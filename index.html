@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Generate D&D 2024 NPCs instantly on your phone">
+  <meta name="theme-color" content="#8b4513">
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg">
+  <link rel="apple-touch-icon" href="icons/icon-192.svg">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/styles.css">
+
+  <title>D&D NPC Generator</title>
+</head>
+<body>
+  <div id="app">
+    <!-- Navigation -->
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-screen="generator">
+        <span class="nav-icon">&#9881;</span>
+        <span class="nav-label">Generator</span>
+      </button>
+      <button class="nav-btn" data-screen="library">
+        <span class="nav-icon">&#128214;</span>
+        <span class="nav-label">Library</span>
+      </button>
+    </nav>
+
+    <!-- Screens -->
+    <main class="screens">
+      <!-- Generator Screen -->
+      <section id="screen-generator" class="screen active">
+        <header class="screen-header">
+          <h1>NPC Generator</h1>
+        </header>
+        <div class="screen-content">
+          <!-- Selectors will be rendered here by JS -->
+          <div id="selectors"></div>
+          <button id="btn-generate" class="btn btn-primary">Generate</button>
+        </div>
+      </section>
+
+      <!-- Result Screen -->
+      <section id="screen-result" class="screen">
+        <header class="screen-header">
+          <button id="btn-back" class="btn-icon">&larr;</button>
+          <h1 id="result-name">NPC Name</h1>
+        </header>
+        <div class="screen-content">
+          <div id="result-summary" class="chips"></div>
+          <div id="result-physical" class="description-section">
+            <h2>Physical Description</h2>
+            <p></p>
+          </div>
+          <div id="result-psych" class="description-section">
+            <h2>Psychological Profile</h2>
+            <p></p>
+          </div>
+          <div class="action-buttons">
+            <button id="btn-regenerate" class="btn btn-secondary">Regenerate</button>
+            <button id="btn-copy" class="btn btn-secondary">Copy</button>
+            <button id="btn-save" class="btn btn-primary">Save</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Library Screen -->
+      <section id="screen-library" class="screen">
+        <header class="screen-header">
+          <h1>Library</h1>
+        </header>
+        <div class="screen-content">
+          <div id="library-list"></div>
+          <div id="library-empty" class="empty-state">
+            <p>No saved NPCs yet</p>
+            <button id="btn-generate-first" class="btn btn-primary">Generate one</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Library Detail Screen -->
+      <section id="screen-library-detail" class="screen">
+        <header class="screen-header">
+          <button id="btn-back-library" class="btn-icon">&larr;</button>
+          <h1 id="detail-name">NPC Name</h1>
+        </header>
+        <div class="screen-content">
+          <div id="detail-summary" class="chips"></div>
+          <div id="detail-physical" class="description-section">
+            <h2>Physical Description</h2>
+            <p></p>
+          </div>
+          <div id="detail-psych" class="description-section">
+            <h2>Psychological Profile</h2>
+            <p></p>
+          </div>
+          <div class="action-buttons">
+            <button id="btn-copy-detail" class="btn btn-secondary">Copy</button>
+            <button id="btn-delete" class="btn btn-danger">Delete</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Modal -->
+    <div id="modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content">
+        <h2 id="modal-title"></h2>
+        <p id="modal-message"></p>
+        <div class="modal-actions">
+          <button id="modal-cancel" class="btn btn-secondary">Cancel</button>
+          <button id="modal-confirm" class="btn btn-danger">Confirm</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/data-loader.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/generator.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

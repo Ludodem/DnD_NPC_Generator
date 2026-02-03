@@ -1,0 +1,34 @@
+{
+  "races": [
+    {
+      "id": "human",
+      "label": "Human",
+      "nameFile": "names_human.json",
+      "nameFormat": "first_last"
+    },
+    {
+      "id": "elf",
+      "label": "Elf",
+      "nameFile": "names_elf.json",
+      "nameFormat": "first_last"
+    },
+    {
+      "id": "dwarf",
+      "label": "Dwarf",
+      "nameFile": "names_dwarf.json",
+      "nameFormat": "first_nickname_last"
+    },
+    {
+      "id": "halfling",
+      "label": "Halfling",
+      "nameFile": "names_halfling.json",
+      "nameFormat": "first_last"
+    },
+    {
+      "id": "tiefling",
+      "label": "Tiefling",
+      "nameFile": "names_tiefling.json",
+      "nameFormat": "first_last"
+    }
+  ]
+}

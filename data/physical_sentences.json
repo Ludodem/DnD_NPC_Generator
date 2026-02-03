@@ -1,0 +1,71 @@
+{
+  "generic": [
+    "A weathered face tells stories of many journeys taken and hardships endured.",
+    "Sharp, observant eyes miss nothing, constantly scanning the surroundings.",
+    "Calloused hands speak of years of hard labor and honest work.",
+    "A distinctive scar runs across the left cheek, a memento from past conflicts.",
+    "Moves with a slight limp, though it doesn't seem to slow them down.",
+    "An athletic build suggests regular physical training or demanding work.",
+    "Graying hair frames a face that still holds traces of youthful vigor.",
+    "A warm smile comes easily, putting others at ease immediately.",
+    "Dressed in practical, well-maintained clothing suited for travel.",
+    "A stern expression gives away little of what they're thinking.",
+    "Fidgets constantly with a small trinket kept in a pocket.",
+    "Speaks with a distinct regional accent that's hard to place.",
+    "A booming laugh that fills any room when something amuses them.",
+    "Carries themselves with the confident posture of someone used to being in charge.",
+    "Nervous habits betray an underlying anxiety despite outward composure."
+  ],
+  "byRace": {
+    "Human": [
+      "Sun-bronzed skin suggests a life spent mostly outdoors.",
+      "A stocky, muscular build developed through years of physical work.",
+      "Prematurely gray streaks run through otherwise dark hair.",
+      "Laugh lines around the eyes speak of a generally cheerful disposition.",
+      "A tall, imposing figure that commands attention when entering a room.",
+      "Freckles dust the nose and cheeks from constant sun exposure.",
+      "Work-roughened hands with short, practical nails.",
+      "A round, friendly face that puts strangers at ease."
+    ],
+    "Elf": [
+      "Delicate, angular features give an almost otherworldly appearance.",
+      "Luminous eyes that seem to catch and reflect even the faintest light.",
+      "Hair like spun silver flows well past the shoulders.",
+      "Moves with an effortless grace that seems almost supernatural.",
+      "Skin has a faint, ethereal glow in moonlight.",
+      "Ears taper to elegant points, adorned with small silver rings.",
+      "Ageless features make it impossible to guess their years.",
+      "Long, nimble fingers suited for intricate work or music."
+    ],
+    "Dwarf": [
+      "A magnificently braided beard adorned with golden clasps and gems.",
+      "Broad shoulders and thick arms built for wielding heavy tools.",
+      "Deep-set eyes that gleam like polished stones in firelight.",
+      "Intricate clan tattoos cover the forearms and shoulders.",
+      "A nose that's been broken at least twice and set imperfectly.",
+      "Thick, calloused fingers from decades at the forge.",
+      "Stocky and solid, built low to the ground like mountain stone.",
+      "A booming voice that echoes in enclosed spaces."
+    ],
+    "Halfling": [
+      "Bright, curious eyes that seem to notice every detail.",
+      "Curly hair that refuses to stay tamed despite best efforts.",
+      "Bare feet with impressively tough, leathery soles.",
+      "A round, cheerful face that rarely stops smiling.",
+      "Quick, nimble movements like a sparrow hopping about.",
+      "Laugh lines and crow's feet from a life of good humor.",
+      "Small but surprisingly strong hands with deft fingers.",
+      "An infectious grin that spreads to everyone nearby."
+    ],
+    "Tiefling": [
+      "Curved horns rise from the forehead, polished to a dark shine.",
+      "Eyes glow with a faint inner fire, especially in darkness.",
+      "A long, sinuous tail swishes unconsciously with mood changes.",
+      "Skin has an unusual deep red hue with darker patches.",
+      "Sharp canine teeth flash when speaking or smiling.",
+      "Clawed fingernails filed to practical but still sharp points.",
+      "Faint sulfurous scent that lingers, impossible to wash away.",
+      "Shadows seem to cling slightly longer around their form."
+    ]
+  }
+}
