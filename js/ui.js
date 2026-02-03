@@ -569,16 +569,20 @@ const UI = (function() {
     elements.libraryList.classList.remove('hidden');
     elements.libraryEmpty.classList.add('hidden');
 
-    elements.libraryList.innerHTML = npcs.map(npc => `
+    elements.libraryList.innerHTML = npcs.map(npc => {
+      const tierLabel = npc.tier || 'Novice';
+      const archetypeLabel = npc.archetypeLabel || formatLabel(npc.archetype) || 'Generalist';
+      return `
       <div class="npc-card" data-npc-id="${npc.id}">
         <div class="npc-card-content">
           <div class="npc-card-name">${npc.name}</div>
-          <div class="npc-card-meta">${npc.race} · ${npc.alignment}</div>
+          <div class="npc-card-meta">${npc.race} · ${npc.alignment} · ${tierLabel} ${archetypeLabel}</div>
         </div>
         <button class="npc-card-delete" data-npc-id="${npc.id}" aria-label="Delete NPC">Delete</button>
         <span class="npc-card-arrow">›</span>
       </div>
-    `).join('');
+    `;
+    }).join('');
 
     // Add click handlers
     elements.libraryList.querySelectorAll('.npc-card').forEach(card => {
