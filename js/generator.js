@@ -11,7 +11,7 @@ const Generator = (function() {
   const ABILITY_KEYS = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
 
   const TIER_CONFIG = {
-    Novice: { cr: 1, pb: 2, primaryBoost: 0, secondaryBoost: 0 },
+    Novice: { cr: 1, pb: 2, primaryBoost: 0, secondaryBoost: 0, novice: true },
     Trained: { cr: 3, pb: 2, primaryBoost: 1, secondaryBoost: 0 },
     Veteran: { cr: 6, pb: 3, primaryBoost: 2, secondaryBoost: 1 },
     Elite: { cr: 9, pb: 4, primaryBoost: 3, secondaryBoost: 1 },
@@ -183,6 +183,25 @@ const Generator = (function() {
     ABILITY_KEYS.forEach(key => {
       scores[key] = 10;
     });
+
+    if (tierInfo.novice && archetype && Array.isArray(archetype.primary) && archetype.primary.length > 0) {
+      const primaryList = archetype.primary.slice();
+      const primaryMain = randomPick(primaryList);
+      scores[primaryMain] = 14;
+
+      const secondaryPrimary = primaryList.find(key => key !== primaryMain);
+      if (secondaryPrimary) {
+        scores[secondaryPrimary] = 12;
+      } else if (archetype.secondary && archetype.secondary.length > 0) {
+        scores[archetype.secondary[0]] = 12;
+      }
+
+      ABILITY_KEYS.forEach(key => {
+        scores[key] = Math.max(8, Math.min(14, scores[key]));
+      });
+
+      return scores;
+    }
 
     if (archetype && archetype.primary) {
       archetype.primary.forEach(key => {
