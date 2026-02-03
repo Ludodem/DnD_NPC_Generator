@@ -178,6 +178,28 @@ button {
   flex: 1;
 }
 
+#result-name,
+#detail-name {
+  font-size: 2.1rem;
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+  margin: 0 auto;
+}
+
+#screen-result .screen-header,
+#screen-library-detail .screen-header {
+  justify-content: center;
+  position: relative;
+  text-align: center;
+}
+
+#screen-result .screen-header .btn-icon,
+#screen-library-detail .screen-header .btn-icon {
+  position: absolute;
+  left: var(--space-md);
+}
+
 .screen-content {
   flex: 1;
   padding: var(--space-md);
@@ -311,20 +333,23 @@ button {
    Chips (Summary)
    ---------------------------------------- */
 .chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-sm);
+  display: block;
+  text-align: center;
   margin-bottom: var(--space-lg);
 }
 
 .chip {
-  display: inline-block;
-  padding: var(--space-xs) var(--space-sm);
-  background-color: var(--color-accent-light);
-  color: var(--color-text);
-  border-radius: var(--radius-sm);
-  font-size: 0.85rem;
-  font-weight: 500;
+  display: inline;
+  padding: 0;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.chip:not(:last-child)::after {
+  content: " \u00b7 ";
+  color: var(--color-text-muted);
 }
 
 /* ----------------------------------------
