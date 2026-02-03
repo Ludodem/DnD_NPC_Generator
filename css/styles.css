@@ -610,6 +610,33 @@ button {
   color: var(--color-text);
 }
 
+.statblock-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.statblock-action-text {
+  flex: 1;
+}
+
+.action-roll {
+  border: none;
+  background-color: #3a2a18;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.action-roll:active {
+  transform: scale(0.98);
+}
+
 .roll-modal-content {
   text-align: center;
 }

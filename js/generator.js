@@ -569,7 +569,13 @@ Psych: ${npc.psychDescription}`;
 
     return {
       name: entry.name,
-      text
+      text,
+      roll: attackAbility ? {
+        attackBonus: mod + pb,
+        damageDice: dice || null,
+        bonusDice: bonusDice || null,
+        damageMod: mod
+      } : null
     };
   }
 

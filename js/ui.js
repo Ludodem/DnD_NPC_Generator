@@ -874,7 +874,7 @@ const UI = (function() {
     }
 
     renderEntryList(target.traits, npc.traits);
-    renderEntryList(target.actions, npc.actions);
+    renderActionList(target.actions, npc.actions);
     renderEntryList(target.reactions, npc.reactions);
   }
 
@@ -891,6 +891,96 @@ const UI = (function() {
     `).join('');
   }
 
+  function renderActionList(container, items) {
+    if (!container) return;
+    if (!items || items.length === 0) {
+      container.innerHTML = '<div class="statblock-entry">None</div>';
+      return;
+    }
+
+    container.innerHTML = items.map(item => {
+      const rollButton = item.roll ? `<button class="action-roll" type="button">Roll</button>` : '';
+      return `
+        <div class="statblock-entry statblock-action" data-roll='${item.roll ? JSON.stringify(item.roll) : ''}'>
+          <div class="statblock-action-text">
+            <span class="entry-name">${item.name}.</span> ${item.text}
+          </div>
+          ${rollButton}
+        </div>
+      `;
+    }).join('');
+
+    container.querySelectorAll('.action-roll').forEach(button => {
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const entry = button.closest('.statblock-action');
+        if (!entry) return;
+        const raw = entry.dataset.roll;
+        if (!raw) return;
+        let rollData = null;
+        try {
+          rollData = JSON.parse(raw);
+        } catch (e) {
+          return;
+        }
+        rollAttackAndDamage(rollData);
+      });
+    });
+  }
+
+  function rollAttackAndDamage(rollData) {
+    if (!rollData) return;
+    const attackBonus = rollData.attackBonus || 0;
+    const attackRoll = rollD20();
+    const attackTotal = attackRoll + attackBonus;
+
+    const damageParts = [];
+    let damageTotal = 0;
+
+    if (rollData.damageDice) {
+      const dmg = rollDice(rollData.damageDice);
+      damageParts.push(`${rollData.damageDice} (${dmg.total})`);
+      damageTotal += dmg.total;
+    }
+
+    if (rollData.bonusDice) {
+      const bonus = rollDice(rollData.bonusDice);
+      damageParts.push(`${rollData.bonusDice} (${bonus.total})`);
+      damageTotal += bonus.total;
+    }
+
+    const mod = rollData.damageMod || 0;
+    damageTotal += mod;
+
+    const modLabel = mod === 0 ? '' : ` ${mod > 0 ? '+' : '-'} ${Math.abs(mod)}`;
+    const damageDetail = `${damageParts.join(' + ')}${modLabel}`.trim();
+
+    showRollModalWith(
+      'Attack Roll',
+      `${attackTotal}`,
+      `d20 (${attackRoll}) + ${formatSigned(attackBonus)} = ${attackTotal}\nDamage: ${damageDetail} = ${damageTotal}`
+    );
+  }
+
+  function rollD20() {
+    return Math.floor(Math.random() * 20) + 1;
+  }
+
+  function rollDice(dice) {
+    const match = /^(\d+)d(\d+)$/i.exec(dice);
+    if (!match) {
+      return { total: 0 };
+    }
+    const count = parseInt(match[1], 10);
+    const sides = parseInt(match[2], 10);
+    let total = 0;
+    for (let i = 0; i < count; i++) {
+      total += Math.floor(Math.random() * sides) + 1;
+    }
+    return { total };
+  }
+
   function rollSavingThrow(npc, abilityKey) {
     const mods = getAbilityMods(npc);
     const pb = npc.proficiencyBonus || 0;
@@ -902,11 +992,11 @@ const UI = (function() {
 
     const modifierLabel = `${formatSigned(modifier)}${isProficient ? ' (proficient)' : ''}`;
 
-    elements.rollTitle.textContent = `${abilityKey} Saving Throw`;
-    elements.rollResult.textContent = `${total}`;
-    elements.rollDetail.textContent = `Roll: ${roll} + Modifier: ${modifierLabel}`;
-
-    showRollModal();
+    showRollModalWith(
+      `${abilityKey} Saving Throw`,
+      `${total}`,
+      `Roll: ${roll} + Modifier: ${modifierLabel}`
+    );
   }
 
   function showRollModal() {
@@ -921,6 +1011,13 @@ const UI = (function() {
   function hideRollModal() {
     if (!elements.rollModal) return;
     elements.rollModal.classList.add('hidden');
+  }
+
+  function showRollModalWith(title, result, detail) {
+    elements.rollTitle.textContent = title;
+    elements.rollResult.textContent = result;
+    elements.rollDetail.textContent = detail;
+    showRollModal();
   }
 
   async function ensureNpcStats(npc, persistIfSaved) {
