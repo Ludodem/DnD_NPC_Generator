@@ -15,6 +15,8 @@ const UI = (function() {
     tier: 'Novice'
   };
   let viewingNpcId = null;
+  let cachedArchetypes = [];
+  let cachedTiers = [];
 
   // DOM element cache
   const elements = {};
@@ -62,6 +64,8 @@ const UI = (function() {
     elements.resultPsych = document.querySelector('#result-psych p');
     elements.resultNotes = document.getElementById('notes-input');
     elements.resultAbilityMods = mapAbilityElements(document.querySelectorAll('#screen-result .ability-mod'));
+    elements.resultArchetypeSelect = document.getElementById('result-archetype-select');
+    elements.resultTierSelect = document.getElementById('result-tier-select');
     elements.btnBack = document.getElementById('btn-back');
     elements.btnRegenerate = document.getElementById('btn-regenerate');
     elements.btnCopy = document.getElementById('btn-copy');
@@ -81,6 +85,8 @@ const UI = (function() {
     elements.detailPsych = document.querySelector('#detail-psych p');
     elements.detailNotes = document.getElementById('detail-notes-input');
     elements.detailAbilityMods = mapAbilityElements(document.querySelectorAll('#screen-library-detail .ability-mod'));
+    elements.detailArchetypeSelect = document.getElementById('detail-archetype-select');
+    elements.detailTierSelect = document.getElementById('detail-tier-select');
     elements.btnBackLibrary = document.getElementById('btn-back-library');
     elements.btnCopyDetail = document.getElementById('btn-copy-detail');
     elements.btnDelete = document.getElementById('btn-delete');
@@ -166,10 +172,10 @@ const UI = (function() {
    */
   async function renderSelectors() {
     const races = await DataLoader.getAllRaces();
-    const archetypes = await DataLoader.getArchetypes();
+    const archetypes = await getArchetypes();
     const sexOptions = Generator.getSexOptions();
     const alignmentOptions = Generator.getAlignmentOptions();
-    const tierOptions = Generator.getTierOptions();
+    const tierOptions = getTierOptions();
 
     const html = `
       ${renderSelectorGroup('Sex', 'sex', sexOptions, 'random')}
@@ -266,7 +272,7 @@ const UI = (function() {
 
       currentNpc = await Generator.generate(generatorCriteria);
       currentNpc.notes = keepNotes ? notesSnapshot : '';
-      renderResult(currentNpc);
+      await renderResult(currentNpc);
       showScreen('result');
     } catch (error) {
       console.error('Generation error:', error);
@@ -295,6 +301,18 @@ const UI = (function() {
       saveCurrentNpc();
     });
 
+    elements.resultArchetypeSelect.addEventListener('change', () => {
+      if (!currentNpc) return;
+      void applyStatChanges(currentNpc, elements.resultArchetypeSelect.value, elements.resultTierSelect.value, true);
+      generatorCriteria.archetype = elements.resultArchetypeSelect.value;
+    });
+
+    elements.resultTierSelect.addEventListener('change', () => {
+      if (!currentNpc) return;
+      void applyStatChanges(currentNpc, elements.resultArchetypeSelect.value, elements.resultTierSelect.value, true);
+      generatorCriteria.tier = elements.resultTierSelect.value;
+    });
+
     const saveResultNotes = debounce(() => {
       if (!currentNpc) return;
       currentNpc.notes = elements.resultNotes.value || '';
@@ -309,7 +327,9 @@ const UI = (function() {
   /**
    * Render NPC result
    */
-  function renderResult(npc) {
+  async function renderResult(npc) {
+    await ensureNpcStats(npc, true);
+    await renderStatControls(elements.resultArchetypeSelect, elements.resultTierSelect, npc);
     elements.resultName.textContent = npc.name;
     elements.resultSummary.innerHTML = renderChips(npc);
     renderStats(elements.resultAbilityMods, elements.resultStatline, elements.resultSaves, npc);
@@ -429,6 +449,20 @@ const UI = (function() {
     }, 300);
 
     elements.detailNotes.addEventListener('input', saveDetailNotes);
+
+    elements.detailArchetypeSelect.addEventListener('change', () => {
+      if (!viewingNpcId) return;
+      const npc = Storage.getById(viewingNpcId);
+      if (!npc) return;
+      void applyStatChanges(npc, elements.detailArchetypeSelect.value, elements.detailTierSelect.value, true);
+    });
+
+    elements.detailTierSelect.addEventListener('change', () => {
+      if (!viewingNpcId) return;
+      const npc = Storage.getById(viewingNpcId);
+      if (!npc) return;
+      void applyStatChanges(npc, elements.detailArchetypeSelect.value, elements.detailTierSelect.value, true);
+    });
   }
 
   /**
@@ -460,7 +494,7 @@ const UI = (function() {
     elements.libraryList.querySelectorAll('.npc-card').forEach(card => {
       card.addEventListener('click', () => {
         const npcId = card.dataset.npcId;
-        viewNpcDetail(npcId);
+        void viewNpcDetail(npcId);
       });
     });
   }
@@ -468,7 +502,7 @@ const UI = (function() {
   /**
    * View NPC detail from library
    */
-  function viewNpcDetail(npcId) {
+  async function viewNpcDetail(npcId) {
     const npc = Storage.getById(npcId);
     if (!npc) {
       showToast('NPC not found');
@@ -477,6 +511,8 @@ const UI = (function() {
 
     viewingNpcId = npcId;
 
+    await ensureNpcStats(npc, true);
+    await renderStatControls(elements.detailArchetypeSelect, elements.detailTierSelect, npc);
     elements.detailName.textContent = npc.name;
     elements.detailSummary.innerHTML = renderChips(npc);
     renderStats(elements.detailAbilityMods, elements.detailStatline, elements.detailSaves, npc);
@@ -622,6 +658,71 @@ const UI = (function() {
     const savingThrows = npc.savingThrows || computeSavingThrows(mods, saveProfs, pb);
     const saveText = saveProfs.map(key => `${key} ${formatSigned(savingThrows[key])}`).join(', ');
     savesEl.textContent = `Saving Throws: ${saveText}`;
+  }
+
+  async function ensureNpcStats(npc, persistIfSaved) {
+    if (npc.abilityMods && npc.savingThrows && npc.proficiencyBonus && npc.cr && npc.archetype && npc.tier) {
+      return;
+    }
+
+    const archetypes = await getArchetypes();
+    const defaultArchetype = archetypes[0];
+    const archetypeId = npc.archetype || (defaultArchetype ? defaultArchetype.id : null);
+    const tier = npc.tier || 'Novice';
+
+    await applyStatChanges(npc, archetypeId, tier, persistIfSaved);
+  }
+
+  async function applyStatChanges(npc, archetypeId, tier, persistIfSaved) {
+    const stats = await Generator.computeStatsFor(archetypeId, tier);
+
+    npc.archetype = stats.archetype.id;
+    npc.archetypeLabel = stats.archetype.label;
+    npc.tier = stats.tier;
+    npc.cr = stats.tierInfo.cr;
+    npc.proficiencyBonus = stats.tierInfo.pb;
+    npc.abilityScores = stats.abilityScores;
+    npc.abilityMods = stats.abilityMods;
+    npc.savingThrowProficiencies = stats.saveProfs;
+    npc.savingThrows = stats.savingThrows;
+
+    if (persistIfSaved && Storage.exists(npc.id)) {
+      Storage.save(npc);
+    }
+
+    if (npc === currentNpc) {
+      renderStats(elements.resultAbilityMods, elements.resultStatline, elements.resultSaves, npc);
+    } else if (viewingNpcId && npc.id === viewingNpcId) {
+      renderStats(elements.detailAbilityMods, elements.detailStatline, elements.detailSaves, npc);
+    }
+  }
+
+  async function renderStatControls(archetypeSelect, tierSelect, npc) {
+    const archetypes = await getArchetypes();
+    const tiers = getTierOptions();
+
+    archetypeSelect.innerHTML = archetypes.map(a => `<option value="${a.id}">${a.label}</option>`).join('');
+    tierSelect.innerHTML = tiers.map(t => `<option value="${t}">${t}</option>`).join('');
+
+    archetypeSelect.value = npc.archetype || archetypes[0].id;
+    tierSelect.value = npc.tier || 'Novice';
+  }
+
+  async function getArchetypes() {
+    if (cachedArchetypes.length > 0) {
+      return cachedArchetypes;
+    }
+    const archetypes = await DataLoader.getArchetypes();
+    cachedArchetypes = archetypes;
+    return archetypes;
+  }
+
+  function getTierOptions() {
+    if (cachedTiers.length > 0) {
+      return cachedTiers;
+    }
+    cachedTiers = Generator.getTierOptions();
+    return cachedTiers;
   }
 
   function getAbilityMods(npc) {

@@ -150,6 +150,32 @@ const Generator = (function() {
   }
 
   /**
+   * Compute stats for a given archetype and tier
+   */
+  async function computeStatsFor(archetypeId, tier) {
+    const archetypes = await DataLoader.getArchetypes();
+    const archetype = archetypes.find(a => a.id === archetypeId) || archetypes[0];
+    const resolvedTier = TIER_CONFIG[tier] ? tier : 'Novice';
+    const tierInfo = getTierInfo(resolvedTier);
+    const abilityScores = generateAbilityScores(archetype, tierInfo);
+    const abilityMods = computeAbilityMods(abilityScores);
+    const saveProfs = (archetype && archetype.saveProfs && archetype.saveProfs.length >= 2)
+      ? archetype.saveProfs.slice(0, 2)
+      : pickTopTwo(abilityMods);
+    const savingThrows = computeSavingThrows(abilityMods, saveProfs, tierInfo.pb);
+
+    return {
+      archetype,
+      tier: resolvedTier,
+      tierInfo,
+      abilityScores,
+      abilityMods,
+      saveProfs,
+      savingThrows
+    };
+  }
+
+  /**
    * Generate ability scores based on archetype and tier
    */
   function generateAbilityScores(archetype, tierInfo) {
@@ -339,6 +365,7 @@ Psych: ${npc.psychDescription}`;
     getAlignmentOptions,
     getTierOptions,
     getTierInfo,
-    getAbilityModsFromScores
+    getAbilityModsFromScores,
+    computeStatsFor
   };
 })();
