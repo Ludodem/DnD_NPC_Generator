@@ -9,6 +9,7 @@ const DataLoader = (function() {
     races: null,
     names: {},
     physical: null,
+    archetypes: null,
     psych: {
       good: null,
       neutral: null,
@@ -77,6 +78,17 @@ const DataLoader = (function() {
   }
 
   /**
+   * Load archetypes configuration
+   */
+  async function loadArchetypes() {
+    if (cache.archetypes) {
+      return cache.archetypes;
+    }
+    cache.archetypes = await fetchJSON('archetypes.json');
+    return cache.archetypes;
+  }
+
+  /**
    * Load psychological descriptions for an alignment
    */
   async function loadPsych(alignment) {
@@ -103,12 +115,16 @@ const DataLoader = (function() {
     // Load physical descriptions
     const physicalPromise = loadPhysical();
 
+    // Load archetypes
+    const archetypesPromise = loadArchetypes();
+
     // Load all psych files
     const psychPromises = ['good', 'neutral', 'evil'].map(alignment => loadPsych(alignment));
 
     await Promise.all([
       ...namePromises,
       physicalPromise,
+      archetypesPromise,
       ...psychPromises
     ]);
 
@@ -132,14 +148,24 @@ const DataLoader = (function() {
     return races.races;
   }
 
+  /**
+   * Get archetypes list
+   */
+  async function getArchetypes() {
+    const archetypes = await loadArchetypes();
+    return archetypes.archetypes;
+  }
+
   // Public API
   return {
     loadRaces,
     loadNames,
     loadPhysical,
     loadPsych,
+    loadArchetypes,
     preloadAll,
     getRace,
-    getAllRaces
+    getAllRaces,
+    getArchetypes
   };
 })();

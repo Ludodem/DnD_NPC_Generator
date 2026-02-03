@@ -7,6 +7,16 @@ const Generator = (function() {
   // Available options
   const SEX_OPTIONS = ['Male', 'Female'];
   const ALIGNMENT_OPTIONS = ['Good', 'Neutral', 'Evil'];
+  const TIER_OPTIONS = ['Novice', 'Trained', 'Veteran', 'Elite', 'Legendary'];
+  const ABILITY_KEYS = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
+
+  const TIER_CONFIG = {
+    Novice: { cr: 1, pb: 2, primaryBoost: 0, secondaryBoost: 0 },
+    Trained: { cr: 3, pb: 2, primaryBoost: 1, secondaryBoost: 0 },
+    Veteran: { cr: 6, pb: 3, primaryBoost: 2, secondaryBoost: 1 },
+    Elite: { cr: 9, pb: 4, primaryBoost: 3, secondaryBoost: 1 },
+    Legendary: { cr: 13, pb: 5, primaryBoost: 4, secondaryBoost: 2 }
+  };
 
   /**
    * Pick a random item from an array
@@ -84,6 +94,33 @@ const Generator = (function() {
   }
 
   /**
+   * Resolve an archetype selection
+   */
+  async function resolveArchetype(value) {
+    const archetypes = await DataLoader.getArchetypes();
+
+    if (!value || value === 'random') {
+      return randomPick(archetypes);
+    }
+
+    if (typeof value === 'object') {
+      return value;
+    }
+
+    return archetypes.find(a => a.id === value) || randomPick(archetypes);
+  }
+
+  /**
+   * Resolve tier selection
+   */
+  function resolveTier(value) {
+    if (!value || value === 'random') {
+      return randomPick(TIER_OPTIONS);
+    }
+    return value;
+  }
+
+  /**
    * Resolve a selection (return value if set, or random if "random")
    */
   async function resolveSelection(value, options, getRaceLabel = false) {
@@ -106,17 +143,110 @@ const Generator = (function() {
   }
 
   /**
+   * Get tier configuration info
+   */
+  function getTierInfo(tier) {
+    return TIER_CONFIG[tier] || TIER_CONFIG.Novice;
+  }
+
+  /**
+   * Generate ability scores based on archetype and tier
+   */
+  function generateAbilityScores(archetype, tierInfo) {
+    const scores = {};
+    ABILITY_KEYS.forEach(key => {
+      scores[key] = 10;
+    });
+
+    if (archetype && archetype.primary) {
+      archetype.primary.forEach(key => {
+        if (scores[key] !== undefined) {
+          scores[key] += 4;
+        }
+      });
+    }
+
+    if (archetype && archetype.secondary) {
+      archetype.secondary.forEach(key => {
+        if (scores[key] !== undefined) {
+          scores[key] += 2;
+        }
+      });
+    }
+
+    if (archetype && archetype.primary) {
+      archetype.primary.forEach(key => {
+        if (scores[key] !== undefined) {
+          scores[key] += tierInfo.primaryBoost;
+        }
+      });
+    }
+
+    if (archetype && archetype.secondary) {
+      archetype.secondary.forEach(key => {
+        if (scores[key] !== undefined) {
+          scores[key] += tierInfo.secondaryBoost;
+        }
+      });
+    }
+
+    ABILITY_KEYS.forEach(key => {
+      scores[key] = Math.max(8, Math.min(20, scores[key]));
+    });
+
+    return scores;
+  }
+
+  /**
+   * Compute ability modifiers from scores
+   */
+  function computeAbilityMods(scores) {
+    const mods = {};
+    ABILITY_KEYS.forEach(key => {
+      const score = scores[key] || 10;
+      mods[key] = Math.floor((score - 10) / 2);
+    });
+    return mods;
+  }
+
+  /**
+   * Pick top two abilities for saving throws
+   */
+  function pickTopTwo(mods) {
+    return ABILITY_KEYS
+      .slice()
+      .sort((a, b) => mods[b] - mods[a])
+      .slice(0, 2);
+  }
+
+  /**
+   * Compute saving throws values
+   */
+  function computeSavingThrows(mods, saveProfs, proficiencyBonus) {
+    const saves = {};
+    ABILITY_KEYS.forEach(key => {
+      const isProficient = saveProfs.includes(key);
+      saves[key] = mods[key] + (isProficient ? proficiencyBonus : 0);
+    });
+    return saves;
+  }
+
+  /**
    * Generate a complete NPC
    * @param {Object} criteria - Generation criteria
    * @param {string} criteria.sex - 'Male', 'Female', or 'random'
    * @param {Object|string} criteria.race - { id, label } or 'random'
    * @param {string} criteria.alignment - 'Good', 'Neutral', 'Evil', or 'random'
+   * @param {Object|string} criteria.archetype - archetype object, id, or 'random'
+   * @param {string} criteria.tier - tier label or 'random'
    */
   async function generate(criteria = {}) {
     // Resolve random selections
     const sex = await resolveSelection(criteria.sex, SEX_OPTIONS);
     const race = await resolveSelection(criteria.race, null, true);
     const alignment = await resolveSelection(criteria.alignment, ALIGNMENT_OPTIONS);
+    const archetype = await resolveArchetype(criteria.archetype);
+    const tier = resolveTier(criteria.tier);
 
     // Generate name based on resolved race and sex
     const name = await generateName(race.id, sex);
@@ -124,6 +254,15 @@ const Generator = (function() {
     // Generate descriptions
     const physicalDescription = await generatePhysicalDescription(race.label);
     const psychDescription = await generatePsychDescription(alignment);
+
+    // Stats block basics
+    const tierInfo = getTierInfo(tier);
+    const abilityScores = generateAbilityScores(archetype, tierInfo);
+    const abilityMods = computeAbilityMods(abilityScores);
+    const saveProfs = (archetype && archetype.saveProfs && archetype.saveProfs.length >= 2)
+      ? archetype.saveProfs.slice(0, 2)
+      : pickTopTwo(abilityMods);
+    const savingThrows = computeSavingThrows(abilityMods, saveProfs, tierInfo.pb);
 
     // Create NPC object
     const npc = {
@@ -135,6 +274,15 @@ const Generator = (function() {
       alignment: alignment,
       class: null,
       level: null,
+      archetype: archetype ? archetype.id : null,
+      archetypeLabel: archetype ? archetype.label : null,
+      tier: tier,
+      cr: tierInfo.cr,
+      proficiencyBonus: tierInfo.pb,
+      abilityScores: abilityScores,
+      abilityMods: abilityMods,
+      savingThrowProficiencies: saveProfs,
+      savingThrows: savingThrows,
       name: name,
       physicalDescription: physicalDescription,
       psychDescription: psychDescription,
@@ -169,11 +317,28 @@ Psych: ${npc.psychDescription}`;
     return [...ALIGNMENT_OPTIONS];
   }
 
+  /**
+   * Get available tier options
+   */
+  function getTierOptions() {
+    return [...TIER_OPTIONS];
+  }
+
+  /**
+   * Get ability modifier map from scores (exported for UI fallback)
+   */
+  function getAbilityModsFromScores(scores) {
+    return computeAbilityMods(scores);
+  }
+
   // Public API
   return {
     generate,
     formatForClipboard,
     getSexOptions,
-    getAlignmentOptions
+    getAlignmentOptions,
+    getTierOptions,
+    getTierInfo,
+    getAbilityModsFromScores
   };
 })();

@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = 'npc-gen-v2';
+﻿const CACHE_NAME = 'npc-gen-v3';
 
 const ASSETS = [
   './',
@@ -10,6 +10,7 @@ const ASSETS = [
   './js/storage.js',
   './js/ui.js',
   './data/races.json',
+  './data/archetypes.json',
   './data/names_human.json',
   './data/names_elf.json',
   './data/names_dwarf.json',
@@ -85,4 +86,5 @@ self.addEventListener('fetch', event => {
     })
   );
 });
+
 

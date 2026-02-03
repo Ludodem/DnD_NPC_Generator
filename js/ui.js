@@ -10,7 +10,9 @@ const UI = (function() {
   let generatorCriteria = {
     sex: 'random',
     race: 'random',
-    alignment: 'random'
+    alignment: 'random',
+    archetype: 'random',
+    tier: 'random'
   };
   let viewingNpcId = null;
 
@@ -54,9 +56,12 @@ const UI = (function() {
     // Result
     elements.resultName = document.getElementById('result-name');
     elements.resultSummary = document.getElementById('result-summary');
+    elements.resultStatline = document.getElementById('result-statline');
+    elements.resultSaves = document.getElementById('result-saves');
     elements.resultPhysical = document.querySelector('#result-physical p');
     elements.resultPsych = document.querySelector('#result-psych p');
     elements.resultNotes = document.getElementById('notes-input');
+    elements.resultAbilityMods = mapAbilityElements(document.querySelectorAll('#screen-result .ability-mod'));
     elements.btnBack = document.getElementById('btn-back');
     elements.btnRegenerate = document.getElementById('btn-regenerate');
     elements.btnCopy = document.getElementById('btn-copy');
@@ -70,9 +75,12 @@ const UI = (function() {
     // Library Detail
     elements.detailName = document.getElementById('detail-name');
     elements.detailSummary = document.getElementById('detail-summary');
+    elements.detailStatline = document.getElementById('detail-statline');
+    elements.detailSaves = document.getElementById('detail-saves');
     elements.detailPhysical = document.querySelector('#detail-physical p');
     elements.detailPsych = document.querySelector('#detail-psych p');
     elements.detailNotes = document.getElementById('detail-notes-input');
+    elements.detailAbilityMods = mapAbilityElements(document.querySelectorAll('#screen-library-detail .ability-mod'));
     elements.btnBackLibrary = document.getElementById('btn-back-library');
     elements.btnCopyDetail = document.getElementById('btn-copy-detail');
     elements.btnDelete = document.getElementById('btn-delete');
@@ -158,13 +166,17 @@ const UI = (function() {
    */
   async function renderSelectors() {
     const races = await DataLoader.getAllRaces();
+    const archetypes = await DataLoader.getArchetypes();
     const sexOptions = Generator.getSexOptions();
     const alignmentOptions = Generator.getAlignmentOptions();
+    const tierOptions = Generator.getTierOptions();
 
     const html = `
       ${renderSelectorGroup('Sex', 'sex', sexOptions)}
       ${renderSelectorGroup('Race', 'race', races.map(r => ({ value: r.id, label: r.label })))}
       ${renderSelectorGroup('Alignment', 'alignment', alignmentOptions)}
+      ${renderSelectorGroup('Archetype', 'archetype', archetypes.map(a => ({ value: a.id, label: a.label })))}
+      ${renderSelectorGroup('Tier', 'tier', tierOptions)}
       ${renderDisabledSelector('Class', 'Coming in V2')}
     `;
 
@@ -297,6 +309,7 @@ const UI = (function() {
   function renderResult(npc) {
     elements.resultName.textContent = npc.name;
     elements.resultSummary.innerHTML = renderChips(npc);
+    renderStats(elements.resultAbilityMods, elements.resultStatline, elements.resultSaves, npc);
     elements.resultPhysical.textContent = npc.physicalDescription;
     elements.resultPsych.textContent = npc.psychDescription;
     elements.resultNotes.value = npc.notes || '';
@@ -463,6 +476,7 @@ const UI = (function() {
 
     elements.detailName.textContent = npc.name;
     elements.detailSummary.innerHTML = renderChips(npc);
+    renderStats(elements.detailAbilityMods, elements.detailStatline, elements.detailSaves, npc);
     elements.detailPhysical.textContent = npc.physicalDescription;
     elements.detailPsych.textContent = npc.psychDescription;
     elements.detailNotes.value = npc.notes || '';
@@ -568,6 +582,75 @@ const UI = (function() {
         elements.toast.classList.add('hidden');
       }, 300);
     }, 2500);
+  }
+
+  /**
+   * Map ability elements by data-ability attribute
+   */
+  function mapAbilityElements(nodeList) {
+    const map = {};
+    nodeList.forEach(el => {
+      const key = el.dataset.ability;
+      if (key) {
+        map[key] = el;
+      }
+    });
+    return map;
+  }
+
+  /**
+   * Render ability mods and stats lines
+   */
+  function renderStats(abilityMap, statlineEl, savesEl, npc) {
+    const mods = getAbilityMods(npc);
+    Object.keys(abilityMap).forEach(key => {
+      abilityMap[key].textContent = formatSigned(mods[key]);
+    });
+
+    const tier = npc.tier || 'Novice';
+    const tierInfo = Generator.getTierInfo(tier);
+    const cr = npc.cr || tierInfo.cr;
+    const pb = npc.proficiencyBonus || tierInfo.pb;
+    const archetypeLabel = npc.archetypeLabel || formatLabel(npc.archetype) || 'Generalist';
+
+    statlineEl.textContent = `Archetype: ${archetypeLabel} · Tier: ${tier} · CR ${cr} · PB ${formatSigned(pb)}`;
+
+    const saveProfs = npc.savingThrowProficiencies || ['STR', 'CON'];
+    const savingThrows = npc.savingThrows || computeSavingThrows(mods, saveProfs, pb);
+    const saveText = saveProfs.map(key => `${key} ${formatSigned(savingThrows[key])}`).join(', ');
+    savesEl.textContent = `Saving Throws: ${saveText}`;
+  }
+
+  function getAbilityMods(npc) {
+    if (npc.abilityMods) {
+      return npc.abilityMods;
+    }
+    if (npc.abilityScores) {
+      return Generator.getAbilityModsFromScores(npc.abilityScores);
+    }
+    const mods = { STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0 };
+    return mods;
+  }
+
+  function computeSavingThrows(mods, saveProfs, pb) {
+    const saves = {};
+    Object.keys(mods).forEach(key => {
+      const isProficient = saveProfs.includes(key);
+      saves[key] = mods[key] + (isProficient ? pb : 0);
+    });
+    return saves;
+  }
+
+  function formatSigned(value) {
+    if (value >= 0) {
+      return `+${value}`;
+    }
+    return `${value}`;
+  }
+
+  function formatLabel(value) {
+    if (!value) return '';
+    return value.charAt(0).toUpperCase() + value.slice(1);
   }
 
   /**
