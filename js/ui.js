@@ -54,6 +54,8 @@ const UI = (function() {
     // Generator
     elements.selectors = document.getElementById('selectors');
     elements.btnGenerate = document.getElementById('btn-generate');
+    elements.generatorFaceLeft = document.getElementById('generator-face-left');
+    elements.generatorFaceRight = document.getElementById('generator-face-right');
 
     // Result
     elements.resultName = document.getElementById('result-name');
@@ -163,6 +165,7 @@ const UI = (function() {
    */
   async function setupGeneratorScreen() {
     await renderSelectors();
+    await setRandomGeneratorFaces();
 
     elements.btnGenerate.addEventListener('click', handleGenerate);
   }
@@ -192,6 +195,30 @@ const UI = (function() {
     elements.selectors.querySelectorAll('.selector-option:not(.disabled)').forEach(option => {
       option.addEventListener('click', handleSelectorClick);
     });
+  }
+
+  async function setRandomGeneratorFaces() {
+    if (!elements.generatorFaceLeft || !elements.generatorFaceRight) {
+      return;
+    }
+
+    const faces = await DataLoader.getFaces();
+    if (!faces || faces.length === 0) {
+      return;
+    }
+
+    const left = faces[Math.floor(Math.random() * faces.length)];
+    let right = faces[Math.floor(Math.random() * faces.length)];
+    if (faces.length > 1) {
+      let guard = 0;
+      while (right === left && guard < 5) {
+        right = faces[Math.floor(Math.random() * faces.length)];
+        guard++;
+      }
+    }
+
+    elements.generatorFaceLeft.src = `data/${left}`;
+    elements.generatorFaceRight.src = `data/${right}`;
   }
 
   /**

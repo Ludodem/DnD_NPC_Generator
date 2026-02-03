@@ -172,6 +172,27 @@ button {
   min-height: var(--header-height);
 }
 
+.generator-header {
+  display: grid;
+  grid-template-columns: 48px 1fr 48px;
+  align-items: center;
+  justify-items: center;
+  text-align: center;
+}
+
+.generator-header h1 {
+  margin: 0;
+  text-align: center;
+  justify-self: center;
+}
+
+.header-face {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(44, 36, 22, 0.2));
+}
+
 .screen-header h1 {
   font-size: 1.5rem;
   color: var(--color-accent);

@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = 'npc-gen-v4';
+﻿const CACHE_NAME = 'npc-gen-v5';
 
 const ASSETS = [
   './',
@@ -11,6 +11,7 @@ const ASSETS = [
   './js/ui.js',
   './data/races.json',
   './data/archetypes.json',
+  './data/faces.json',
   './data/names_human.json',
   './data/names_elf.json',
   './data/names_dwarf.json',
@@ -20,6 +21,26 @@ const ASSETS = [
   './data/psych_good.json',
   './data/psych_neutral.json',
   './data/psych_evil.json',
+  './data/faces/face_01.png',
+  './data/faces/face_02.png',
+  './data/faces/face_03.png',
+  './data/faces/face_04.png',
+  './data/faces/face_05.png',
+  './data/faces/face_06.png',
+  './data/faces/face_07.png',
+  './data/faces/face_08.png',
+  './data/faces/face_09.png',
+  './data/faces/face_10.png',
+  './data/faces/face_11.png',
+  './data/faces/face_12.png',
+  './data/faces/face_13.png',
+  './data/faces/face_14.png',
+  './data/faces/face_15.png',
+  './data/faces/face_16.png',
+  './data/faces/face_17.png',
+  './data/faces/face_18.png',
+  './data/faces/face_19.png',
+  './data/faces/face_20.png',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png'
@@ -86,6 +107,7 @@ self.addEventListener('fetch', event => {
     })
   );
 });
+
 
 
 

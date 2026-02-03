@@ -10,6 +10,7 @@ const DataLoader = (function() {
     names: {},
     physical: null,
     archetypes: null,
+    faces: null,
     psych: {
       good: null,
       neutral: null,
@@ -89,6 +90,17 @@ const DataLoader = (function() {
   }
 
   /**
+   * Load faces list
+   */
+  async function loadFaces() {
+    if (cache.faces) {
+      return cache.faces;
+    }
+    cache.faces = await fetchJSON('faces.json');
+    return cache.faces;
+  }
+
+  /**
    * Load psychological descriptions for an alignment
    */
   async function loadPsych(alignment) {
@@ -118,6 +130,9 @@ const DataLoader = (function() {
     // Load archetypes
     const archetypesPromise = loadArchetypes();
 
+    // Load faces list
+    const facesPromise = loadFaces();
+
     // Load all psych files
     const psychPromises = ['good', 'neutral', 'evil'].map(alignment => loadPsych(alignment));
 
@@ -125,6 +140,7 @@ const DataLoader = (function() {
       ...namePromises,
       physicalPromise,
       archetypesPromise,
+      facesPromise,
       ...psychPromises
     ]);
 
@@ -156,6 +172,14 @@ const DataLoader = (function() {
     return archetypes.archetypes;
   }
 
+  /**
+   * Get face list
+   */
+  async function getFaces() {
+    const faces = await loadFaces();
+    return faces.faces;
+  }
+
   // Public API
   return {
     loadRaces,
@@ -163,9 +187,11 @@ const DataLoader = (function() {
     loadPhysical,
     loadPsych,
     loadArchetypes,
+    loadFaces,
     preloadAll,
     getRace,
     getAllRaces,
-    getArchetypes
+    getArchetypes,
+    getFaces
   };
 })();
