@@ -58,88 +58,140 @@
           <h1 id="result-name">NPC Name</h1>
         </header>
         <div class="screen-content">
-          <div class="stat-controls">
-            <label class="stat-control">
-              <span>Archetype</span>
-              <select id="result-archetype-select" class="stat-select"></select>
-            </label>
-            <label class="stat-control">
-              <span>Tier</span>
-              <select id="result-tier-select" class="stat-select"></select>
-            </label>
+          <div class="view-tabs">
+            <button class="view-tab active" data-tab="overview">Overview</button>
+            <button class="view-tab" data-tab="statblock">Stat Block</button>
           </div>
-          <div id="result-summary" class="chips"></div>
-          <div class="ac-badge" aria-label="Armor Class">
-            <div class="ac-shield" aria-hidden="true"></div>
-            <div class="ac-text">
-              <span class="ac-label">AC</span>
-              <span id="result-ac" class="ac-value">12</span>
+          <div class="view-tab-content active" data-tab="overview">
+            <div class="stat-controls">
+              <label class="stat-control">
+                <span>Archetype</span>
+                <select id="result-archetype-select" class="stat-select"></select>
+              </label>
+              <label class="stat-control">
+                <span>Tier</span>
+                <select id="result-tier-select" class="stat-select"></select>
+              </label>
             </div>
-          </div>
-          <div class="abilities-block" aria-label="Ability Modifiers">
-            <div class="abilities-grid">
-              <div class="ability-card">
-                <div class="ability-main">
-                  <span class="ability-label">STR</span>
-                  <span class="ability-mod" data-ability="STR">+0</span>
-                </div>
-                <button class="ability-roll" type="button" data-ability="STR" aria-label="Roll STR saving throw">Save</button>
-              </div>
-              <div class="ability-card">
-                <div class="ability-main">
-                  <span class="ability-label">DEX</span>
-                  <span class="ability-mod" data-ability="DEX">+0</span>
-                </div>
-                <button class="ability-roll" type="button" data-ability="DEX" aria-label="Roll DEX saving throw">Save</button>
-              </div>
-              <div class="ability-card">
-                <div class="ability-main">
-                  <span class="ability-label">CON</span>
-                  <span class="ability-mod" data-ability="CON">+0</span>
-                </div>
-                <button class="ability-roll" type="button" data-ability="CON" aria-label="Roll CON saving throw">Save</button>
-              </div>
-              <div class="ability-card">
-                <div class="ability-main">
-                  <span class="ability-label">INT</span>
-                  <span class="ability-mod" data-ability="INT">+0</span>
-                </div>
-                <button class="ability-roll" type="button" data-ability="INT" aria-label="Roll INT saving throw">Save</button>
-              </div>
-              <div class="ability-card">
-                <div class="ability-main">
-                  <span class="ability-label">WIS</span>
-                  <span class="ability-mod" data-ability="WIS">+0</span>
-                </div>
-                <button class="ability-roll" type="button" data-ability="WIS" aria-label="Roll WIS saving throw">Save</button>
-              </div>
-              <div class="ability-card">
-                <div class="ability-main">
-                  <span class="ability-label">CHA</span>
-                  <span class="ability-mod" data-ability="CHA">+0</span>
-                </div>
-                <button class="ability-roll" type="button" data-ability="CHA" aria-label="Roll CHA saving throw">Save</button>
+            <div id="result-summary" class="chips"></div>
+            <div class="ac-badge" aria-label="Armor Class">
+              <div class="ac-shield" aria-hidden="true"></div>
+              <div class="ac-text">
+                <span class="ac-label">AC</span>
+                <span id="result-ac" class="ac-value">12</span>
               </div>
             </div>
+            <div class="abilities-block" aria-label="Ability Modifiers">
+              <div class="abilities-grid">
+                <div class="ability-card">
+                  <div class="ability-main">
+                    <span class="ability-label">STR</span>
+                    <span class="ability-mod" data-ability="STR">+0</span>
+                  </div>
+                  <button class="ability-roll" type="button" data-ability="STR" aria-label="Roll STR saving throw">Save</button>
+                </div>
+                <div class="ability-card">
+                  <div class="ability-main">
+                    <span class="ability-label">DEX</span>
+                    <span class="ability-mod" data-ability="DEX">+0</span>
+                  </div>
+                  <button class="ability-roll" type="button" data-ability="DEX" aria-label="Roll DEX saving throw">Save</button>
+                </div>
+                <div class="ability-card">
+                  <div class="ability-main">
+                    <span class="ability-label">CON</span>
+                    <span class="ability-mod" data-ability="CON">+0</span>
+                  </div>
+                  <button class="ability-roll" type="button" data-ability="CON" aria-label="Roll CON saving throw">Save</button>
+                </div>
+                <div class="ability-card">
+                  <div class="ability-main">
+                    <span class="ability-label">INT</span>
+                    <span class="ability-mod" data-ability="INT">+0</span>
+                  </div>
+                  <button class="ability-roll" type="button" data-ability="INT" aria-label="Roll INT saving throw">Save</button>
+                </div>
+                <div class="ability-card">
+                  <div class="ability-main">
+                    <span class="ability-label">WIS</span>
+                    <span class="ability-mod" data-ability="WIS">+0</span>
+                  </div>
+                  <button class="ability-roll" type="button" data-ability="WIS" aria-label="Roll WIS saving throw">Save</button>
+                </div>
+                <div class="ability-card">
+                  <div class="ability-main">
+                    <span class="ability-label">CHA</span>
+                    <span class="ability-mod" data-ability="CHA">+0</span>
+                  </div>
+                  <button class="ability-roll" type="button" data-ability="CHA" aria-label="Roll CHA saving throw">Save</button>
+                </div>
+              </div>
+            </div>
+            <div id="result-statline" class="statline"></div>
+            <div id="result-saves" class="statline small"></div>
+            <div id="result-physical" class="description-section">
+              <h2>Physical Description</h2>
+              <p></p>
+            </div>
+            <div id="result-psych" class="description-section">
+              <h2>Psychological Profile</h2>
+              <p></p>
+            </div>
+            <div id="result-notes" class="description-section">
+              <h2>Notes</h2>
+              <textarea id="notes-input" class="notes-textarea" rows="4" placeholder="Add notes for this NPC..."></textarea>
+            </div>
+            <div class="action-buttons">
+              <button id="btn-regenerate" class="btn btn-secondary">Regenerate</button>
+              <button id="btn-copy" class="btn btn-secondary">Copy</button>
+              <button id="btn-save" class="btn btn-primary">Save</button>
+            </div>
           </div>
-          <div id="result-statline" class="statline"></div>
-          <div id="result-saves" class="statline small"></div>
-          <div id="result-physical" class="description-section">
-            <h2>Physical Description</h2>
-            <p></p>
-          </div>
-          <div id="result-psych" class="description-section">
-            <h2>Psychological Profile</h2>
-            <p></p>
-          </div>
-          <div id="result-notes" class="description-section">
-            <h2>Notes</h2>
-            <textarea id="notes-input" class="notes-textarea" rows="4" placeholder="Add notes for this NPC..."></textarea>
-          </div>
-          <div class="action-buttons">
-            <button id="btn-regenerate" class="btn btn-secondary">Regenerate</button>
-            <button id="btn-copy" class="btn btn-secondary">Copy</button>
-            <button id="btn-save" class="btn btn-primary">Save</button>
+          <div class="view-tab-content" data-tab="statblock">
+            <div class="statblock">
+              <div class="stat-controls">
+                <label class="stat-control">
+                  <span>Archetype</span>
+                  <select id="result-archetype-select-stat" class="stat-select"></select>
+                </label>
+                <label class="stat-control">
+                  <span>Tier</span>
+                  <select id="result-tier-select-stat" class="stat-select"></select>
+                </label>
+              </div>
+              <div class="statblock-top">
+                <div class="statblock-item">
+                  <span class="statblock-label">AC</span>
+                  <span id="result-statblock-ac" class="statblock-value">12</span>
+                </div>
+                <div class="statblock-item">
+                  <span class="statblock-label">HP</span>
+                  <span id="result-statblock-hp" class="statblock-value">10</span>
+                </div>
+                <div class="statblock-item">
+                  <span class="statblock-label">Speed</span>
+                  <span id="result-statblock-speed" class="statblock-value">30 ft.</span>
+                </div>
+                <div class="statblock-item">
+                  <span class="statblock-label">Init</span>
+                  <span id="result-statblock-init" class="statblock-value">+0</span>
+                </div>
+              </div>
+              <div id="result-statblock-meta" class="statblock-meta"></div>
+              <div id="result-statblock-abilities" class="statblock-abilities"></div>
+              <div class="statblock-section">
+                <h2>Traits</h2>
+                <div id="result-statblock-traits" class="statblock-list"></div>
+              </div>
+              <div class="statblock-section">
+                <h2>Actions</h2>
+                <div id="result-statblock-actions" class="statblock-list"></div>
+              </div>
+              <div class="statblock-section">
+                <h2>Reactions</h2>
+                <div id="result-statblock-reactions" class="statblock-list"></div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -165,87 +217,139 @@
           <h1 id="detail-name">NPC Name</h1>
         </header>
         <div class="screen-content">
-          <div class="stat-controls">
-            <label class="stat-control">
-              <span>Archetype</span>
-              <select id="detail-archetype-select" class="stat-select"></select>
-            </label>
-            <label class="stat-control">
-              <span>Tier</span>
-              <select id="detail-tier-select" class="stat-select"></select>
-            </label>
+          <div class="view-tabs">
+            <button class="view-tab active" data-tab="overview">Overview</button>
+            <button class="view-tab" data-tab="statblock">Stat Block</button>
           </div>
-          <div id="detail-summary" class="chips"></div>
-          <div class="ac-badge" aria-label="Armor Class">
-            <div class="ac-shield" aria-hidden="true"></div>
-            <div class="ac-text">
-              <span class="ac-label">AC</span>
-              <span id="detail-ac" class="ac-value">12</span>
+          <div class="view-tab-content active" data-tab="overview">
+            <div class="stat-controls">
+              <label class="stat-control">
+                <span>Archetype</span>
+                <select id="detail-archetype-select" class="stat-select"></select>
+              </label>
+              <label class="stat-control">
+                <span>Tier</span>
+                <select id="detail-tier-select" class="stat-select"></select>
+              </label>
             </div>
-          </div>
-          <div class="abilities-block" aria-label="Ability Modifiers">
-            <div class="abilities-grid">
-              <div class="ability-card">
-                <div class="ability-main">
-                  <span class="ability-label">STR</span>
-                  <span class="ability-mod" data-ability="STR">+0</span>
-                </div>
-                <button class="ability-roll" type="button" data-ability="STR" aria-label="Roll STR saving throw">Save</button>
-              </div>
-              <div class="ability-card">
-                <div class="ability-main">
-                  <span class="ability-label">DEX</span>
-                  <span class="ability-mod" data-ability="DEX">+0</span>
-                </div>
-                <button class="ability-roll" type="button" data-ability="DEX" aria-label="Roll DEX saving throw">Save</button>
-              </div>
-              <div class="ability-card">
-                <div class="ability-main">
-                  <span class="ability-label">CON</span>
-                  <span class="ability-mod" data-ability="CON">+0</span>
-                </div>
-                <button class="ability-roll" type="button" data-ability="CON" aria-label="Roll CON saving throw">Save</button>
-              </div>
-              <div class="ability-card">
-                <div class="ability-main">
-                  <span class="ability-label">INT</span>
-                  <span class="ability-mod" data-ability="INT">+0</span>
-                </div>
-                <button class="ability-roll" type="button" data-ability="INT" aria-label="Roll INT saving throw">Save</button>
-              </div>
-              <div class="ability-card">
-                <div class="ability-main">
-                  <span class="ability-label">WIS</span>
-                  <span class="ability-mod" data-ability="WIS">+0</span>
-                </div>
-                <button class="ability-roll" type="button" data-ability="WIS" aria-label="Roll WIS saving throw">Save</button>
-              </div>
-              <div class="ability-card">
-                <div class="ability-main">
-                  <span class="ability-label">CHA</span>
-                  <span class="ability-mod" data-ability="CHA">+0</span>
-                </div>
-                <button class="ability-roll" type="button" data-ability="CHA" aria-label="Roll CHA saving throw">Save</button>
+            <div id="detail-summary" class="chips"></div>
+            <div class="ac-badge" aria-label="Armor Class">
+              <div class="ac-shield" aria-hidden="true"></div>
+              <div class="ac-text">
+                <span class="ac-label">AC</span>
+                <span id="detail-ac" class="ac-value">12</span>
               </div>
             </div>
+            <div class="abilities-block" aria-label="Ability Modifiers">
+              <div class="abilities-grid">
+                <div class="ability-card">
+                  <div class="ability-main">
+                    <span class="ability-label">STR</span>
+                    <span class="ability-mod" data-ability="STR">+0</span>
+                  </div>
+                  <button class="ability-roll" type="button" data-ability="STR" aria-label="Roll STR saving throw">Save</button>
+                </div>
+                <div class="ability-card">
+                  <div class="ability-main">
+                    <span class="ability-label">DEX</span>
+                    <span class="ability-mod" data-ability="DEX">+0</span>
+                  </div>
+                  <button class="ability-roll" type="button" data-ability="DEX" aria-label="Roll DEX saving throw">Save</button>
+                </div>
+                <div class="ability-card">
+                  <div class="ability-main">
+                    <span class="ability-label">CON</span>
+                    <span class="ability-mod" data-ability="CON">+0</span>
+                  </div>
+                  <button class="ability-roll" type="button" data-ability="CON" aria-label="Roll CON saving throw">Save</button>
+                </div>
+                <div class="ability-card">
+                  <div class="ability-main">
+                    <span class="ability-label">INT</span>
+                    <span class="ability-mod" data-ability="INT">+0</span>
+                  </div>
+                  <button class="ability-roll" type="button" data-ability="INT" aria-label="Roll INT saving throw">Save</button>
+                </div>
+                <div class="ability-card">
+                  <div class="ability-main">
+                    <span class="ability-label">WIS</span>
+                    <span class="ability-mod" data-ability="WIS">+0</span>
+                  </div>
+                  <button class="ability-roll" type="button" data-ability="WIS" aria-label="Roll WIS saving throw">Save</button>
+                </div>
+                <div class="ability-card">
+                  <div class="ability-main">
+                    <span class="ability-label">CHA</span>
+                    <span class="ability-mod" data-ability="CHA">+0</span>
+                  </div>
+                  <button class="ability-roll" type="button" data-ability="CHA" aria-label="Roll CHA saving throw">Save</button>
+                </div>
+              </div>
+            </div>
+            <div id="detail-statline" class="statline"></div>
+            <div id="detail-saves" class="statline small"></div>
+            <div id="detail-physical" class="description-section">
+              <h2>Physical Description</h2>
+              <p></p>
+            </div>
+            <div id="detail-psych" class="description-section">
+              <h2>Psychological Profile</h2>
+              <p></p>
+            </div>
+            <div id="detail-notes" class="description-section">
+              <h2>Notes</h2>
+              <textarea id="detail-notes-input" class="notes-textarea" rows="4" placeholder="Add notes for this NPC..."></textarea>
+            </div>
+            <div class="action-buttons">
+              <button id="btn-copy-detail" class="btn btn-secondary">Copy</button>
+              <button id="btn-delete" class="btn btn-danger">Delete</button>
+            </div>
           </div>
-          <div id="detail-statline" class="statline"></div>
-          <div id="detail-saves" class="statline small"></div>
-          <div id="detail-physical" class="description-section">
-            <h2>Physical Description</h2>
-            <p></p>
-          </div>
-          <div id="detail-psych" class="description-section">
-            <h2>Psychological Profile</h2>
-            <p></p>
-          </div>
-          <div id="detail-notes" class="description-section">
-            <h2>Notes</h2>
-            <textarea id="detail-notes-input" class="notes-textarea" rows="4" placeholder="Add notes for this NPC..."></textarea>
-          </div>
-          <div class="action-buttons">
-            <button id="btn-copy-detail" class="btn btn-secondary">Copy</button>
-            <button id="btn-delete" class="btn btn-danger">Delete</button>
+          <div class="view-tab-content" data-tab="statblock">
+            <div class="statblock">
+              <div class="stat-controls">
+                <label class="stat-control">
+                  <span>Archetype</span>
+                  <select id="detail-archetype-select-stat" class="stat-select"></select>
+                </label>
+                <label class="stat-control">
+                  <span>Tier</span>
+                  <select id="detail-tier-select-stat" class="stat-select"></select>
+                </label>
+              </div>
+              <div class="statblock-top">
+                <div class="statblock-item">
+                  <span class="statblock-label">AC</span>
+                  <span id="detail-statblock-ac" class="statblock-value">12</span>
+                </div>
+                <div class="statblock-item">
+                  <span class="statblock-label">HP</span>
+                  <span id="detail-statblock-hp" class="statblock-value">10</span>
+                </div>
+                <div class="statblock-item">
+                  <span class="statblock-label">Speed</span>
+                  <span id="detail-statblock-speed" class="statblock-value">30 ft.</span>
+                </div>
+                <div class="statblock-item">
+                  <span class="statblock-label">Init</span>
+                  <span id="detail-statblock-init" class="statblock-value">+0</span>
+                </div>
+              </div>
+              <div id="detail-statblock-meta" class="statblock-meta"></div>
+              <div id="detail-statblock-abilities" class="statblock-abilities"></div>
+              <div class="statblock-section">
+                <h2>Traits</h2>
+                <div id="detail-statblock-traits" class="statblock-list"></div>
+              </div>
+              <div class="statblock-section">
+                <h2>Actions</h2>
+                <div id="detail-statblock-actions" class="statblock-list"></div>
+              </div>
+              <div class="statblock-section">
+                <h2>Reactions</h2>
+                <div id="detail-statblock-reactions" class="statblock-list"></div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

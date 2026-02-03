@@ -1,0 +1,147 @@
+{
+  "actions": [
+    {
+      "name": "Weapon Strike",
+      "tags": ["martial", "brute", "cleric"],
+      "attackAbility": "STR",
+      "damageByTier": {
+        "Novice": "1d6",
+        "Trained": "1d8",
+        "Veteran": "2d6",
+        "Elite": "2d8",
+        "Legendary": "3d8"
+      },
+      "text": "Melee Weapon Attack: {toHit} to hit, reach 5 ft., one target. Hit: {damage} slashing damage."
+    },
+    {
+      "name": "Shield Bash",
+      "tags": ["martial"],
+      "attackAbility": "STR",
+      "damageByTier": {
+        "Novice": "1d4",
+        "Trained": "1d6",
+        "Veteran": "2d4",
+        "Elite": "2d6",
+        "Legendary": "3d6"
+      },
+      "text": "Melee Weapon Attack: {toHit} to hit, reach 5 ft., one target. Hit: {damage} bludgeoning damage, and the target must succeed on a DC {dc} Strength saving throw or be knocked prone."
+    },
+    {
+      "name": "Heavy Smash",
+      "tags": ["brute"],
+      "attackAbility": "STR",
+      "damageByTier": {
+        "Novice": "1d8",
+        "Trained": "1d10",
+        "Veteran": "2d8",
+        "Elite": "3d6",
+        "Legendary": "4d6"
+      },
+      "text": "Melee Weapon Attack: {toHit} to hit, reach 5 ft., one target. Hit: {damage} bludgeoning damage."
+    },
+    {
+      "name": "Ground Slam",
+      "tags": ["brute"],
+      "saveAbility": "STR",
+      "damageByTier": {
+        "Novice": "1d6",
+        "Trained": "1d8",
+        "Veteran": "2d6",
+        "Elite": "2d8",
+        "Legendary": "3d8"
+      },
+      "text": "Each creature within 5 ft. must succeed on a DC {dc} Strength saving throw or take {damage} bludgeoning damage and be pushed 5 ft."
+    },
+    {
+      "name": "Dagger Strike",
+      "tags": ["rogue"],
+      "attackAbility": "DEX",
+      "damageByTier": {
+        "Novice": "1d4",
+        "Trained": "1d6",
+        "Veteran": "2d4",
+        "Elite": "2d6",
+        "Legendary": "3d6"
+      },
+      "text": "Melee or Ranged Weapon Attack: {toHit} to hit, reach 5 ft. or range 20/60 ft., one target. Hit: {damage} piercing damage."
+    },
+    {
+      "name": "Quick Shot",
+      "tags": ["rogue"],
+      "attackAbility": "DEX",
+      "damageByTier": {
+        "Novice": "1d6",
+        "Trained": "1d8",
+        "Veteran": "2d6",
+        "Elite": "2d8",
+        "Legendary": "3d8"
+      },
+      "text": "Ranged Weapon Attack: {toHit} to hit, range 80/320 ft., one target. Hit: {damage} piercing damage."
+    },
+    {
+      "name": "Mace Strike",
+      "tags": ["cleric"],
+      "attackAbility": "STR",
+      "damageByTier": {
+        "Novice": "1d6",
+        "Trained": "1d8",
+        "Veteran": "2d6",
+        "Elite": "2d8",
+        "Legendary": "3d8"
+      },
+      "text": "Melee Weapon Attack: {toHit} to hit, reach 5 ft., one target. Hit: {damage} bludgeoning damage."
+    },
+    {
+      "name": "Radiant Burst",
+      "tags": ["cleric"],
+      "saveAbility": "WIS",
+      "damageByTier": {
+        "Novice": "1d6",
+        "Trained": "1d8",
+        "Veteran": "2d6",
+        "Elite": "2d8",
+        "Legendary": "3d8"
+      },
+      "text": "One creature within 30 ft. must succeed on a DC {dc} Wisdom saving throw or take {damage} radiant damage."
+    },
+    {
+      "name": "Arcane Bolt",
+      "tags": ["caster"],
+      "attackAbility": "INT",
+      "damageByTier": {
+        "Novice": "1d6",
+        "Trained": "1d8",
+        "Veteran": "2d6",
+        "Elite": "2d8",
+        "Legendary": "3d8"
+      },
+      "text": "Ranged Spell Attack: {toHit} to hit, range 120 ft., one target. Hit: {damage} force damage."
+    },
+    {
+      "name": "Mind Lance",
+      "tags": ["caster"],
+      "saveAbility": "INT",
+      "damageByTier": {
+        "Novice": "1d6",
+        "Trained": "1d8",
+        "Veteran": "2d6",
+        "Elite": "2d8",
+        "Legendary": "3d8"
+      },
+      "text": "One creature within 60 ft. must succeed on a DC {dc} Intelligence saving throw or take {damage} psychic damage."
+    },
+    {
+      "name": "Unarmed Strike",
+      "tags": ["any"],
+      "attackAbility": "STR",
+      "damageByTier": {
+        "Novice": "1d4",
+        "Trained": "1d6",
+        "Veteran": "1d8",
+        "Elite": "2d4",
+        "Legendary": "2d6"
+      },
+      "text": "Melee Weapon Attack: {toHit} to hit, reach 5 ft., one target. Hit: {damage} bludgeoning damage."
+    }
+  ]
+}

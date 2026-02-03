@@ -1,0 +1,29 @@
+{
+  "reactions": [
+    {
+      "name": "Parry",
+      "tags": ["martial", "rogue"],
+      "text": "The NPC adds +{pb} to its AC against one attack that would hit it."
+    },
+    {
+      "name": "Retaliate",
+      "tags": ["brute"],
+      "text": "When hit by a creature within 5 ft., the NPC makes one melee attack against that creature."
+    },
+    {
+      "name": "Protective Prayer",
+      "tags": ["cleric"],
+      "text": "When a creature the NPC can see within 30 ft. is hit, the NPC adds +{pb} to that creature's AC against the triggering attack."
+    },
+    {
+      "name": "Arcane Shield",
+      "tags": ["caster"],
+      "text": "When the NPC is hit by an attack, it gains +{pb} AC against that attack, potentially causing it to miss."
+    },
+    {
+      "name": "Slip Away",
+      "tags": ["rogue"],
+      "text": "When a creature misses the NPC with a melee attack, the NPC can move up to 10 ft. without provoking opportunity attacks."
+    }
+  ]
+}

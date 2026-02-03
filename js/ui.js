@@ -31,6 +31,7 @@ const UI = (function() {
     setupResultScreen();
     setupLibraryScreen();
     setupModal();
+    setupViewTabs();
 
     // Show generator screen by default
     showScreen('generator');
@@ -69,7 +70,22 @@ const UI = (function() {
     elements.resultAbilityMods = mapAbilityElements(document.querySelectorAll('#screen-result .ability-mod'));
     elements.resultArchetypeSelect = document.getElementById('result-archetype-select');
     elements.resultTierSelect = document.getElementById('result-tier-select');
+    elements.resultArchetypeSelectStat = document.getElementById('result-archetype-select-stat');
+    elements.resultTierSelectStat = document.getElementById('result-tier-select-stat');
     elements.resultAbilityRolls = document.querySelectorAll('#screen-result .ability-roll');
+    elements.resultTabs = document.querySelectorAll('#screen-result .view-tab');
+    elements.resultTabContents = document.querySelectorAll('#screen-result .view-tab-content');
+    elements.resultStatblock = {
+      ac: document.getElementById('result-statblock-ac'),
+      hp: document.getElementById('result-statblock-hp'),
+      speed: document.getElementById('result-statblock-speed'),
+      init: document.getElementById('result-statblock-init'),
+      meta: document.getElementById('result-statblock-meta'),
+      abilities: document.getElementById('result-statblock-abilities'),
+      traits: document.getElementById('result-statblock-traits'),
+      actions: document.getElementById('result-statblock-actions'),
+      reactions: document.getElementById('result-statblock-reactions')
+    };
     elements.btnBack = document.getElementById('btn-back');
     elements.btnRegenerate = document.getElementById('btn-regenerate');
     elements.btnCopy = document.getElementById('btn-copy');
@@ -92,7 +108,22 @@ const UI = (function() {
     elements.detailAbilityMods = mapAbilityElements(document.querySelectorAll('#screen-library-detail .ability-mod'));
     elements.detailArchetypeSelect = document.getElementById('detail-archetype-select');
     elements.detailTierSelect = document.getElementById('detail-tier-select');
+    elements.detailArchetypeSelectStat = document.getElementById('detail-archetype-select-stat');
+    elements.detailTierSelectStat = document.getElementById('detail-tier-select-stat');
     elements.detailAbilityRolls = document.querySelectorAll('#screen-library-detail .ability-roll');
+    elements.detailTabs = document.querySelectorAll('#screen-library-detail .view-tab');
+    elements.detailTabContents = document.querySelectorAll('#screen-library-detail .view-tab-content');
+    elements.detailStatblock = {
+      ac: document.getElementById('detail-statblock-ac'),
+      hp: document.getElementById('detail-statblock-hp'),
+      speed: document.getElementById('detail-statblock-speed'),
+      init: document.getElementById('detail-statblock-init'),
+      meta: document.getElementById('detail-statblock-meta'),
+      abilities: document.getElementById('detail-statblock-abilities'),
+      traits: document.getElementById('detail-statblock-traits'),
+      actions: document.getElementById('detail-statblock-actions'),
+      reactions: document.getElementById('detail-statblock-reactions')
+    };
     elements.btnBackLibrary = document.getElementById('btn-back-library');
     elements.btnCopyDetail = document.getElementById('btn-copy-detail');
     elements.btnDelete = document.getElementById('btn-delete');
@@ -349,17 +380,17 @@ const UI = (function() {
       });
     });
 
-    elements.resultArchetypeSelect.addEventListener('change', () => {
-      if (!currentNpc) return;
-      void applyStatChanges(currentNpc, elements.resultArchetypeSelect.value, elements.resultTierSelect.value, true);
-      generatorCriteria.archetype = elements.resultArchetypeSelect.value;
-    });
-
-    elements.resultTierSelect.addEventListener('change', () => {
-      if (!currentNpc) return;
-      void applyStatChanges(currentNpc, elements.resultArchetypeSelect.value, elements.resultTierSelect.value, true);
-      generatorCriteria.tier = elements.resultTierSelect.value;
-    });
+    bindStatSelectors(
+      elements.resultArchetypeSelect,
+      elements.resultTierSelect,
+      elements.resultArchetypeSelectStat,
+      elements.resultTierSelectStat,
+      () => currentNpc,
+      (archetype, tier) => {
+        generatorCriteria.archetype = archetype;
+        generatorCriteria.tier = tier;
+      }
+    );
 
     const saveResultNotes = debounce(() => {
       if (!currentNpc) return;
@@ -377,10 +408,18 @@ const UI = (function() {
    */
   async function renderResult(npc) {
     await ensureNpcStats(npc, true);
-    await renderStatControls(elements.resultArchetypeSelect, elements.resultTierSelect, npc);
+    await renderStatControls(
+      elements.resultArchetypeSelect,
+      elements.resultTierSelect,
+      npc,
+      elements.resultArchetypeSelectStat,
+      elements.resultTierSelectStat
+    );
+    setActiveTab(elements.resultTabs, elements.resultTabContents, 'overview');
     elements.resultName.textContent = npc.name;
     elements.resultSummary.innerHTML = renderChips(npc);
     renderStats(elements.resultAbilityMods, elements.resultStatline, elements.resultSaves, npc, elements.resultAc);
+    renderStatBlock(elements.resultStatblock, npc);
     elements.resultPhysical.textContent = npc.physicalDescription;
     elements.resultPsych.textContent = npc.psychDescription;
     elements.resultNotes.value = npc.notes || '';
@@ -498,19 +537,14 @@ const UI = (function() {
 
     elements.detailNotes.addEventListener('input', saveDetailNotes);
 
-    elements.detailArchetypeSelect.addEventListener('change', () => {
-      if (!viewingNpcId) return;
-      const npc = Storage.getById(viewingNpcId);
-      if (!npc) return;
-      void applyStatChanges(npc, elements.detailArchetypeSelect.value, elements.detailTierSelect.value, true);
-    });
-
-    elements.detailTierSelect.addEventListener('change', () => {
-      if (!viewingNpcId) return;
-      const npc = Storage.getById(viewingNpcId);
-      if (!npc) return;
-      void applyStatChanges(npc, elements.detailArchetypeSelect.value, elements.detailTierSelect.value, true);
-    });
+    bindStatSelectors(
+      elements.detailArchetypeSelect,
+      elements.detailTierSelect,
+      elements.detailArchetypeSelectStat,
+      elements.detailTierSelectStat,
+      () => (viewingNpcId ? Storage.getById(viewingNpcId) : null),
+      null
+    );
 
     elements.detailAbilityRolls.forEach(button => {
       button.addEventListener('click', (event) => {
@@ -593,10 +627,18 @@ const UI = (function() {
     viewingNpcId = npcId;
 
     await ensureNpcStats(npc, true);
-    await renderStatControls(elements.detailArchetypeSelect, elements.detailTierSelect, npc);
+    await renderStatControls(
+      elements.detailArchetypeSelect,
+      elements.detailTierSelect,
+      npc,
+      elements.detailArchetypeSelectStat,
+      elements.detailTierSelectStat
+    );
+    setActiveTab(elements.detailTabs, elements.detailTabContents, 'overview');
     elements.detailName.textContent = npc.name;
     elements.detailSummary.innerHTML = renderChips(npc);
     renderStats(elements.detailAbilityMods, elements.detailStatline, elements.detailSaves, npc, elements.detailAc);
+    renderStatBlock(elements.detailStatblock, npc);
     elements.detailPhysical.textContent = npc.physicalDescription;
     elements.detailPsych.textContent = npc.psychDescription;
     elements.detailNotes.value = npc.notes || '';
@@ -619,6 +661,11 @@ const UI = (function() {
       }
       hideModal();
     });
+  }
+
+  function setupViewTabs() {
+    initTabs(elements.resultTabs, elements.resultTabContents);
+    initTabs(elements.detailTabs, elements.detailTabContents);
   }
 
   /**
@@ -704,6 +751,59 @@ const UI = (function() {
     }, 2500);
   }
 
+  function bindStatSelectors(primaryArchetype, primaryTier, secondaryArchetype, secondaryTier, getNpc, onChange) {
+    const handleChange = () => {
+      const npc = getNpc ? getNpc() : null;
+      if (!npc) return;
+      const archetype = primaryArchetype ? primaryArchetype.value : (secondaryArchetype ? secondaryArchetype.value : 'random');
+      const tier = primaryTier ? primaryTier.value : (secondaryTier ? secondaryTier.value : 'Novice');
+
+      if (secondaryArchetype && secondaryArchetype.value !== archetype) {
+        secondaryArchetype.value = archetype;
+      }
+      if (secondaryTier && secondaryTier.value !== tier) {
+        secondaryTier.value = tier;
+      }
+      if (primaryArchetype && primaryArchetype.value !== archetype) {
+        primaryArchetype.value = archetype;
+      }
+      if (primaryTier && primaryTier.value !== tier) {
+        primaryTier.value = tier;
+      }
+
+      void applyStatChanges(npc, archetype, tier, true);
+      if (onChange) {
+        onChange(archetype, tier);
+      }
+    };
+
+    if (primaryArchetype) primaryArchetype.addEventListener('change', handleChange);
+    if (primaryTier) primaryTier.addEventListener('change', handleChange);
+    if (secondaryArchetype) secondaryArchetype.addEventListener('change', handleChange);
+    if (secondaryTier) secondaryTier.addEventListener('change', handleChange);
+  }
+
+  function initTabs(tabs, contents) {
+    if (!tabs || !contents) {
+      return;
+    }
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.dataset.tab;
+        setActiveTab(tabs, contents, target);
+      });
+    });
+  }
+
+  function setActiveTab(tabs, contents, target) {
+    tabs.forEach(tab => {
+      tab.classList.toggle('active', tab.dataset.tab === target);
+    });
+    contents.forEach(content => {
+      content.classList.toggle('active', content.dataset.tab === target);
+    });
+  }
+
   /**
    * Map ability elements by data-ability attribute
    */
@@ -746,6 +846,59 @@ const UI = (function() {
     }
   }
 
+  function renderStatBlock(target, npc) {
+    if (!target) return;
+
+    const tier = npc.tier || 'Novice';
+    const tierInfo = Generator.getTierInfo(tier);
+    const pb = npc.proficiencyBonus || tierInfo.pb;
+    const cr = npc.cr || tierInfo.cr;
+
+    if (target.ac) target.ac.textContent = npc.armorClass || computeArmorClassFallback(npc, tier);
+    if (target.hp) target.hp.textContent = npc.hitPoints || 0;
+    if (target.speed) target.speed.textContent = npc.speed || '30 ft.';
+    if (target.init) target.init.textContent = formatSigned(npc.initiative || 0);
+    if (target.meta) target.meta.textContent = `PB ${formatSigned(pb)} · CR ${cr}`;
+
+    if (target.abilities) {
+      const mods = getAbilityMods(npc);
+      const scores = npc.abilityScores || {};
+      const saves = npc.savingThrows || computeSavingThrows(mods, npc.savingThrowProficiencies || [], pb);
+      const saveProfs = new Set(npc.savingThrowProficiencies || []);
+      const rows = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'].map(key => {
+        const score = scores[key] !== undefined ? scores[key] : 10;
+        const mod = mods[key] !== undefined ? mods[key] : 0;
+        const save = saves[key] !== undefined ? saves[key] : mod;
+        const proficientClass = saveProfs.has(key) ? ' proficient' : '';
+        return `
+          <div class="statblock-ability-row${proficientClass}">
+            <span class="ability-name">${key}</span>
+            <span class="ability-score">${score} (${formatSigned(mod)})</span>
+            <span class="ability-save">Save ${formatSigned(save)}</span>
+          </div>
+        `;
+      }).join('');
+      target.abilities.innerHTML = rows;
+    }
+
+    renderEntryList(target.traits, npc.traits);
+    renderEntryList(target.actions, npc.actions);
+    renderEntryList(target.reactions, npc.reactions);
+  }
+
+  function renderEntryList(container, items) {
+    if (!container) return;
+    if (!items || items.length === 0) {
+      container.innerHTML = '<div class="statblock-entry">None</div>';
+      return;
+    }
+    container.innerHTML = items.map(item => `
+      <div class="statblock-entry">
+        <span class="entry-name">${item.name}.</span> ${item.text}
+      </div>
+    `).join('');
+  }
+
   function rollSavingThrow(npc, abilityKey) {
     const mods = getAbilityMods(npc);
     const pb = npc.proficiencyBonus || 0;
@@ -779,7 +932,21 @@ const UI = (function() {
   }
 
   async function ensureNpcStats(npc, persistIfSaved) {
-    if (npc.abilityMods && npc.savingThrows && npc.proficiencyBonus && npc.cr && npc.archetype && npc.tier) {
+    if (
+      npc.abilityMods &&
+      npc.savingThrows &&
+      npc.proficiencyBonus &&
+      npc.cr &&
+      npc.archetype &&
+      npc.tier &&
+      npc.armorClass &&
+      npc.hitPoints &&
+      npc.speed &&
+      npc.initiative !== undefined &&
+      npc.traits &&
+      npc.actions &&
+      npc.reactions
+    ) {
       return;
     }
 
@@ -792,7 +959,7 @@ const UI = (function() {
   }
 
   async function applyStatChanges(npc, archetypeId, tier, persistIfSaved) {
-    const stats = await Generator.computeStatsFor(archetypeId, tier);
+    const stats = await Generator.computeStatsFor(archetypeId, tier, npc.race);
 
     npc.archetype = stats.archetype.id;
     npc.archetypeLabel = stats.archetype.label;
@@ -800,10 +967,16 @@ const UI = (function() {
     npc.cr = stats.tierInfo.cr;
     npc.proficiencyBonus = stats.tierInfo.pb;
     npc.armorClass = stats.ac;
+    npc.hitPoints = stats.hp;
+    npc.speed = stats.speed;
+    npc.initiative = stats.initiative;
     npc.abilityScores = stats.abilityScores;
     npc.abilityMods = stats.abilityMods;
     npc.savingThrowProficiencies = stats.saveProfs;
     npc.savingThrows = stats.savingThrows;
+    npc.traits = stats.traits;
+    npc.actions = stats.actions;
+    npc.reactions = stats.reactions;
 
     if (persistIfSaved && Storage.exists(npc.id)) {
       Storage.save(npc);
@@ -811,20 +984,32 @@ const UI = (function() {
 
     if (npc === currentNpc) {
       renderStats(elements.resultAbilityMods, elements.resultStatline, elements.resultSaves, npc, elements.resultAc);
+      renderStatBlock(elements.resultStatblock, npc);
     } else if (viewingNpcId && npc.id === viewingNpcId) {
       renderStats(elements.detailAbilityMods, elements.detailStatline, elements.detailSaves, npc, elements.detailAc);
+      renderStatBlock(elements.detailStatblock, npc);
     }
   }
 
-  async function renderStatControls(archetypeSelect, tierSelect, npc) {
+  async function renderStatControls(archetypeSelect, tierSelect, npc, archetypeSelectSecondary, tierSelectSecondary) {
     const archetypes = await getArchetypes();
     const tiers = getTierOptions();
 
-    archetypeSelect.innerHTML = archetypes.map(a => `<option value="${a.id}">${a.label}</option>`).join('');
-    tierSelect.innerHTML = tiers.map(t => `<option value="${t}">${t}</option>`).join('');
+    const archetypeOptions = archetypes.map(a => `<option value="${a.id}">${a.label}</option>`).join('');
+    const tierOptions = tiers.map(t => `<option value="${t}">${t}</option>`).join('');
 
-    archetypeSelect.value = npc.archetype || archetypes[0].id;
-    tierSelect.value = npc.tier || 'Novice';
+    if (archetypeSelect) archetypeSelect.innerHTML = archetypeOptions;
+    if (tierSelect) tierSelect.innerHTML = tierOptions;
+    if (archetypeSelectSecondary) archetypeSelectSecondary.innerHTML = archetypeOptions;
+    if (tierSelectSecondary) tierSelectSecondary.innerHTML = tierOptions;
+
+    const archetypeValue = npc.archetype || archetypes[0].id;
+    const tierValue = npc.tier || 'Novice';
+
+    if (archetypeSelect) archetypeSelect.value = archetypeValue;
+    if (tierSelect) tierSelect.value = tierValue;
+    if (archetypeSelectSecondary) archetypeSelectSecondary.value = archetypeValue;
+    if (tierSelectSecondary) tierSelectSecondary.value = tierValue;
   }
 
   async function getArchetypes() {

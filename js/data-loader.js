@@ -11,6 +11,9 @@ const DataLoader = (function() {
     physical: null,
     archetypes: null,
     faces: null,
+    actions: null,
+    traits: null,
+    reactions: null,
     psych: {
       good: null,
       neutral: null,
@@ -101,6 +104,39 @@ const DataLoader = (function() {
   }
 
   /**
+   * Load actions configuration
+   */
+  async function loadActions() {
+    if (cache.actions) {
+      return cache.actions;
+    }
+    cache.actions = await fetchJSON('actions.json');
+    return cache.actions;
+  }
+
+  /**
+   * Load traits configuration
+   */
+  async function loadTraits() {
+    if (cache.traits) {
+      return cache.traits;
+    }
+    cache.traits = await fetchJSON('traits.json');
+    return cache.traits;
+  }
+
+  /**
+   * Load reactions configuration
+   */
+  async function loadReactions() {
+    if (cache.reactions) {
+      return cache.reactions;
+    }
+    cache.reactions = await fetchJSON('reactions.json');
+    return cache.reactions;
+  }
+
+  /**
    * Load psychological descriptions for an alignment
    */
   async function loadPsych(alignment) {
@@ -133,6 +169,11 @@ const DataLoader = (function() {
     // Load faces list
     const facesPromise = loadFaces();
 
+    // Load actions/traits/reactions
+    const actionsPromise = loadActions();
+    const traitsPromise = loadTraits();
+    const reactionsPromise = loadReactions();
+
     // Load all psych files
     const psychPromises = ['good', 'neutral', 'evil'].map(alignment => loadPsych(alignment));
 
@@ -141,6 +182,9 @@ const DataLoader = (function() {
       physicalPromise,
       archetypesPromise,
       facesPromise,
+      actionsPromise,
+      traitsPromise,
+      reactionsPromise,
       ...psychPromises
     ]);
 
@@ -180,6 +224,30 @@ const DataLoader = (function() {
     return faces.faces;
   }
 
+  /**
+   * Get actions list
+   */
+  async function getActions() {
+    const actions = await loadActions();
+    return actions.actions;
+  }
+
+  /**
+   * Get traits list
+   */
+  async function getTraits() {
+    const traits = await loadTraits();
+    return traits.traits;
+  }
+
+  /**
+   * Get reactions list
+   */
+  async function getReactions() {
+    const reactions = await loadReactions();
+    return reactions.reactions;
+  }
+
   // Public API
   return {
     loadRaces,
@@ -188,10 +256,16 @@ const DataLoader = (function() {
     loadPsych,
     loadArchetypes,
     loadFaces,
+    loadActions,
+    loadTraits,
+    loadReactions,
     preloadAll,
     getRace,
     getAllRaces,
     getArchetypes,
-    getFaces
+    getFaces,
+    getActions,
+    getTraits,
+    getReactions
   };
 })();

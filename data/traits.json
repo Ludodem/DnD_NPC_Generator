@@ -1,0 +1,59 @@
+{
+  "traits": [
+    {
+      "name": "Disciplined",
+      "tags": ["martial"],
+      "text": "The NPC has advantage on initiative rolls in the first round of combat."
+    },
+    {
+      "name": "Shield Training",
+      "tags": ["martial"],
+      "text": "While holding a shield, the NPC gains a +1 bonus to AC."
+    },
+    {
+      "name": "Thick Hide",
+      "tags": ["brute"],
+      "text": "The NPC has resistance to bludgeoning damage from nonmagical attacks."
+    },
+    {
+      "name": "Relentless",
+      "tags": ["brute"],
+      "text": "The first time the NPC would drop to 0 hit points, it drops to 1 hit point instead."
+    },
+    {
+      "name": "Cunning",
+      "tags": ["rogue"],
+      "text": "The NPC can take the Disengage action as a bonus action."
+    },
+    {
+      "name": "Evasive",
+      "tags": ["rogue"],
+      "text": "The NPC has advantage on Dexterity saving throws against effects it can see."
+    },
+    {
+      "name": "Blessed",
+      "tags": ["cleric"],
+      "text": "The NPC and allies within 10 ft. gain a +1 bonus to saving throws."
+    },
+    {
+      "name": "Divine Ward",
+      "tags": ["cleric"],
+      "text": "The NPC gains temporary hit points equal to its proficiency bonus at the start of combat."
+    },
+    {
+      "name": "Arcane Focus",
+      "tags": ["caster"],
+      "text": "The NPC adds its proficiency bonus to damage from spell attacks."
+    },
+    {
+      "name": "Mystic Veil",
+      "tags": ["caster"],
+      "text": "The NPC has advantage on saving throws against being charmed."
+    },
+    {
+      "name": "Steady",
+      "tags": ["any"],
+      "text": "The NPC has advantage on saving throws against being frightened."
+    }
+  ]
+}
