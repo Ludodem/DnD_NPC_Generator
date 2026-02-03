@@ -58,21 +58,21 @@
           <h1 id="result-name">NPC Name</h1>
         </header>
         <div class="screen-content">
+          <div class="stat-controls">
+            <label class="stat-control">
+              <span>Archetype</span>
+              <select id="result-archetype-select" class="stat-select"></select>
+            </label>
+            <label class="stat-control">
+              <span>Tier</span>
+              <select id="result-tier-select" class="stat-select"></select>
+            </label>
+          </div>
           <div class="view-tabs">
             <button class="view-tab active" data-tab="overview">Overview</button>
             <button class="view-tab" data-tab="statblock">Stat Block</button>
           </div>
           <div class="view-tab-content active" data-tab="overview">
-            <div class="stat-controls">
-              <label class="stat-control">
-                <span>Archetype</span>
-                <select id="result-archetype-select" class="stat-select"></select>
-              </label>
-              <label class="stat-control">
-                <span>Tier</span>
-                <select id="result-tier-select" class="stat-select"></select>
-              </label>
-            </div>
             <div id="result-summary" class="chips"></div>
             <div class="ac-badge" aria-label="Armor Class">
               <div class="ac-shield" aria-hidden="true"></div>
@@ -149,16 +149,6 @@
           </div>
           <div class="view-tab-content" data-tab="statblock">
             <div class="statblock">
-              <div class="stat-controls">
-                <label class="stat-control">
-                  <span>Archetype</span>
-                  <select id="result-archetype-select-stat" class="stat-select"></select>
-                </label>
-                <label class="stat-control">
-                  <span>Tier</span>
-                  <select id="result-tier-select-stat" class="stat-select"></select>
-                </label>
-              </div>
               <div class="statblock-top">
                 <div class="statblock-item">
                   <span class="statblock-label">AC</span>
@@ -217,21 +207,21 @@
           <h1 id="detail-name">NPC Name</h1>
         </header>
         <div class="screen-content">
+          <div class="stat-controls">
+            <label class="stat-control">
+              <span>Archetype</span>
+              <select id="detail-archetype-select" class="stat-select"></select>
+            </label>
+            <label class="stat-control">
+              <span>Tier</span>
+              <select id="detail-tier-select" class="stat-select"></select>
+            </label>
+          </div>
           <div class="view-tabs">
             <button class="view-tab active" data-tab="overview">Overview</button>
             <button class="view-tab" data-tab="statblock">Stat Block</button>
           </div>
           <div class="view-tab-content active" data-tab="overview">
-            <div class="stat-controls">
-              <label class="stat-control">
-                <span>Archetype</span>
-                <select id="detail-archetype-select" class="stat-select"></select>
-              </label>
-              <label class="stat-control">
-                <span>Tier</span>
-                <select id="detail-tier-select" class="stat-select"></select>
-              </label>
-            </div>
             <div id="detail-summary" class="chips"></div>
             <div class="ac-badge" aria-label="Armor Class">
               <div class="ac-shield" aria-hidden="true"></div>
@@ -307,16 +297,6 @@
           </div>
           <div class="view-tab-content" data-tab="statblock">
             <div class="statblock">
-              <div class="stat-controls">
-                <label class="stat-control">
-                  <span>Archetype</span>
-                  <select id="detail-archetype-select-stat" class="stat-select"></select>
-                </label>
-                <label class="stat-control">
-                  <span>Tier</span>
-                  <select id="detail-tier-select-stat" class="stat-select"></select>
-                </label>
-              </div>
               <div class="statblock-top">
                 <div class="statblock-item">
                   <span class="statblock-label">AC</span>

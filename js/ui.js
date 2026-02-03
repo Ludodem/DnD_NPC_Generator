@@ -70,8 +70,6 @@ const UI = (function() {
     elements.resultAbilityMods = mapAbilityElements(document.querySelectorAll('#screen-result .ability-mod'));
     elements.resultArchetypeSelect = document.getElementById('result-archetype-select');
     elements.resultTierSelect = document.getElementById('result-tier-select');
-    elements.resultArchetypeSelectStat = document.getElementById('result-archetype-select-stat');
-    elements.resultTierSelectStat = document.getElementById('result-tier-select-stat');
     elements.resultAbilityRolls = document.querySelectorAll('#screen-result .ability-roll');
     elements.resultTabs = document.querySelectorAll('#screen-result .view-tab');
     elements.resultTabContents = document.querySelectorAll('#screen-result .view-tab-content');
@@ -108,8 +106,6 @@ const UI = (function() {
     elements.detailAbilityMods = mapAbilityElements(document.querySelectorAll('#screen-library-detail .ability-mod'));
     elements.detailArchetypeSelect = document.getElementById('detail-archetype-select');
     elements.detailTierSelect = document.getElementById('detail-tier-select');
-    elements.detailArchetypeSelectStat = document.getElementById('detail-archetype-select-stat');
-    elements.detailTierSelectStat = document.getElementById('detail-tier-select-stat');
     elements.detailAbilityRolls = document.querySelectorAll('#screen-library-detail .ability-roll');
     elements.detailTabs = document.querySelectorAll('#screen-library-detail .view-tab');
     elements.detailTabContents = document.querySelectorAll('#screen-library-detail .view-tab-content');
@@ -383,8 +379,8 @@ const UI = (function() {
     bindStatSelectors(
       elements.resultArchetypeSelect,
       elements.resultTierSelect,
-      elements.resultArchetypeSelectStat,
-      elements.resultTierSelectStat,
+      null,
+      null,
       () => currentNpc,
       (archetype, tier) => {
         generatorCriteria.archetype = archetype;
@@ -411,9 +407,7 @@ const UI = (function() {
     await renderStatControls(
       elements.resultArchetypeSelect,
       elements.resultTierSelect,
-      npc,
-      elements.resultArchetypeSelectStat,
-      elements.resultTierSelectStat
+      npc
     );
     setActiveTab(elements.resultTabs, elements.resultTabContents, 'overview');
     elements.resultName.textContent = npc.name;
@@ -540,8 +534,8 @@ const UI = (function() {
     bindStatSelectors(
       elements.detailArchetypeSelect,
       elements.detailTierSelect,
-      elements.detailArchetypeSelectStat,
-      elements.detailTierSelectStat,
+      null,
+      null,
       () => (viewingNpcId ? Storage.getById(viewingNpcId) : null),
       null
     );
@@ -630,9 +624,7 @@ const UI = (function() {
     await renderStatControls(
       elements.detailArchetypeSelect,
       elements.detailTierSelect,
-      npc,
-      elements.detailArchetypeSelectStat,
-      elements.detailTierSelectStat
+      npc
     );
     setActiveTab(elements.detailTabs, elements.detailTabContents, 'overview');
     elements.detailName.textContent = npc.name;
@@ -991,7 +983,7 @@ const UI = (function() {
     }
   }
 
-  async function renderStatControls(archetypeSelect, tierSelect, npc, archetypeSelectSecondary, tierSelectSecondary) {
+  async function renderStatControls(archetypeSelect, tierSelect, npc) {
     const archetypes = await getArchetypes();
     const tiers = getTierOptions();
 
@@ -1000,16 +992,12 @@ const UI = (function() {
 
     if (archetypeSelect) archetypeSelect.innerHTML = archetypeOptions;
     if (tierSelect) tierSelect.innerHTML = tierOptions;
-    if (archetypeSelectSecondary) archetypeSelectSecondary.innerHTML = archetypeOptions;
-    if (tierSelectSecondary) tierSelectSecondary.innerHTML = tierOptions;
 
     const archetypeValue = npc.archetype || archetypes[0].id;
     const tierValue = npc.tier || 'Novice';
 
     if (archetypeSelect) archetypeSelect.value = archetypeValue;
     if (tierSelect) tierSelect.value = tierValue;
-    if (archetypeSelectSecondary) archetypeSelectSecondary.value = archetypeValue;
-    if (tierSelectSecondary) tierSelectSecondary.value = tierValue;
   }
 
   async function getArchetypes() {
