@@ -15,25 +15,25 @@
       "saveProfs": ["INT", "WIS"]
     },
     {
-      "id": "expert",
-      "label": "Expert",
-      "primary": ["DEX", "INT"],
-      "secondary": ["WIS", "CHA"],
-      "saveProfs": ["DEX", "INT"]
-    },
-    {
-      "id": "skirmisher",
-      "label": "Skirmisher",
-      "primary": ["DEX", "CON"],
-      "secondary": ["WIS", "STR"],
-      "saveProfs": ["DEX", "CON"]
-    },
-    {
       "id": "brute",
       "label": "Brute",
       "primary": ["STR", "CON"],
       "secondary": ["CHA", "DEX"],
       "saveProfs": ["STR", "CON"]
+    },
+    {
+      "id": "rogue",
+      "label": "Rogue",
+      "primary": ["DEX", "INT"],
+      "secondary": ["WIS", "CHA"],
+      "saveProfs": ["DEX", "INT"]
+    },
+    {
+      "id": "cleric",
+      "label": "Cleric",
+      "primary": ["WIS", "CON"],
+      "secondary": ["STR", "CHA"],
+      "saveProfs": ["WIS", "CHA"]
     }
   ]
 }

@@ -12,7 +12,7 @@ const UI = (function() {
     race: 'random',
     alignment: 'random',
     archetype: 'random',
-    tier: 'random'
+    tier: 'Novice'
   };
   let viewingNpcId = null;
 
@@ -172,11 +172,11 @@ const UI = (function() {
     const tierOptions = Generator.getTierOptions();
 
     const html = `
-      ${renderSelectorGroup('Sex', 'sex', sexOptions)}
-      ${renderSelectorGroup('Race', 'race', races.map(r => ({ value: r.id, label: r.label })))}
-      ${renderSelectorGroup('Alignment', 'alignment', alignmentOptions)}
-      ${renderSelectorGroup('Archetype', 'archetype', archetypes.map(a => ({ value: a.id, label: a.label })))}
-      ${renderSelectorGroup('Tier', 'tier', tierOptions)}
+      ${renderSelectorGroup('Sex', 'sex', sexOptions, 'random')}
+      ${renderSelectorGroup('Race', 'race', races.map(r => ({ value: r.id, label: r.label })), 'random')}
+      ${renderSelectorGroup('Alignment', 'alignment', alignmentOptions, 'random')}
+      ${renderSelectorGroup('Archetype', 'archetype', archetypes.map(a => ({ value: a.id, label: a.label })), 'random')}
+      ${renderSelectorGroup('Tier', 'tier', tierOptions, 'Novice')}
       ${renderDisabledSelector('Class', 'Coming in V2')}
     `;
 
@@ -191,18 +191,21 @@ const UI = (function() {
   /**
    * Render a single selector group
    */
-  function renderSelectorGroup(label, name, options) {
+  function renderSelectorGroup(label, name, options, defaultValue = 'random') {
     const optionsHtml = options.map(opt => {
       const value = typeof opt === 'object' ? opt.value : opt;
       const displayLabel = typeof opt === 'object' ? opt.label : opt;
-      return `<button class="selector-option" data-selector="${name}" data-value="${value}">${displayLabel}</button>`;
+      const selectedClass = value === defaultValue ? ' selected' : '';
+      return `<button class="selector-option${selectedClass}" data-selector="${name}" data-value="${value}">${displayLabel}</button>`;
     }).join('');
+
+    const randomSelected = defaultValue === 'random' ? ' selected' : '';
 
     return `
       <div class="selector-group">
         <span class="selector-label">${label}</span>
         <div class="selector-options">
-          <button class="selector-option selected" data-selector="${name}" data-value="random">Random</button>
+          <button class="selector-option${randomSelected}" data-selector="${name}" data-value="random">Random</button>
           ${optionsHtml}
         </div>
       </div>
