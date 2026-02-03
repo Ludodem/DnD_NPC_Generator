@@ -386,7 +386,7 @@ button {
 }
 
 .chip:not(:last-child)::after {
-  content: " \u00b7 ";
+  content: " \00B7 ";
   color: var(--color-text-muted);
 }
 
