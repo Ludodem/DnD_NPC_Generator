@@ -60,6 +60,7 @@ const UI = (function() {
     // Result
     elements.resultName = document.getElementById('result-name');
     elements.resultSummary = document.getElementById('result-summary');
+    elements.resultAc = document.getElementById('result-ac');
     elements.resultStatline = document.getElementById('result-statline');
     elements.resultSaves = document.getElementById('result-saves');
     elements.resultPhysical = document.querySelector('#result-physical p');
@@ -82,6 +83,7 @@ const UI = (function() {
     // Library Detail
     elements.detailName = document.getElementById('detail-name');
     elements.detailSummary = document.getElementById('detail-summary');
+    elements.detailAc = document.getElementById('detail-ac');
     elements.detailStatline = document.getElementById('detail-statline');
     elements.detailSaves = document.getElementById('detail-saves');
     elements.detailPhysical = document.querySelector('#detail-physical p');
@@ -378,7 +380,7 @@ const UI = (function() {
     await renderStatControls(elements.resultArchetypeSelect, elements.resultTierSelect, npc);
     elements.resultName.textContent = npc.name;
     elements.resultSummary.innerHTML = renderChips(npc);
-    renderStats(elements.resultAbilityMods, elements.resultStatline, elements.resultSaves, npc);
+    renderStats(elements.resultAbilityMods, elements.resultStatline, elements.resultSaves, npc, elements.resultAc);
     elements.resultPhysical.textContent = npc.physicalDescription;
     elements.resultPsych.textContent = npc.psychDescription;
     elements.resultNotes.value = npc.notes || '';
@@ -594,7 +596,7 @@ const UI = (function() {
     await renderStatControls(elements.detailArchetypeSelect, elements.detailTierSelect, npc);
     elements.detailName.textContent = npc.name;
     elements.detailSummary.innerHTML = renderChips(npc);
-    renderStats(elements.detailAbilityMods, elements.detailStatline, elements.detailSaves, npc);
+    renderStats(elements.detailAbilityMods, elements.detailStatline, elements.detailSaves, npc, elements.detailAc);
     elements.detailPhysical.textContent = npc.physicalDescription;
     elements.detailPsych.textContent = npc.psychDescription;
     elements.detailNotes.value = npc.notes || '';
@@ -719,7 +721,7 @@ const UI = (function() {
   /**
    * Render ability mods and stats lines
    */
-  function renderStats(abilityMap, statlineEl, savesEl, npc) {
+  function renderStats(abilityMap, statlineEl, savesEl, npc, acEl) {
     const mods = getAbilityMods(npc);
     Object.keys(abilityMap).forEach(key => {
       abilityMap[key].textContent = formatSigned(mods[key]);
@@ -737,6 +739,11 @@ const UI = (function() {
     const savingThrows = npc.savingThrows || computeSavingThrows(mods, saveProfs, pb);
     const saveText = saveProfs.map(key => `${key} ${formatSigned(savingThrows[key])}`).join(', ');
     savesEl.textContent = `Saving Throws: ${saveText}`;
+
+    if (acEl) {
+      const acValue = npc.armorClass || computeArmorClassFallback(npc, tier);
+      acEl.textContent = acValue;
+    }
   }
 
   function rollSavingThrow(npc, abilityKey) {
@@ -792,6 +799,7 @@ const UI = (function() {
     npc.tier = stats.tier;
     npc.cr = stats.tierInfo.cr;
     npc.proficiencyBonus = stats.tierInfo.pb;
+    npc.armorClass = stats.ac;
     npc.abilityScores = stats.abilityScores;
     npc.abilityMods = stats.abilityMods;
     npc.savingThrowProficiencies = stats.saveProfs;
@@ -802,9 +810,9 @@ const UI = (function() {
     }
 
     if (npc === currentNpc) {
-      renderStats(elements.resultAbilityMods, elements.resultStatline, elements.resultSaves, npc);
+      renderStats(elements.resultAbilityMods, elements.resultStatline, elements.resultSaves, npc, elements.resultAc);
     } else if (viewingNpcId && npc.id === viewingNpcId) {
-      renderStats(elements.detailAbilityMods, elements.detailStatline, elements.detailSaves, npc);
+      renderStats(elements.detailAbilityMods, elements.detailStatline, elements.detailSaves, npc, elements.detailAc);
     }
   }
 
@@ -854,6 +862,28 @@ const UI = (function() {
       saves[key] = mods[key] + (isProficient ? pb : 0);
     });
     return saves;
+  }
+
+  function computeArmorClassFallback(npc, tier) {
+    const tierBase = {
+      Novice: 12,
+      Trained: 13,
+      Veteran: 14,
+      Elite: 16,
+      Legendary: 18
+    };
+    const archetypeAdjust = {
+      martial: 2,
+      brute: 2,
+      rogue: 1,
+      cleric: 1,
+      caster: -1
+    };
+
+    const base = tierBase[tier] || 12;
+    const adjust = archetypeAdjust[npc.archetype] || 0;
+    const ac = base + adjust;
+    return Math.max(10, Math.min(20, ac));
   }
 
   function formatSigned(value) {

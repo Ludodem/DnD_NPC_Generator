@@ -18,6 +18,22 @@ const Generator = (function() {
     Legendary: { cr: 13, pb: 5, primaryBoost: 4, secondaryBoost: 2 }
   };
 
+  const TIER_AC_BASE = {
+    Novice: 12,
+    Trained: 13,
+    Veteran: 14,
+    Elite: 16,
+    Legendary: 18
+  };
+
+  const ARCHETYPE_AC_ADJUST = {
+    martial: 2,
+    brute: 2,
+    rogue: 1,
+    cleric: 1,
+    caster: -1
+  };
+
   /**
    * Pick a random item from an array
    */
@@ -149,6 +165,13 @@ const Generator = (function() {
     return TIER_CONFIG[tier] || TIER_CONFIG.Novice;
   }
 
+  function computeArmorClass(tier, archetypeId) {
+    const base = TIER_AC_BASE[tier] || TIER_AC_BASE.Novice;
+    const adjust = ARCHETYPE_AC_ADJUST[archetypeId] || 0;
+    const ac = base + adjust;
+    return Math.max(10, Math.min(20, ac));
+  }
+
   /**
    * Compute stats for a given archetype and tier
    */
@@ -163,6 +186,7 @@ const Generator = (function() {
       ? archetype.saveProfs.slice(0, 2)
       : pickTopTwo(abilityMods);
     const savingThrows = computeSavingThrows(abilityMods, saveProfs, tierInfo.pb);
+    const ac = computeArmorClass(resolvedTier, archetype.id);
 
     return {
       archetype,
@@ -171,7 +195,8 @@ const Generator = (function() {
       abilityScores,
       abilityMods,
       saveProfs,
-      savingThrows
+      savingThrows,
+      ac
     };
   }
 
@@ -308,6 +333,7 @@ const Generator = (function() {
       ? archetype.saveProfs.slice(0, 2)
       : pickTopTwo(abilityMods);
     const savingThrows = computeSavingThrows(abilityMods, saveProfs, tierInfo.pb);
+    const ac = computeArmorClass(tier, archetype ? archetype.id : null);
 
     // Create NPC object
     const npc = {
@@ -324,6 +350,7 @@ const Generator = (function() {
       tier: tier,
       cr: tierInfo.cr,
       proficiencyBonus: tierInfo.pb,
+      armorClass: ac,
       abilityScores: abilityScores,
       abilityMods: abilityMods,
       savingThrowProficiencies: saveProfs,

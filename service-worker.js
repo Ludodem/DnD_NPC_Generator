@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = 'npc-gen-v8';
+﻿const CACHE_NAME = 'npc-gen-v9';
 
 const ASSETS = [
   './',
@@ -107,6 +107,7 @@ self.addEventListener('fetch', event => {
     })
   );
 });
+
 
 
 
