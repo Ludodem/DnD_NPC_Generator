@@ -68,6 +68,7 @@ const UI = (function() {
     elements.resultAbilityMods = mapAbilityElements(document.querySelectorAll('#screen-result .ability-mod'));
     elements.resultArchetypeSelect = document.getElementById('result-archetype-select');
     elements.resultTierSelect = document.getElementById('result-tier-select');
+    elements.resultAbilityRolls = document.querySelectorAll('#screen-result .ability-roll');
     elements.btnBack = document.getElementById('btn-back');
     elements.btnRegenerate = document.getElementById('btn-regenerate');
     elements.btnCopy = document.getElementById('btn-copy');
@@ -89,6 +90,7 @@ const UI = (function() {
     elements.detailAbilityMods = mapAbilityElements(document.querySelectorAll('#screen-library-detail .ability-mod'));
     elements.detailArchetypeSelect = document.getElementById('detail-archetype-select');
     elements.detailTierSelect = document.getElementById('detail-tier-select');
+    elements.detailAbilityRolls = document.querySelectorAll('#screen-library-detail .ability-roll');
     elements.btnBackLibrary = document.getElementById('btn-back-library');
     elements.btnCopyDetail = document.getElementById('btn-copy-detail');
     elements.btnDelete = document.getElementById('btn-delete');
@@ -102,6 +104,12 @@ const UI = (function() {
 
     // Toast
     elements.toast = document.getElementById('toast');
+
+    // Roll modal
+    elements.rollModal = document.getElementById('roll-modal');
+    elements.rollTitle = document.getElementById('roll-title');
+    elements.rollResult = document.getElementById('roll-result');
+    elements.rollDetail = document.getElementById('roll-detail');
   }
 
   /**
@@ -328,6 +336,17 @@ const UI = (function() {
       saveCurrentNpc();
     });
 
+    elements.resultAbilityRolls.forEach(button => {
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!currentNpc) return;
+        const ability = button.dataset.ability;
+        if (!ability) return;
+        rollSavingThrow(currentNpc, ability);
+      });
+    });
+
     elements.resultArchetypeSelect.addEventListener('change', () => {
       if (!currentNpc) return;
       void applyStatChanges(currentNpc, elements.resultArchetypeSelect.value, elements.resultTierSelect.value, true);
@@ -489,6 +508,19 @@ const UI = (function() {
       const npc = Storage.getById(viewingNpcId);
       if (!npc) return;
       void applyStatChanges(npc, elements.detailArchetypeSelect.value, elements.detailTierSelect.value, true);
+    });
+
+    elements.detailAbilityRolls.forEach(button => {
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!viewingNpcId) return;
+        const npc = Storage.getById(viewingNpcId);
+        if (!npc) return;
+        const ability = button.dataset.ability;
+        if (!ability) return;
+        rollSavingThrow(npc, ability);
+      });
     });
   }
 
@@ -685,6 +717,38 @@ const UI = (function() {
     const savingThrows = npc.savingThrows || computeSavingThrows(mods, saveProfs, pb);
     const saveText = saveProfs.map(key => `${key} ${formatSigned(savingThrows[key])}`).join(', ');
     savesEl.textContent = `Saving Throws: ${saveText}`;
+  }
+
+  function rollSavingThrow(npc, abilityKey) {
+    const mods = getAbilityMods(npc);
+    const pb = npc.proficiencyBonus || 0;
+    const saveProfs = npc.savingThrowProficiencies || [];
+    const isProficient = saveProfs.includes(abilityKey);
+    const modifier = (mods[abilityKey] || 0) + (isProficient ? pb : 0);
+    const roll = Math.floor(Math.random() * 20) + 1;
+    const total = roll + modifier;
+
+    const modifierLabel = `${formatSigned(modifier)}${isProficient ? ' (proficient)' : ''}`;
+
+    elements.rollTitle.textContent = `${abilityKey} Saving Throw`;
+    elements.rollResult.textContent = `${total}`;
+    elements.rollDetail.textContent = `Roll: ${roll} + Modifier: ${modifierLabel}`;
+
+    showRollModal();
+  }
+
+  function showRollModal() {
+    if (!elements.rollModal) return;
+    elements.rollModal.classList.remove('hidden');
+
+    setTimeout(() => {
+      document.addEventListener('click', hideRollModal, { once: true });
+    }, 0);
+  }
+
+  function hideRollModal() {
+    if (!elements.rollModal) return;
+    elements.rollModal.classList.add('hidden');
   }
 
   async function ensureNpcStats(npc, persistIfSaved) {

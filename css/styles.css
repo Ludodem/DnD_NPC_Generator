@@ -371,16 +371,42 @@ button {
 
 .ability-card {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
+  align-items: stretch;
+  justify-content: space-between;
   padding: 6px;
   background-color: var(--color-bg-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
   min-height: 44px;
+  gap: 6px;
+}
+
+.ability-main {
+  flex: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.ability-roll {
+  flex: 1;
+  border: none;
+  border-radius: var(--radius-sm);
+  background-color: #3a2a18;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  min-width: 0;
+  padding: 4px 6px;
+}
+
+.ability-roll:active {
+  transform: scale(0.98);
 }
 
 .ability-label {
@@ -410,6 +436,23 @@ button {
   font-weight: 500;
   color: var(--color-text-muted);
   margin-bottom: var(--space-lg);
+}
+
+.roll-modal-content {
+  text-align: center;
+}
+
+.roll-result {
+  font-family: var(--font-heading);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: var(--space-sm);
+}
+
+.roll-detail {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
 }
 
 .stat-controls {

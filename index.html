@@ -62,28 +62,46 @@
           <div class="abilities-block" aria-label="Ability Modifiers">
             <div class="abilities-grid">
               <div class="ability-card">
-                <span class="ability-label">STR</span>
-                <span class="ability-mod" data-ability="STR">+0</span>
+                <div class="ability-main">
+                  <span class="ability-label">STR</span>
+                  <span class="ability-mod" data-ability="STR">+0</span>
+                </div>
+                <button class="ability-roll" type="button" data-ability="STR" aria-label="Roll STR saving throw">Save</button>
               </div>
               <div class="ability-card">
-                <span class="ability-label">DEX</span>
-                <span class="ability-mod" data-ability="DEX">+0</span>
+                <div class="ability-main">
+                  <span class="ability-label">DEX</span>
+                  <span class="ability-mod" data-ability="DEX">+0</span>
+                </div>
+                <button class="ability-roll" type="button" data-ability="DEX" aria-label="Roll DEX saving throw">Save</button>
               </div>
               <div class="ability-card">
-                <span class="ability-label">CON</span>
-                <span class="ability-mod" data-ability="CON">+0</span>
+                <div class="ability-main">
+                  <span class="ability-label">CON</span>
+                  <span class="ability-mod" data-ability="CON">+0</span>
+                </div>
+                <button class="ability-roll" type="button" data-ability="CON" aria-label="Roll CON saving throw">Save</button>
               </div>
               <div class="ability-card">
-                <span class="ability-label">INT</span>
-                <span class="ability-mod" data-ability="INT">+0</span>
+                <div class="ability-main">
+                  <span class="ability-label">INT</span>
+                  <span class="ability-mod" data-ability="INT">+0</span>
+                </div>
+                <button class="ability-roll" type="button" data-ability="INT" aria-label="Roll INT saving throw">Save</button>
               </div>
               <div class="ability-card">
-                <span class="ability-label">WIS</span>
-                <span class="ability-mod" data-ability="WIS">+0</span>
+                <div class="ability-main">
+                  <span class="ability-label">WIS</span>
+                  <span class="ability-mod" data-ability="WIS">+0</span>
+                </div>
+                <button class="ability-roll" type="button" data-ability="WIS" aria-label="Roll WIS saving throw">Save</button>
               </div>
               <div class="ability-card">
-                <span class="ability-label">CHA</span>
-                <span class="ability-mod" data-ability="CHA">+0</span>
+                <div class="ability-main">
+                  <span class="ability-label">CHA</span>
+                  <span class="ability-mod" data-ability="CHA">+0</span>
+                </div>
+                <button class="ability-roll" type="button" data-ability="CHA" aria-label="Roll CHA saving throw">Save</button>
               </div>
             </div>
           </div>
@@ -144,28 +162,46 @@
           <div class="abilities-block" aria-label="Ability Modifiers">
             <div class="abilities-grid">
               <div class="ability-card">
-                <span class="ability-label">STR</span>
-                <span class="ability-mod" data-ability="STR">+0</span>
+                <div class="ability-main">
+                  <span class="ability-label">STR</span>
+                  <span class="ability-mod" data-ability="STR">+0</span>
+                </div>
+                <button class="ability-roll" type="button" data-ability="STR" aria-label="Roll STR saving throw">Save</button>
               </div>
               <div class="ability-card">
-                <span class="ability-label">DEX</span>
-                <span class="ability-mod" data-ability="DEX">+0</span>
+                <div class="ability-main">
+                  <span class="ability-label">DEX</span>
+                  <span class="ability-mod" data-ability="DEX">+0</span>
+                </div>
+                <button class="ability-roll" type="button" data-ability="DEX" aria-label="Roll DEX saving throw">Save</button>
               </div>
               <div class="ability-card">
-                <span class="ability-label">CON</span>
-                <span class="ability-mod" data-ability="CON">+0</span>
+                <div class="ability-main">
+                  <span class="ability-label">CON</span>
+                  <span class="ability-mod" data-ability="CON">+0</span>
+                </div>
+                <button class="ability-roll" type="button" data-ability="CON" aria-label="Roll CON saving throw">Save</button>
               </div>
               <div class="ability-card">
-                <span class="ability-label">INT</span>
-                <span class="ability-mod" data-ability="INT">+0</span>
+                <div class="ability-main">
+                  <span class="ability-label">INT</span>
+                  <span class="ability-mod" data-ability="INT">+0</span>
+                </div>
+                <button class="ability-roll" type="button" data-ability="INT" aria-label="Roll INT saving throw">Save</button>
               </div>
               <div class="ability-card">
-                <span class="ability-label">WIS</span>
-                <span class="ability-mod" data-ability="WIS">+0</span>
+                <div class="ability-main">
+                  <span class="ability-label">WIS</span>
+                  <span class="ability-mod" data-ability="WIS">+0</span>
+                </div>
+                <button class="ability-roll" type="button" data-ability="WIS" aria-label="Roll WIS saving throw">Save</button>
               </div>
               <div class="ability-card">
-                <span class="ability-label">CHA</span>
-                <span class="ability-mod" data-ability="CHA">+0</span>
+                <div class="ability-main">
+                  <span class="ability-label">CHA</span>
+                  <span class="ability-mod" data-ability="CHA">+0</span>
+                </div>
+                <button class="ability-roll" type="button" data-ability="CHA" aria-label="Roll CHA saving throw">Save</button>
               </div>
             </div>
           </div>
@@ -211,6 +247,16 @@
           <button id="modal-cancel" class="btn btn-secondary">Cancel</button>
           <button id="modal-confirm" class="btn btn-danger">Confirm</button>
         </div>
+      </div>
+    </div>
+
+    <!-- Roll Modal -->
+    <div id="roll-modal" class="modal hidden" aria-live="polite">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content roll-modal-content">
+        <h2 id="roll-title">Saving Throw</h2>
+        <div id="roll-result" class="roll-result"></div>
+        <div id="roll-detail" class="roll-detail"></div>
       </div>
     </div>
 
