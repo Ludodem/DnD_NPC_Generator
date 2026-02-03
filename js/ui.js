@@ -545,6 +545,7 @@ const UI = (function() {
           <div class="npc-card-name">${npc.name}</div>
           <div class="npc-card-meta">${npc.race} · ${npc.alignment}</div>
         </div>
+        <button class="npc-card-delete" data-npc-id="${npc.id}" aria-label="Delete NPC">Delete</button>
         <span class="npc-card-arrow">›</span>
       </div>
     `).join('');
@@ -554,6 +555,25 @@ const UI = (function() {
       card.addEventListener('click', () => {
         const npcId = card.dataset.npcId;
         void viewNpcDetail(npcId);
+      });
+    });
+
+    elements.libraryList.querySelectorAll('.npc-card-delete').forEach(button => {
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const npcId = button.dataset.npcId;
+        const npc = Storage.getById(npcId);
+        if (!npc) return;
+        showModal(
+          'Delete NPC',
+          `Are you sure you want to delete "${npc.name}"? This cannot be undone.`,
+          () => {
+            Storage.remove(npcId);
+            showToast('NPC deleted');
+            renderLibrary();
+          }
+        );
       });
     });
   }
