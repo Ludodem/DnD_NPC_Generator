@@ -641,6 +641,20 @@ button {
   text-align: center;
 }
 
+.roll-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.roll-title {
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
 .roll-result {
   font-family: var(--font-heading);
   font-size: 2rem;
@@ -652,6 +666,12 @@ button {
 .roll-detail {
   font-size: 0.95rem;
   color: var(--color-text-muted);
+}
+
+.roll-divider {
+  height: 1px;
+  background-color: var(--color-border);
+  margin: var(--space-sm) 0 var(--space-sm);
 }
 
 .stat-controls {

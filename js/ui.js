@@ -139,6 +139,11 @@ const UI = (function() {
     elements.rollTitle = document.getElementById('roll-title');
     elements.rollResult = document.getElementById('roll-result');
     elements.rollDetail = document.getElementById('roll-detail');
+    elements.rollDivider = document.getElementById('roll-divider');
+    elements.rollSectionDamage = document.getElementById('roll-section-damage');
+    elements.rollTitle2 = document.getElementById('roll-title-2');
+    elements.rollResult2 = document.getElementById('roll-result-2');
+    elements.rollDetail2 = document.getElementById('roll-detail-2');
   }
 
   /**
@@ -961,9 +966,16 @@ const UI = (function() {
     const damageDetail = `${damageParts.join(' + ')}${modLabel}`.trim();
 
     showRollModalWith(
-      'Attack Roll',
-      `${attackTotal}`,
-      `d20 (${attackRoll}) + ${formatSigned(attackBonus)} = ${attackTotal}\nDamage: ${damageDetail} = ${damageTotal}`
+      {
+        title: 'Attack Roll',
+        result: `${attackTotal}`,
+        detail: `d20 (${attackRoll}) ${formatSigned(attackBonus)} = ${attackTotal}`
+      },
+      {
+        title: 'Damage Roll',
+        result: `${damageTotal}`,
+        detail: `${damageDetail} = ${damageTotal}`
+      }
     );
   }
 
@@ -997,9 +1009,11 @@ const UI = (function() {
     const modifierLabel = `${formatSigned(modifier)}${isProficient ? ' (proficient)' : ''}`;
 
     showRollModalWith(
-      `${abilityKey} Saving Throw`,
-      `${total}`,
-      `Roll: ${roll} + Modifier: ${modifierLabel}`
+      {
+        title: `${abilityKey} Saving Throw`,
+        result: `${total}`,
+        detail: `Roll: ${roll} + Modifier: ${modifierLabel}`
+      }
     );
   }
 
@@ -1017,10 +1031,25 @@ const UI = (function() {
     elements.rollModal.classList.add('hidden');
   }
 
-  function showRollModalWith(title, result, detail) {
-    elements.rollTitle.textContent = title;
-    elements.rollResult.textContent = result;
-    elements.rollDetail.textContent = detail;
+  function showRollModalWith(primary, secondary = null) {
+    elements.rollTitle.textContent = primary.title;
+    elements.rollResult.textContent = primary.result;
+    elements.rollDetail.textContent = primary.detail;
+
+    if (secondary) {
+      elements.rollDivider.classList.remove('hidden');
+      elements.rollSectionDamage.classList.remove('hidden');
+      elements.rollTitle2.textContent = secondary.title;
+      elements.rollResult2.textContent = secondary.result;
+      elements.rollDetail2.textContent = secondary.detail;
+    } else {
+      elements.rollDivider.classList.add('hidden');
+      elements.rollSectionDamage.classList.add('hidden');
+      elements.rollTitle2.textContent = '';
+      elements.rollResult2.textContent = '';
+      elements.rollDetail2.textContent = '';
+    }
+
     showRollModal();
   }
 
