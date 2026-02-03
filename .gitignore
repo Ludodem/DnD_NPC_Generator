@@ -1,0 +1,17 @@
+# Documentation (kept locally, not in repo)
+specifications.md
+implementation_plan.md
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp
