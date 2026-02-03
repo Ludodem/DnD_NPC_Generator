@@ -56,6 +56,7 @@ const UI = (function() {
     elements.resultSummary = document.getElementById('result-summary');
     elements.resultPhysical = document.querySelector('#result-physical p');
     elements.resultPsych = document.querySelector('#result-psych p');
+    elements.resultNotes = document.getElementById('notes-input');
     elements.btnBack = document.getElementById('btn-back');
     elements.btnRegenerate = document.getElementById('btn-regenerate');
     elements.btnCopy = document.getElementById('btn-copy');
@@ -71,6 +72,7 @@ const UI = (function() {
     elements.detailSummary = document.getElementById('detail-summary');
     elements.detailPhysical = document.querySelector('#detail-physical p');
     elements.detailPsych = document.querySelector('#detail-psych p');
+    elements.detailNotes = document.getElementById('detail-notes-input');
     elements.btnBackLibrary = document.getElementById('btn-back-library');
     elements.btnCopyDetail = document.getElementById('btn-copy-detail');
     elements.btnDelete = document.getElementById('btn-delete');
@@ -244,7 +246,11 @@ const UI = (function() {
     elements.btnGenerate.textContent = 'Generating...';
 
     try {
+      const keepNotes = currentScreen === 'result';
+      const notesSnapshot = keepNotes && elements.resultNotes ? elements.resultNotes.value : '';
+
       currentNpc = await Generator.generate(generatorCriteria);
+      currentNpc.notes = keepNotes ? notesSnapshot : '';
       renderResult(currentNpc);
       showScreen('result');
     } catch (error) {
@@ -273,6 +279,16 @@ const UI = (function() {
     elements.btnSave.addEventListener('click', () => {
       saveCurrentNpc();
     });
+
+    const saveResultNotes = debounce(() => {
+      if (!currentNpc) return;
+      currentNpc.notes = elements.resultNotes.value || '';
+      if (Storage.exists(currentNpc.id)) {
+        Storage.save(currentNpc);
+      }
+    }, 300);
+
+    elements.resultNotes.addEventListener('input', saveResultNotes);
   }
 
   /**
@@ -283,6 +299,7 @@ const UI = (function() {
     elements.resultSummary.innerHTML = renderChips(npc);
     elements.resultPhysical.textContent = npc.physicalDescription;
     elements.resultPsych.textContent = npc.psychDescription;
+    elements.resultNotes.value = npc.notes || '';
 
     // Update save button state
     updateSaveButton(npc.id);
@@ -321,6 +338,8 @@ const UI = (function() {
    */
   function saveCurrentNpc() {
     if (!currentNpc) return;
+
+    currentNpc.notes = elements.resultNotes.value || '';
 
     // Check if already saved
     if (Storage.exists(currentNpc.id)) {
@@ -384,6 +403,16 @@ const UI = (function() {
         );
       }
     });
+
+    const saveDetailNotes = debounce(() => {
+      if (!viewingNpcId) return;
+      const npc = Storage.getById(viewingNpcId);
+      if (!npc) return;
+      npc.notes = elements.detailNotes.value || '';
+      Storage.save(npc);
+    }, 300);
+
+    elements.detailNotes.addEventListener('input', saveDetailNotes);
   }
 
   /**
@@ -436,6 +465,7 @@ const UI = (function() {
     elements.detailSummary.innerHTML = renderChips(npc);
     elements.detailPhysical.textContent = npc.physicalDescription;
     elements.detailPsych.textContent = npc.psychDescription;
+    elements.detailNotes.value = npc.notes || '';
 
     showScreen('libraryDetail');
   }
@@ -538,6 +568,21 @@ const UI = (function() {
         elements.toast.classList.add('hidden');
       }, 300);
     }, 2500);
+  }
+
+  /**
+   * Debounce helper
+   */
+  function debounce(fn, delay) {
+    let timer = null;
+    return function(...args) {
+      if (timer) {
+        clearTimeout(timer);
+      }
+      timer = setTimeout(() => {
+        fn.apply(this, args);
+      }, delay);
+    };
   }
 
   // Public API

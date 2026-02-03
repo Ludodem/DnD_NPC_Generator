@@ -138,6 +138,7 @@ const Generator = (function() {
       name: name,
       physicalDescription: physicalDescription,
       psychDescription: psychDescription,
+      notes: '',
       version: 1
     };
 
