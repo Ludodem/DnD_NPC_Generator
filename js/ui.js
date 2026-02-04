@@ -709,12 +709,17 @@ const UI = (function() {
 
   function setupMonsterFilters() {
     if (elements.monsterSearch) {
-      elements.monsterSearch.addEventListener('input', debounce(() => {
+      const trigger = debounce(() => {
         void renderMonsters();
-      }, 200));
+      }, 200);
+      elements.monsterSearch.addEventListener('input', trigger);
+      elements.monsterSearch.addEventListener('keyup', trigger);
     }
     if (elements.monsterTypeFilter) {
       elements.monsterTypeFilter.addEventListener('change', () => {
+        void renderMonsters();
+      });
+      elements.monsterTypeFilter.addEventListener('input', () => {
         void renderMonsters();
       });
     }
@@ -749,20 +754,26 @@ const UI = (function() {
     ensureMonsterFilters(monsters);
 
     const search = (elements.monsterSearch ? elements.monsterSearch.value : '').trim().toLowerCase();
-    const typeFilter = elements.monsterTypeFilter ? elements.monsterTypeFilter.value : '';
+    const typeFilter = (elements.monsterTypeFilter ? elements.monsterTypeFilter.value : '').trim().toLowerCase();
     const minValue = elements.monsterCrMin ? parseFloat(elements.monsterCrMin.value) : NaN;
     const maxValue = elements.monsterCrMax ? parseFloat(elements.monsterCrMax.value) : NaN;
     const hasMin = !Number.isNaN(minValue);
     const hasMax = !Number.isNaN(maxValue);
 
     const filtered = monsters
-      .map((monster, index) => ({ monster, index, crValue: parseChallengeRating(monster.challenge_rating) }))
+      .map((monster, index) => ({
+        monster,
+        index,
+        crValue: parseChallengeRating(monster.challenge_rating)
+      }))
       .filter(entry => {
         const monster = entry.monster;
-        if (search && !monster.name.toLowerCase().includes(search)) {
+        const monsterName = String(monster.name || '').toLowerCase();
+        const monsterType = String(monster.type || '').trim().toLowerCase();
+        if (search && !monsterName.includes(search)) {
           return false;
         }
-        if (typeFilter && monster.type !== typeFilter) {
+        if (typeFilter && monsterType !== typeFilter) {
           return false;
         }
         if (hasMin && entry.crValue < minValue) {
