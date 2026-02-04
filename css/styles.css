@@ -583,6 +583,27 @@ button {
   color: var(--color-accent);
 }
 
+.statblock-save {
+  border: none;
+  background-color: #3a2a18;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  justify-self: end;
+}
+
+.statblock-save:active {
+  transform: scale(0.98);
+}
+
+.statblock-ability-row.proficient .statblock-save {
+  background-color: var(--color-accent);
+}
+
 .statblock-section h2 {
   font-size: 1rem;
   color: var(--color-accent);

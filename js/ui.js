@@ -875,11 +875,23 @@ const UI = (function() {
           <div class="statblock-ability-row${proficientClass}">
             <span class="ability-name">${key}</span>
             <span class="ability-score">${score} (${formatSigned(mod)})</span>
-            <span class="ability-save">Save ${formatSigned(save)}</span>
+            <button class="statblock-save" type="button" data-ability="${key}" aria-label="Roll ${key} saving throw">
+              Save ${formatSigned(save)}
+            </button>
           </div>
         `;
       }).join('');
       target.abilities.innerHTML = rows;
+
+      target.abilities.querySelectorAll('.statblock-save').forEach(button => {
+        button.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const abilityKey = button.dataset.ability;
+          if (!abilityKey) return;
+          rollSavingThrow(npc, abilityKey);
+        });
+      });
     }
 
     renderEntryList(target.traits, npc.traits);
