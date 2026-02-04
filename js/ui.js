@@ -844,7 +844,7 @@ const UI = (function() {
     elements.spellEmpty.classList.add('hidden');
     elements.spellList.innerHTML = filtered.map(spell => {
       const classLabel = (spell.classes && spell.classes.length > 0)
-        ? ` &middot; ${spell.classes.map(toTitleCase).join(', ')}`
+        ? ` &middot; <span class="spell-classes">${spell.classes.map(toTitleCase).join(', ')}</span>`
         : '';
       const meta = `${formatSpellLevel(spell.level)} &middot; ${toTitleCase(spell.school)} &middot; ${toTitleCase(spell.actionType)}${classLabel}`;
       return `

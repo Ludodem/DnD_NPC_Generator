@@ -896,6 +896,11 @@ button {
   cursor: pointer;
 }
 
+.spell-classes {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
 .npc-card-content {
   flex: 1;
 }
