@@ -843,7 +843,10 @@ const UI = (function() {
 
     elements.spellEmpty.classList.add('hidden');
     elements.spellList.innerHTML = filtered.map(spell => {
-      const meta = `${formatSpellLevel(spell.level)} &middot; ${toTitleCase(spell.school)} &middot; ${toTitleCase(spell.actionType)}`;
+      const classLabel = (spell.classes && spell.classes.length > 0)
+        ? ` &middot; ${spell.classes.map(toTitleCase).join(', ')}`
+        : '';
+      const meta = `${formatSpellLevel(spell.level)} &middot; ${toTitleCase(spell.school)} &middot; ${toTitleCase(spell.actionType)}${classLabel}`;
       return `
         <div class="npc-card spell-card">
           <div class="npc-card-content">
