@@ -21,6 +21,8 @@ const UI = (function() {
   let cachedTiers = [];
   let cachedMonsters = null;
   let cachedSpells = null;
+  let spellIndex = null;
+  let spellRegex = null;
   let libraryTab = 'npcs';
 
   // DOM element cache
@@ -174,6 +176,12 @@ const UI = (function() {
     // Settings modal
     elements.settingsModal = document.getElementById('settings-modal');
     elements.btnClearReload = document.getElementById('btn-clear-reload');
+
+    // Spell modal
+    elements.spellModal = document.getElementById('spell-modal');
+    elements.spellTitle = document.getElementById('spell-title');
+    elements.spellMeta = document.getElementById('spell-meta');
+    elements.spellDetails = document.getElementById('spell-details');
   }
 
   /**
@@ -567,6 +575,7 @@ const UI = (function() {
     setupLibraryTabs();
     setupMonsterFilters();
     setupSpellFilters();
+    void prepareSpellIndex();
 
     const saveDetailNotes = debounce(() => {
       if (!viewingNpcId) return;
@@ -599,6 +608,8 @@ const UI = (function() {
         rollSavingThrow(npc, ability);
       });
     });
+
+    document.addEventListener('click', handleSpellLinkClick);
   }
 
   /**
@@ -831,6 +842,15 @@ const UI = (function() {
         </div>
       `;
     }).join('');
+
+    elements.spellList.querySelectorAll('.spell-card').forEach((card, index) => {
+      card.addEventListener('click', () => {
+        const spell = filtered[index];
+        if (spell) {
+          showSpellModal(spell);
+        }
+      });
+    });
   }
 
   /**
@@ -1168,6 +1188,175 @@ const UI = (function() {
     }
   }
 
+  async function prepareSpellIndex() {
+    if (spellIndex) {
+      return;
+    }
+    try {
+      const spells = await getSpells();
+      buildSpellIndex(spells);
+      refreshSpellLinks();
+    } catch (error) {
+      console.warn('Unable to load spells:', error);
+    }
+  }
+
+  function buildSpellIndex(spells) {
+    spellIndex = new Map();
+    const names = [];
+    spells.forEach(spell => {
+      if (!spell || !spell.name) return;
+      const key = normalizeSpellKey(spell.name);
+      spellIndex.set(key, spell);
+      names.push(spell.name);
+    });
+
+    if (names.length === 0) {
+      spellRegex = null;
+      return;
+    }
+
+    const escaped = names
+      .sort((a, b) => b.length - a.length)
+      .map(name => escapeRegExp(name));
+    const pattern = `\\b(${escaped.join('|')})\\b`;
+    spellRegex = new RegExp(pattern, 'gi');
+  }
+
+  function refreshSpellLinks() {
+    if (currentNpc) {
+      renderStatBlock(elements.resultStatblock, currentNpc);
+    }
+    if (viewingNpcId) {
+      const npc = Storage.getById(viewingNpcId);
+      if (npc) {
+        renderStatBlock(elements.detailStatblock, npc);
+      }
+    } else if (viewingMonster) {
+      renderStatBlock(elements.detailStatblock, viewingMonster);
+    }
+  }
+
+  function linkifySpellText(text) {
+    if (!text || !spellRegex || !spellIndex) {
+      return text || '';
+    }
+
+    return String(text).replace(spellRegex, match => {
+      const key = normalizeSpellKey(match);
+      if (!spellIndex.has(key)) {
+        return match;
+      }
+      const safe = escapeAttribute(match);
+      return `<button class="spell-link" type="button" data-spell="${safe}">${match}</button>`;
+    });
+  }
+
+  function handleSpellLinkClick(event) {
+    const button = event.target.closest('.spell-link');
+    if (!button) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const spellName = button.dataset.spell;
+    if (!spellName) return;
+    void openSpellModalByName(spellName);
+  }
+
+  async function openSpellModalByName(name) {
+    if (!spellIndex) {
+      await prepareSpellIndex();
+    }
+    if (!spellIndex) {
+      showToast('Spells not loaded yet');
+      return;
+    }
+    const key = normalizeSpellKey(name);
+    const spell = spellIndex.get(key);
+    if (!spell) {
+      showToast('Spell not found');
+      return;
+    }
+    showSpellModal(spell);
+  }
+
+  let spellModalOpen = false;
+
+  function showSpellModal(spell) {
+    if (!elements.spellModal || !spell) return;
+    elements.spellTitle.textContent = spell.name;
+    elements.spellMeta.textContent = `${formatSpellLevel(spell.level)} \u00b7 ${toTitleCase(spell.school)}`;
+
+    const details = [];
+    details.push(renderSpellDetail('Casting', toTitleCase(spell.actionType)));
+    details.push(renderSpellDetail('Range', spell.range || ''));
+    details.push(renderSpellDetail('Components', formatComponents(spell.components)));
+    details.push(renderSpellDetail('Duration', spell.duration || ''));
+    details.push(renderSpellDetail('Concentration', spell.concentration ? 'Yes' : 'No'));
+    details.push(renderSpellDetail('Ritual', spell.ritual ? 'Yes' : 'No'));
+
+    if (spell.classes && spell.classes.length > 0) {
+      details.push(renderSpellDetail('Classes', spell.classes.map(toTitleCase).join(', ')));
+    }
+
+    details.push(`<div class="spell-description">${spell.description || ''}</div>`);
+
+    if (spell.cantripUpgrade) {
+      details.push(`<div class="spell-description"><strong>At Higher Levels.</strong> ${spell.cantripUpgrade}</div>`);
+    }
+
+    elements.spellDetails.innerHTML = details.join('');
+
+    elements.spellModal.classList.remove('hidden');
+    spellModalOpen = true;
+    setTimeout(() => {
+      document.addEventListener('click', handleSpellOutsideClick, { once: true });
+    }, 0);
+  }
+
+  function renderSpellDetail(label, value) {
+    return `
+      <div class="spell-detail">
+        <span class="detail-label">${label}</span>
+        <span class="detail-value">${value || '-'}</span>
+      </div>
+    `;
+  }
+
+  function handleSpellOutsideClick(event) {
+    if (!spellModalOpen) return;
+    const content = elements.spellModal.querySelector('.modal-content');
+    if (content && content.contains(event.target)) {
+      document.addEventListener('click', handleSpellOutsideClick, { once: true });
+      return;
+    }
+    hideSpellModal();
+  }
+
+  function hideSpellModal() {
+    if (!elements.spellModal) return;
+    elements.spellModal.classList.add('hidden');
+    spellModalOpen = false;
+  }
+
+  function formatComponents(components) {
+    if (!components || components.length === 0) return '-';
+    return components.map(component => component.toUpperCase()).join(', ');
+  }
+
+  function normalizeSpellKey(name) {
+    return String(name || '').trim().toLowerCase();
+  }
+
+  function escapeRegExp(value) {
+    return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  function escapeAttribute(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;');
+  }
+
   function renderStatBlock(target, npc) {
     if (!target) return;
 
@@ -1231,7 +1420,7 @@ const UI = (function() {
     }
     container.innerHTML = items.map(item => `
       <div class="statblock-entry">
-        <span class="entry-name">${item.name}.</span> ${item.text}
+        <span class="entry-name">${item.name}.</span> ${linkifySpellText(item.text)}
       </div>
     `).join('');
   }
@@ -1248,7 +1437,7 @@ const UI = (function() {
       return `
         <div class="statblock-entry statblock-action" data-roll='${item.roll ? JSON.stringify(item.roll) : ''}'>
           <div class="statblock-action-text">
-            <span class="entry-name">${item.name}.</span> ${item.text}
+            <span class="entry-name">${item.name}.</span> ${linkifySpellText(item.text)}
           </div>
           ${rollButton}
         </div>
