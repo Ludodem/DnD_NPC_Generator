@@ -215,6 +215,11 @@ button {
   text-align: center;
 }
 
+#screen-library .screen-header {
+  justify-content: center;
+  text-align: center;
+}
+
 #screen-result .screen-header .btn-icon,
 #screen-library-detail .screen-header .btn-icon {
   position: absolute;
