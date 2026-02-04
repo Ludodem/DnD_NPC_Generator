@@ -43,6 +43,7 @@ const UI = (function() {
   function cacheElements() {
     // Navigation
     elements.navBtns = document.querySelectorAll('.nav-btn');
+    elements.settingsBtn = document.querySelector('.nav-btn[data-action="settings"]');
 
     // Screens
     elements.screens = {
@@ -144,6 +145,10 @@ const UI = (function() {
     elements.rollTitle2 = document.getElementById('roll-title-2');
     elements.rollResult2 = document.getElementById('roll-result-2');
     elements.rollDetail2 = document.getElementById('roll-detail-2');
+
+    // Settings modal
+    elements.settingsModal = document.getElementById('settings-modal');
+    elements.btnClearReload = document.getElementById('btn-clear-reload');
   }
 
   /**
@@ -152,6 +157,10 @@ const UI = (function() {
   function setupNavigation() {
     elements.navBtns.forEach(btn => {
       btn.addEventListener('click', () => {
+        if (btn.dataset.action === 'settings') {
+          showSettingsModal();
+          return;
+        }
         const screen = btn.dataset.screen;
         if (screen === 'library') {
           showScreen('library');
@@ -179,6 +188,10 @@ const UI = (function() {
     const navTarget = navMap[activeScreen] || activeScreen;
 
     elements.navBtns.forEach(btn => {
+      if (btn.dataset.action === 'settings') {
+        btn.classList.remove('active');
+        return;
+      }
       btn.classList.toggle('active', btn.dataset.screen === navTarget);
     });
   }
@@ -662,6 +675,17 @@ const UI = (function() {
       }
       hideModal();
     });
+
+    if (elements.settingsModal) {
+      elements.settingsModal.querySelector('.modal-backdrop').addEventListener('click', hideSettingsModal);
+    }
+    if (elements.btnClearReload) {
+      elements.btnClearReload.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        clearAppDataAndReload();
+      });
+    }
   }
 
   function setupViewTabs() {
@@ -750,6 +774,50 @@ const UI = (function() {
         elements.toast.classList.add('hidden');
       }, 300);
     }, 2500);
+  }
+
+  let settingsModalOpen = false;
+
+  function showSettingsModal() {
+    if (!elements.settingsModal) return;
+    elements.settingsModal.classList.remove('hidden');
+    settingsModalOpen = true;
+    setTimeout(() => {
+      document.addEventListener('click', handleSettingsOutsideClick, { once: true });
+    }, 0);
+  }
+
+  function hideSettingsModal() {
+    if (!elements.settingsModal) return;
+    elements.settingsModal.classList.add('hidden');
+    settingsModalOpen = false;
+  }
+
+  function handleSettingsOutsideClick(event) {
+    if (!settingsModalOpen) return;
+    const content = elements.settingsModal.querySelector('.modal-content');
+    if (content && content.contains(event.target)) {
+      document.addEventListener('click', handleSettingsOutsideClick, { once: true });
+      return;
+    }
+    hideSettingsModal();
+  }
+
+  async function clearAppDataAndReload() {
+    try {
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(key => caches.delete(key)));
+      }
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map(reg => reg.unregister()));
+      }
+    } catch (error) {
+      console.warn('Failed to clear app cache:', error);
+    } finally {
+      window.location.reload();
+    }
   }
 
   function bindStatSelectors(primaryArchetype, primaryTier, secondaryArchetype, secondaryTier, getNpc, onChange) {

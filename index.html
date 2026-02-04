@@ -33,6 +33,10 @@
         <span class="nav-icon">&#128214;</span>
         <span class="nav-label">Library</span>
       </button>
+      <button class="nav-btn" data-action="settings" aria-label="Settings">
+        <span class="nav-icon">&#9881;</span>
+        <span class="nav-label">Settings</span>
+      </button>
     </nav>
 
     <!-- Screens -->
@@ -362,6 +366,18 @@
           <div id="roll-title-2" class="roll-title">Damage Roll</div>
           <div id="roll-result-2" class="roll-result"></div>
           <div id="roll-detail-2" class="roll-detail"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content">
+        <h2>Settings</h2>
+        <p>Clear cached app data and reload.</p>
+        <div class="modal-actions">
+          <button id="btn-clear-reload" class="btn btn-danger">Clear & Reload</button>
         </div>
       </div>
     </div>
