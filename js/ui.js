@@ -117,6 +117,7 @@ const UI = (function() {
     elements.spellEmpty = document.getElementById('spell-empty');
     elements.spellSearch = document.getElementById('spell-search');
     elements.spellLevelFilter = document.getElementById('spell-level-filter');
+    elements.spellClassFilter = document.getElementById('spell-class-filter');
 
     // Library Detail
     elements.detailName = document.getElementById('detail-name');
@@ -746,6 +747,11 @@ const UI = (function() {
         void renderSpells();
       });
     }
+    if (elements.spellClassFilter) {
+      elements.spellClassFilter.addEventListener('change', () => {
+        void renderSpells();
+      });
+    }
   }
 
   async function renderMonsters() {
@@ -824,6 +830,7 @@ const UI = (function() {
 
     const search = (elements.spellSearch ? elements.spellSearch.value : '').trim().toLowerCase();
     const levelFilter = elements.spellLevelFilter ? elements.spellLevelFilter.value : '';
+    const classFilter = elements.spellClassFilter ? elements.spellClassFilter.value : '';
 
     const filtered = spells.filter(spell => {
       if (search && !spell.name.toLowerCase().includes(search)) {
@@ -831,6 +838,12 @@ const UI = (function() {
       }
       if (levelFilter && String(spell.level) !== levelFilter) {
         return false;
+      }
+      if (classFilter) {
+        const classes = Array.isArray(spell.classes) ? spell.classes : [];
+        if (!classes.map(cls => toTitleCase(cls)).includes(classFilter)) {
+          return false;
+        }
       }
       return true;
     });
@@ -1796,7 +1809,7 @@ const UI = (function() {
   }
 
   function ensureSpellFilters(spells) {
-    if (spellFiltersReady || !elements.spellLevelFilter) {
+    if (spellFiltersReady || !elements.spellLevelFilter || !elements.spellClassFilter) {
       return;
     }
 
@@ -1809,6 +1822,16 @@ const UI = (function() {
       .join('');
 
     elements.spellLevelFilter.innerHTML = options;
+    const classSet = new Set();
+    spells.forEach(spell => {
+      if (Array.isArray(spell.classes)) {
+        spell.classes.forEach(cls => classSet.add(toTitleCase(cls)));
+      }
+    });
+    const classes = Array.from(classSet).sort((a, b) => a.localeCompare(b));
+    elements.spellClassFilter.innerHTML = ['<option value="">All Classes</option>']
+      .concat(classes.map(cls => `<option value="${cls}">${cls}</option>`))
+      .join('');
     spellFiltersReady = true;
   }
 
