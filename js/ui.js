@@ -1,4 +1,4 @@
-/**
+﻿/**
  * UI Module
  * Handles screen navigation, rendering, and user interactions
  */
@@ -15,8 +15,13 @@ const UI = (function() {
     tier: 'Novice'
   };
   let viewingNpcId = null;
+  let viewingMonster = null;
+  let viewingDetailType = 'npc';
   let cachedArchetypes = [];
   let cachedTiers = [];
+  let cachedMonsters = null;
+  let cachedSpells = null;
+  let libraryTab = 'npcs';
 
   // DOM element cache
   const elements = {};
@@ -94,6 +99,22 @@ const UI = (function() {
     elements.libraryList = document.getElementById('library-list');
     elements.libraryEmpty = document.getElementById('library-empty');
     elements.btnGenerateFirst = document.getElementById('btn-generate-first');
+    elements.libraryTabs = document.querySelectorAll('.library-tab');
+    elements.librarySections = {
+      npcs: document.getElementById('library-section-npcs'),
+      monsters: document.getElementById('library-section-monsters'),
+      spells: document.getElementById('library-section-spells')
+    };
+    elements.monsterList = document.getElementById('monster-list');
+    elements.monsterEmpty = document.getElementById('monster-empty');
+    elements.monsterSearch = document.getElementById('monster-search');
+    elements.monsterTypeFilter = document.getElementById('monster-type-filter');
+    elements.monsterCrMin = document.getElementById('monster-cr-min');
+    elements.monsterCrMax = document.getElementById('monster-cr-max');
+    elements.spellList = document.getElementById('spell-list');
+    elements.spellEmpty = document.getElementById('spell-empty');
+    elements.spellSearch = document.getElementById('spell-search');
+    elements.spellLevelFilter = document.getElementById('spell-level-filter');
 
     // Library Detail
     elements.detailName = document.getElementById('detail-name');
@@ -110,6 +131,10 @@ const UI = (function() {
     elements.detailAbilityRolls = document.querySelectorAll('#screen-library-detail .ability-roll');
     elements.detailTabs = document.querySelectorAll('#screen-library-detail .view-tab');
     elements.detailTabContents = document.querySelectorAll('#screen-library-detail .view-tab-content');
+    elements.detailTabsContainer = document.querySelector('#screen-library-detail .view-tabs');
+    elements.detailControls = document.querySelector('#screen-library-detail .stat-controls');
+    elements.detailOverviewContent = document.querySelector('#screen-library-detail .view-tab-content[data-tab="overview"]');
+    elements.detailStatblockContent = document.querySelector('#screen-library-detail .view-tab-content[data-tab="statblock"]');
     elements.detailStatblock = {
       ac: document.getElementById('detail-statblock-ac'),
       hp: document.getElementById('detail-statblock-hp'),
@@ -164,7 +189,7 @@ const UI = (function() {
         const screen = btn.dataset.screen;
         if (screen === 'library') {
           showScreen('library');
-          renderLibrary();
+          renderActiveLibrarySection();
         } else {
           showScreen(screen);
         }
@@ -513,7 +538,7 @@ const UI = (function() {
 
     elements.btnBackLibrary.addEventListener('click', () => {
       showScreen('library');
-      renderLibrary();
+      renderActiveLibrarySection();
     });
 
     elements.btnCopyDetail.addEventListener('click', () => {
@@ -533,11 +558,15 @@ const UI = (function() {
             Storage.remove(viewingNpcId);
             showToast('NPC deleted');
             showScreen('library');
-            renderLibrary();
+            renderActiveLibrarySection();
           }
         );
       }
     });
+
+    setupLibraryTabs();
+    setupMonsterFilters();
+    setupSpellFilters();
 
     const saveDetailNotes = debounce(() => {
       if (!viewingNpcId) return;
@@ -594,10 +623,10 @@ const UI = (function() {
       <div class="npc-card" data-npc-id="${npc.id}">
         <div class="npc-card-content">
           <div class="npc-card-name">${npc.name}</div>
-          <div class="npc-card-meta">${npc.race} · ${npc.alignment} · ${tierLabel} ${archetypeLabel}</div>
+          <div class="npc-card-meta">${npc.race} &middot; ${npc.alignment} &middot; ${tierLabel} ${archetypeLabel}</div>
         </div>
         <button class="npc-card-delete" data-npc-id="${npc.id}" aria-label="Delete NPC">Delete</button>
-        <span class="npc-card-arrow">›</span>
+        <span class="npc-card-arrow">&rsaquo;</span>
       </div>
     `;
     }).join('');
@@ -630,6 +659,180 @@ const UI = (function() {
     });
   }
 
+  function renderActiveLibrarySection() {
+    if (libraryTab === 'monsters') {
+      void renderMonsters();
+      return;
+    }
+    if (libraryTab === 'spells') {
+      void renderSpells();
+      return;
+    }
+    renderLibrary();
+  }
+
+  function setupLibraryTabs() {
+    if (!elements.libraryTabs || elements.libraryTabs.length === 0) return;
+    elements.libraryTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.dataset.library;
+        setLibraryTab(target);
+      });
+    });
+    setLibraryTab(libraryTab, false);
+  }
+
+  function setLibraryTab(target, shouldRender = true) {
+    if (!elements.librarySections[target]) return;
+    libraryTab = target;
+    elements.libraryTabs.forEach(tab => {
+      tab.classList.toggle('active', tab.dataset.library === target);
+    });
+    Object.keys(elements.librarySections).forEach(key => {
+      elements.librarySections[key].classList.toggle('active', key === target);
+    });
+    if (shouldRender) {
+      renderActiveLibrarySection();
+    }
+  }
+
+  function setupMonsterFilters() {
+    if (elements.monsterSearch) {
+      elements.monsterSearch.addEventListener('input', debounce(() => {
+        void renderMonsters();
+      }, 200));
+    }
+    if (elements.monsterTypeFilter) {
+      elements.monsterTypeFilter.addEventListener('change', () => {
+        void renderMonsters();
+      });
+    }
+    if (elements.monsterCrMin) {
+      elements.monsterCrMin.addEventListener('change', () => {
+        void renderMonsters();
+      });
+    }
+    if (elements.monsterCrMax) {
+      elements.monsterCrMax.addEventListener('change', () => {
+        void renderMonsters();
+      });
+    }
+  }
+
+  function setupSpellFilters() {
+    if (elements.spellSearch) {
+      elements.spellSearch.addEventListener('input', debounce(() => {
+        void renderSpells();
+      }, 200));
+    }
+    if (elements.spellLevelFilter) {
+      elements.spellLevelFilter.addEventListener('change', () => {
+        void renderSpells();
+      });
+    }
+  }
+
+  async function renderMonsters() {
+    if (!elements.monsterList) return;
+    const monsters = await getMonsters();
+    ensureMonsterFilters(monsters);
+
+    const search = (elements.monsterSearch ? elements.monsterSearch.value : '').trim().toLowerCase();
+    const typeFilter = elements.monsterTypeFilter ? elements.monsterTypeFilter.value : '';
+    const minValue = elements.monsterCrMin ? parseFloat(elements.monsterCrMin.value) : NaN;
+    const maxValue = elements.monsterCrMax ? parseFloat(elements.monsterCrMax.value) : NaN;
+    const hasMin = !Number.isNaN(minValue);
+    const hasMax = !Number.isNaN(maxValue);
+
+    const filtered = monsters
+      .map((monster, index) => ({ monster, index, crValue: parseChallengeRating(monster.challenge_rating) }))
+      .filter(entry => {
+        const monster = entry.monster;
+        if (search && !monster.name.toLowerCase().includes(search)) {
+          return false;
+        }
+        if (typeFilter && monster.type !== typeFilter) {
+          return false;
+        }
+        if (hasMin && entry.crValue < minValue) {
+          return false;
+        }
+        if (hasMax && entry.crValue > maxValue) {
+          return false;
+        }
+        return true;
+      });
+
+    if (filtered.length === 0) {
+      elements.monsterList.innerHTML = '';
+      elements.monsterEmpty.classList.remove('hidden');
+      return;
+    }
+
+    elements.monsterEmpty.classList.add('hidden');
+    elements.monsterList.innerHTML = filtered.map(entry => {
+      const monster = entry.monster;
+      const meta = `CR ${monster.challenge_rating} &middot; ${formatMonsterTypeLine(monster)}`;
+      return `
+        <div class="npc-card monster-card" data-monster-index="${entry.index}">
+          <div class="npc-card-content">
+            <div class="npc-card-name">${monster.name}</div>
+            <div class="npc-card-meta">${meta}</div>
+          </div>
+          <span class="npc-card-arrow">&rsaquo;</span>
+        </div>
+      `;
+    }).join('');
+
+    elements.monsterList.querySelectorAll('.monster-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const index = Number(card.dataset.monsterIndex);
+        const monster = monsters[index];
+        if (monster) {
+          void viewMonsterDetail(monster);
+        }
+      });
+    });
+  }
+
+  async function renderSpells() {
+    if (!elements.spellList) return;
+    const spells = await getSpells();
+    ensureSpellFilters(spells);
+
+    const search = (elements.spellSearch ? elements.spellSearch.value : '').trim().toLowerCase();
+    const levelFilter = elements.spellLevelFilter ? elements.spellLevelFilter.value : '';
+
+    const filtered = spells.filter(spell => {
+      if (search && !spell.name.toLowerCase().includes(search)) {
+        return false;
+      }
+      if (levelFilter && String(spell.level) !== levelFilter) {
+        return false;
+      }
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      elements.spellList.innerHTML = '';
+      elements.spellEmpty.classList.remove('hidden');
+      return;
+    }
+
+    elements.spellEmpty.classList.add('hidden');
+    elements.spellList.innerHTML = filtered.map(spell => {
+      const meta = `${formatSpellLevel(spell.level)} &middot; ${toTitleCase(spell.school)} &middot; ${toTitleCase(spell.actionType)}`;
+      return `
+        <div class="npc-card spell-card">
+          <div class="npc-card-content">
+            <div class="npc-card-name">${spell.name}</div>
+            <div class="npc-card-meta">${meta}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
   /**
    * View NPC detail from library
    */
@@ -641,6 +844,9 @@ const UI = (function() {
     }
 
     viewingNpcId = npcId;
+    viewingDetailType = 'npc';
+    viewingMonster = null;
+    setDetailMode('npc');
 
     await ensureNpcStats(npc, true);
     await renderStatControls(
@@ -658,6 +864,53 @@ const UI = (function() {
     elements.detailNotes.value = npc.notes || '';
 
     showScreen('libraryDetail');
+  }
+
+  async function viewMonsterDetail(monster) {
+    if (!monster) {
+      showToast('Monster not found');
+      return;
+    }
+
+    viewingNpcId = null;
+    viewingMonster = buildMonsterProfile(monster);
+    viewingDetailType = 'monster';
+    setDetailMode('monster');
+
+    elements.detailName.textContent = monster.name;
+    if (elements.detailSummary) elements.detailSummary.innerHTML = '';
+    if (elements.detailStatline) elements.detailStatline.textContent = '';
+    if (elements.detailSaves) elements.detailSaves.textContent = '';
+    if (elements.detailPhysical) elements.detailPhysical.textContent = '';
+    if (elements.detailPsych) elements.detailPsych.textContent = '';
+    if (elements.detailNotes) elements.detailNotes.value = '';
+
+    renderStatBlock(elements.detailStatblock, viewingMonster);
+    showScreen('libraryDetail');
+  }
+
+  function setDetailMode(mode) {
+    const isNpc = mode === 'npc';
+    if (elements.detailControls) {
+      elements.detailControls.classList.toggle('hidden', !isNpc);
+    }
+    if (elements.detailTabsContainer) {
+      elements.detailTabsContainer.classList.toggle('hidden', !isNpc);
+    }
+    if (elements.detailOverviewContent) {
+      elements.detailOverviewContent.classList.toggle('hidden', !isNpc);
+    }
+    if (elements.btnDelete) {
+      elements.btnDelete.classList.toggle('hidden', !isNpc);
+    }
+    if (elements.btnCopyDetail) {
+      elements.btnCopyDetail.classList.toggle('hidden', !isNpc);
+    }
+    if (isNpc) {
+      setActiveTab(elements.detailTabs, elements.detailTabContents, 'overview');
+    } else {
+      setActiveTab(elements.detailTabs, elements.detailTabContents, 'statblock');
+    }
   }
 
   /**
@@ -902,7 +1155,7 @@ const UI = (function() {
     const pb = npc.proficiencyBonus || tierInfo.pb;
     const archetypeLabel = npc.archetypeLabel || formatLabel(npc.archetype) || 'Generalist';
 
-    statlineEl.textContent = `Archetype: ${archetypeLabel} · Tier: ${tier} · CR ${cr} · PB ${formatSigned(pb)}`;
+    statlineEl.textContent = `Archetype: ${archetypeLabel} \u00b7 Tier: ${tier} \u00b7 CR ${cr} \u00b7 PB ${formatSigned(pb)}`;
 
     const saveProfs = npc.savingThrowProficiencies || ['STR', 'CON'];
     const savingThrows = npc.savingThrows || computeSavingThrows(mods, saveProfs, pb);
@@ -927,7 +1180,10 @@ const UI = (function() {
     if (target.hp) target.hp.textContent = npc.hitPoints || 0;
     if (target.speed) target.speed.textContent = npc.speed || '30 ft.';
     if (target.init) target.init.textContent = formatSigned(npc.initiative || 0);
-    if (target.meta) target.meta.textContent = `PB ${formatSigned(pb)} · CR ${cr}`;
+    if (target.meta) {
+      const metaLine = npc.metaLine || `PB ${formatSigned(pb)} \u00b7 CR ${cr}`;
+      target.meta.textContent = metaLine;
+    }
 
     if (target.abilities) {
       const mods = getAbilityMods(npc);
@@ -1028,22 +1284,32 @@ const UI = (function() {
     let damageTotal = 0;
 
     if (rollData.damageDice) {
-      const dmg = rollDice(rollData.damageDice);
-      damageParts.push(`${rollData.damageDice} (${dmg.total})`);
+      const dmg = rollDiceExpression(rollData.damageDice);
+      if (dmg.detail) {
+        damageParts.push(dmg.detail);
+      }
       damageTotal += dmg.total;
     }
 
     if (rollData.bonusDice) {
-      const bonus = rollDice(rollData.bonusDice);
-      damageParts.push(`${rollData.bonusDice} (${bonus.total})`);
+      const bonus = rollDiceExpression(rollData.bonusDice);
+      if (bonus.detail) {
+        damageParts.push(bonus.detail);
+      }
       damageTotal += bonus.total;
     }
 
     const mod = rollData.damageMod || 0;
     damageTotal += mod;
 
-    const modLabel = mod === 0 ? '' : ` ${mod > 0 ? '+' : '-'} ${Math.abs(mod)}`;
-    const damageDetail = `${damageParts.join(' + ')}${modLabel}`.trim();
+    let damageDetail = damageParts.join(' + ').trim();
+    if (mod !== 0) {
+      const modLabel = `${mod > 0 ? '+' : '-'} ${Math.abs(mod)}`;
+      damageDetail = damageDetail ? `${damageDetail} ${modLabel}` : modLabel;
+    }
+    if (!damageDetail) {
+      damageDetail = `${damageTotal}`;
+    }
 
     showRollModalWith(
       {
@@ -1075,6 +1341,36 @@ const UI = (function() {
       total += Math.floor(Math.random() * sides) + 1;
     }
     return { total };
+  }
+
+  function rollDiceExpression(expression) {
+    if (!expression) {
+      return { total: 0, detail: '' };
+    }
+    const parts = String(expression)
+      .split('+')
+      .map(part => part.trim())
+      .filter(Boolean);
+
+    let total = 0;
+    const detailParts = [];
+
+    parts.forEach(part => {
+      if (/^\d+d\d+$/i.test(part)) {
+        const result = rollDice(part);
+        total += result.total;
+        detailParts.push(`${part} (${result.total})`);
+      } else if (/^\d+$/i.test(part)) {
+        const value = parseInt(part, 10);
+        total += value;
+        detailParts.push(`${value}`);
+      }
+    });
+
+    return {
+      total,
+      detail: detailParts.join(' + ')
+    };
   }
 
   function rollSavingThrow(npc, abilityKey) {
@@ -1227,6 +1523,22 @@ const UI = (function() {
     return cachedTiers;
   }
 
+  async function getMonsters() {
+    if (cachedMonsters) {
+      return cachedMonsters;
+    }
+    cachedMonsters = await DataLoader.getMonsters();
+    return cachedMonsters;
+  }
+
+  async function getSpells() {
+    if (cachedSpells) {
+      return cachedSpells;
+    }
+    cachedSpells = await DataLoader.getSpells();
+    return cachedSpells;
+  }
+
   function getAbilityMods(npc) {
     if (npc.abilityMods) {
       return npc.abilityMods;
@@ -1236,6 +1548,196 @@ const UI = (function() {
     }
     const mods = { STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0 };
     return mods;
+  }
+
+  let monsterFiltersReady = false;
+  let spellFiltersReady = false;
+
+  function ensureMonsterFilters(monsters) {
+    if (monsterFiltersReady || !elements.monsterTypeFilter || !elements.monsterCrMin || !elements.monsterCrMax) {
+      return;
+    }
+
+    const typeSet = new Set();
+    const crMap = new Map();
+    monsters.forEach(monster => {
+      if (monster.type) {
+        typeSet.add(monster.type);
+      }
+      if (monster.challenge_rating !== undefined && monster.challenge_rating !== null) {
+        const label = String(monster.challenge_rating);
+        const value = parseChallengeRating(label);
+        if (!crMap.has(label)) {
+          crMap.set(label, value);
+        }
+      }
+    });
+
+    const types = Array.from(typeSet).sort((a, b) => a.localeCompare(b));
+    elements.monsterTypeFilter.innerHTML = `<option value="">All Types</option>${types.map(type => `<option value="${type}">${toTitleCase(type)}</option>`).join('')}`;
+
+    const crList = Array.from(crMap.entries())
+      .map(([label, value]) => ({ label, value }))
+      .sort((a, b) => a.value - b.value);
+
+    const crMinOptions = ['<option value="">CR Min</option>']
+      .concat(crList.map(cr => `<option value="${cr.value}">${cr.label}</option>`))
+      .join('');
+    const crMaxOptions = ['<option value="">CR Max</option>']
+      .concat(crList.map(cr => `<option value="${cr.value}">${cr.label}</option>`))
+      .join('');
+
+    elements.monsterCrMin.innerHTML = crMinOptions;
+    elements.monsterCrMax.innerHTML = crMaxOptions;
+    monsterFiltersReady = true;
+  }
+
+  function ensureSpellFilters(spells) {
+    if (spellFiltersReady || !elements.spellLevelFilter) {
+      return;
+    }
+
+    const levels = Array.from(new Set(spells.map(spell => spell.level)))
+      .filter(level => level !== undefined && level !== null)
+      .sort((a, b) => a - b);
+
+    const options = ['<option value="">All Levels</option>']
+      .concat(levels.map(level => `<option value="${level}">${formatSpellLevel(level)}</option>`))
+      .join('');
+
+    elements.spellLevelFilter.innerHTML = options;
+    spellFiltersReady = true;
+  }
+
+  function parseChallengeRating(cr) {
+    if (typeof cr === 'number') return cr;
+    if (!cr) return 0;
+    const value = String(cr).trim();
+    if (value.includes('/')) {
+      const [num, denom] = value.split('/').map(part => parseFloat(part));
+      if (!Number.isNaN(num) && !Number.isNaN(denom) && denom !== 0) {
+        return num / denom;
+      }
+    }
+    const parsed = parseFloat(value);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+
+  function getProficiencyBonusForCr(crValue) {
+    if (crValue >= 29) return 9;
+    if (crValue >= 25) return 8;
+    if (crValue >= 21) return 7;
+    if (crValue >= 17) return 6;
+    if (crValue >= 13) return 5;
+    if (crValue >= 9) return 4;
+    if (crValue >= 5) return 3;
+    return 2;
+  }
+
+  function formatMonsterTypeLine(monster) {
+    if (!monster) return '';
+    const size = monster.size ? String(monster.size) : '';
+    const type = monster.type ? toTitleCase(monster.type) : '';
+    const subtype = monster.subtype ? ` (${monster.subtype})` : '';
+    const alignment = monster.alignment ? String(monster.alignment) : '';
+    const base = `${size} ${type}${subtype}`.trim();
+    if (alignment) {
+      return `${base}, ${alignment}`;
+    }
+    return base;
+  }
+
+  function formatSpellLevel(level) {
+    if (Number(level) === 0) {
+      return 'Cantrip';
+    }
+    return `Level ${level}`;
+  }
+
+  function toTitleCase(value) {
+    if (!value) return '';
+    return String(value)
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }
+
+  function buildMonsterProfile(monster) {
+    const abilityScores = {
+      STR: monster.strength,
+      DEX: monster.dexterity,
+      CON: monster.constitution,
+      INT: monster.intelligence,
+      WIS: monster.wisdom,
+      CHA: monster.charisma
+    };
+
+    const abilityMods = Generator.getAbilityModsFromScores(abilityScores);
+    const saveProfs = [];
+    const savingThrows = {};
+    const saveMap = {
+      STR: 'strength_save',
+      DEX: 'dexterity_save',
+      CON: 'constitution_save',
+      INT: 'intelligence_save',
+      WIS: 'wisdom_save',
+      CHA: 'charisma_save'
+    };
+
+    Object.keys(saveMap).forEach(key => {
+      const field = saveMap[key];
+      const value = monster[field];
+      if (Number.isFinite(value)) {
+        savingThrows[key] = value;
+        saveProfs.push(key);
+      } else {
+        savingThrows[key] = abilityMods[key] || 0;
+      }
+    });
+
+    const crLabel = monster.challenge_rating !== undefined ? String(monster.challenge_rating) : '0';
+    const crValue = parseChallengeRating(crLabel);
+    const pb = getProficiencyBonusForCr(crValue);
+    const metaLine = `${formatMonsterTypeLine(monster)} \u00b7 PB ${formatSigned(pb)} \u00b7 CR ${crLabel}`;
+
+    return {
+      name: monster.name,
+      armorClass: monster.armor_class,
+      hitPoints: monster.hit_points,
+      speed: monster.speed,
+      initiative: abilityMods.DEX || 0,
+      proficiencyBonus: pb,
+      cr: crLabel,
+      metaLine,
+      abilityScores,
+      abilityMods,
+      savingThrowProficiencies: saveProfs,
+      savingThrows,
+      traits: mapMonsterEntries(monster.special_abilities),
+      actions: mapMonsterEntries(monster.actions, true),
+      reactions: mapMonsterEntries(monster.reactions, true)
+    };
+  }
+
+  function mapMonsterEntries(entries, includeRoll = false) {
+    if (!Array.isArray(entries)) return [];
+    return entries.map(entry => {
+      const item = {
+        name: entry.name || 'Feature',
+        text: entry.desc || ''
+      };
+
+      if (includeRoll && entry.damage_dice) {
+        item.roll = {
+          attackBonus: entry.attack_bonus || 0,
+          damageDice: entry.damage_dice,
+          bonusDice: null,
+          damageMod: entry.damage_bonus || 0
+        };
+      }
+
+      return item;
+    });
   }
 
   function computeSavingThrows(mods, saveProfs, pb) {
@@ -1304,3 +1806,7 @@ const UI = (function() {
     renderLibrary
   };
 })();
+
+
+
+

@@ -14,6 +14,8 @@ const DataLoader = (function() {
     actions: null,
     traits: null,
     reactions: null,
+    monsters: null,
+    spells: null,
     psych: {
       good: null,
       neutral: null,
@@ -137,6 +139,28 @@ const DataLoader = (function() {
   }
 
   /**
+   * Load monsters list
+   */
+  async function loadMonsters() {
+    if (cache.monsters) {
+      return cache.monsters;
+    }
+    cache.monsters = await fetchJSON('monsters_srd.json');
+    return cache.monsters;
+  }
+
+  /**
+   * Load spells list
+   */
+  async function loadSpells() {
+    if (cache.spells) {
+      return cache.spells;
+    }
+    cache.spells = await fetchJSON('spells_2024.json');
+    return cache.spells;
+  }
+
+  /**
    * Load psychological descriptions for an alignment
    */
   async function loadPsych(alignment) {
@@ -248,6 +272,20 @@ const DataLoader = (function() {
     return reactions.reactions;
   }
 
+  /**
+   * Get monsters list
+   */
+  async function getMonsters() {
+    return await loadMonsters();
+  }
+
+  /**
+   * Get spells list
+   */
+  async function getSpells() {
+    return await loadSpells();
+  }
+
   // Public API
   return {
     loadRaces,
@@ -259,6 +297,8 @@ const DataLoader = (function() {
     loadActions,
     loadTraits,
     loadReactions,
+    loadMonsters,
+    loadSpells,
     preloadAll,
     getRace,
     getAllRaces,
@@ -266,6 +306,8 @@ const DataLoader = (function() {
     getFaces,
     getActions,
     getTraits,
-    getReactions
+    getReactions,
+    getMonsters,
+    getSpells
   };
 })();

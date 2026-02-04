@@ -796,9 +796,78 @@ button {
 }
 
 /* ----------------------------------------
+   Library Tabs & Filters
+   ---------------------------------------- */
+.library-tabs {
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.library-tab {
+  flex: 1;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg-card);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm);
+  font-weight: 600;
+}
+
+.library-tab.active {
+  background-color: var(--color-accent);
+  color: #fff;
+  border-color: var(--color-accent);
+}
+
+.library-section {
+  display: none;
+}
+
+.library-section.active {
+  display: block;
+}
+
+.filter-bar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.filter-input,
+.filter-select {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm);
+  background-color: var(--color-bg-card);
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.filter-input:focus,
+.filter-select:focus {
+  outline: 2px solid var(--color-accent-light);
+  border-color: var(--color-accent-light);
+}
+
+@media (min-width: 420px) {
+  .filter-bar {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* ----------------------------------------
    Library List
    ---------------------------------------- */
 #library-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+#monster-list,
+#spell-list {
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
@@ -821,6 +890,10 @@ button {
 
 .npc-card:active {
   transform: scale(0.99);
+}
+
+.spell-card {
+  cursor: default;
 }
 
 .npc-card-content {

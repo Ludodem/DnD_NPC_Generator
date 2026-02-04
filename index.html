@@ -196,10 +196,50 @@
           <h1>Library</h1>
         </header>
         <div class="screen-content">
-          <div id="library-list"></div>
-          <div id="library-empty" class="empty-state">
-            <p>No saved NPCs yet</p>
-            <button id="btn-generate-first" class="btn btn-primary">Generate one</button>
+          <div class="library-tabs">
+            <button class="library-tab active" data-library="npcs">NPCs</button>
+            <button class="library-tab" data-library="monsters">Monsters</button>
+            <button class="library-tab" data-library="spells">Spells</button>
+          </div>
+
+          <div id="library-section-npcs" class="library-section active">
+            <div id="library-list"></div>
+            <div id="library-empty" class="empty-state">
+              <p>No saved NPCs yet</p>
+              <button id="btn-generate-first" class="btn btn-primary">Generate one</button>
+            </div>
+          </div>
+
+          <div id="library-section-monsters" class="library-section">
+            <div class="filter-bar">
+              <input id="monster-search" class="filter-input" type="search" placeholder="Search monsters...">
+              <select id="monster-type-filter" class="filter-select">
+                <option value="">All Types</option>
+              </select>
+              <select id="monster-cr-min" class="filter-select">
+                <option value="">CR Min</option>
+              </select>
+              <select id="monster-cr-max" class="filter-select">
+                <option value="">CR Max</option>
+              </select>
+            </div>
+            <div id="monster-list"></div>
+            <div id="monster-empty" class="empty-state hidden">
+              <p>No monsters match these filters</p>
+            </div>
+          </div>
+
+          <div id="library-section-spells" class="library-section">
+            <div class="filter-bar">
+              <input id="spell-search" class="filter-input" type="search" placeholder="Search spells...">
+              <select id="spell-level-filter" class="filter-select">
+                <option value="">All Levels</option>
+              </select>
+            </div>
+            <div id="spell-list"></div>
+            <div id="spell-empty" class="empty-state hidden">
+              <p>No spells match these filters</p>
+            </div>
           </div>
         </div>
       </section>
