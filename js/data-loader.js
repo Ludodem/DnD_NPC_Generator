@@ -14,6 +14,7 @@ const DataLoader = (function() {
     actions: null,
     traits: null,
     reactions: null,
+    conditions: null,
     monsters: null,
     spells: null,
     psych: {
@@ -139,6 +140,17 @@ const DataLoader = (function() {
   }
 
   /**
+   * Load conditions list
+   */
+  async function loadConditions() {
+    if (cache.conditions) {
+      return cache.conditions;
+    }
+    cache.conditions = await fetchJSON('conditions_2024.json');
+    return cache.conditions;
+  }
+
+  /**
    * Load monsters list
    */
   async function loadMonsters() {
@@ -197,6 +209,7 @@ const DataLoader = (function() {
     const actionsPromise = loadActions();
     const traitsPromise = loadTraits();
     const reactionsPromise = loadReactions();
+    const conditionsPromise = loadConditions();
 
     // Load all psych files
     const psychPromises = ['good', 'neutral', 'evil'].map(alignment => loadPsych(alignment));
@@ -209,6 +222,7 @@ const DataLoader = (function() {
       actionsPromise,
       traitsPromise,
       reactionsPromise,
+      conditionsPromise,
       ...psychPromises
     ]);
 
@@ -273,6 +287,13 @@ const DataLoader = (function() {
   }
 
   /**
+   * Get conditions list
+   */
+  async function getConditions() {
+    return await loadConditions();
+  }
+
+  /**
    * Get monsters list
    */
   async function getMonsters() {
@@ -297,6 +318,7 @@ const DataLoader = (function() {
     loadActions,
     loadTraits,
     loadReactions,
+    loadConditions,
     loadMonsters,
     loadSpells,
     preloadAll,
@@ -307,6 +329,7 @@ const DataLoader = (function() {
     getActions,
     getTraits,
     getReactions,
+    getConditions,
     getMonsters,
     getSpells
   };

@@ -1,0 +1,62 @@
+﻿[
+  {
+    "name": "Blinded",
+    "description": "You can't see. You fail checks that require sight. Attack rolls against you have advantage, and your attack rolls have disadvantage."
+  },
+  {
+    "name": "Charmed",
+    "description": "You can't attack the charmer or target them with harmful abilities or magic. The charmer has advantage on social checks to interact with you."
+  },
+  {
+    "name": "Deafened",
+    "description": "You can't hear, and you fail checks that require hearing."
+  },
+  {
+    "name": "Exhaustion",
+    "description": "Each level gives a -1 penalty to d20 tests (attack rolls, ability checks, and saving throws). At 6 levels, you die. A long rest can reduce exhaustion by 1 if you have food and water."
+  },
+  {
+    "name": "Frightened",
+    "description": "You have disadvantage on checks and attack rolls while the source of fear is in line of sight. You can't willingly move closer to it."
+  },
+  {
+    "name": "Grappled",
+    "description": "Your speed is 0 and you can't benefit from bonuses to speed. The condition ends if the grappler is incapacitated or you are moved out of their reach."
+  },
+  {
+    "name": "Incapacitated",
+    "description": "You can't take actions or reactions. You can't concentrate, and you can't speak."
+  },
+  {
+    "name": "Invisible",
+    "description": "You are impossible to see without special senses. You have advantage on attack rolls, and attack rolls against you have disadvantage."
+  },
+  {
+    "name": "Paralyzed",
+    "description": "You are incapacitated and can't move or speak. You automatically fail Strength and Dexterity saves. Attack rolls against you have advantage, and any hit from within 5 feet is a critical hit."
+  },
+  {
+    "name": "Petrified",
+    "description": "You are transformed into inanimate stone and are incapacitated. You are unaware of your surroundings. Attack rolls against you have advantage."
+  },
+  {
+    "name": "Poisoned",
+    "description": "You have disadvantage on attack rolls and ability checks."
+  },
+  {
+    "name": "Prone",
+    "description": "Your only movement option is to crawl unless you stand up. Attack rolls against you have advantage if within 5 feet, otherwise they have disadvantage. Your attack rolls have disadvantage."
+  },
+  {
+    "name": "Restrained",
+    "description": "Your speed is 0 and you can't benefit from bonuses to speed. Attack rolls against you have advantage, and your attack rolls have disadvantage. You have disadvantage on Dexterity saves."
+  },
+  {
+    "name": "Stunned",
+    "description": "You are incapacitated and can't move, and you can speak only falteringly. You automatically fail Strength and Dexterity saves. Attack rolls against you have advantage."
+  },
+  {
+    "name": "Unconscious",
+    "description": "You are incapacitated, can't move or speak, and are unaware. You drop whatever you're holding and fall prone. You automatically fail Strength and Dexterity saves. Attack rolls against you have advantage, and any hit from within 5 feet is a critical hit."
+  }
+]

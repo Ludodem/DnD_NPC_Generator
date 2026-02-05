@@ -22,7 +22,10 @@ const UI = (function() {
   let cachedMonsters = null;
   let cachedSpells = null;
   let spellIndex = null;
-  let spellRegex = null;
+  let conditionIndex = null;
+  let referenceRegex = null;
+  let spellNames = [];
+  let conditionNames = [];
   let libraryTab = 'npcs';
 
   // DOM element cache
@@ -183,6 +186,11 @@ const UI = (function() {
     elements.spellTitle = document.getElementById('spell-title');
     elements.spellMeta = document.getElementById('spell-meta');
     elements.spellDetails = document.getElementById('spell-details');
+
+    // Condition modal
+    elements.conditionModal = document.getElementById('condition-modal');
+    elements.conditionTitle = document.getElementById('condition-title');
+    elements.conditionDescription = document.getElementById('condition-description');
   }
 
   /**
@@ -577,6 +585,7 @@ const UI = (function() {
     setupMonsterFilters();
     setupSpellFilters();
     void prepareSpellIndex();
+    void prepareConditionIndex();
 
     const saveDetailNotes = debounce(() => {
       if (!viewingNpcId) return;
@@ -610,7 +619,7 @@ const UI = (function() {
       });
     });
 
-    document.addEventListener('click', handleSpellLinkClick);
+    document.addEventListener('click', handleReferenceLinkClick);
   }
 
   /**
@@ -1222,7 +1231,7 @@ const UI = (function() {
     try {
       const spells = await getSpells();
       buildSpellIndex(spells);
-      refreshSpellLinks();
+      refreshReferenceLinks();
     } catch (error) {
       console.warn('Unable to load spells:', error);
     }
@@ -1238,19 +1247,56 @@ const UI = (function() {
       names.push(spell.name);
     });
 
-    if (names.length === 0) {
-      spellRegex = null;
+    spellNames = names.slice();
+    updateReferenceRegex();
+  }
+
+  async function prepareConditionIndex() {
+    if (conditionIndex) {
       return;
     }
+    try {
+      const conditions = await DataLoader.getConditions();
+      buildConditionIndex(conditions);
+      refreshReferenceLinks();
+    } catch (error) {
+      console.warn('Unable to load conditions:', error);
+    }
+  }
 
-    const escaped = names
+  function buildConditionIndex(conditions) {
+    conditionIndex = new Map();
+    const names = [];
+    conditions.forEach(condition => {
+      if (!condition || !condition.name) return;
+      const key = normalizeSpellKey(condition.name);
+      conditionIndex.set(key, condition);
+      names.push(condition.name);
+    });
+    conditionNames = names.slice();
+    updateReferenceRegex();
+  }
+
+  function updateReferenceRegex() {
+    const combined = [];
+    if (spellNames && spellNames.length > 0) {
+      combined.push(...spellNames);
+    }
+    if (conditionNames && conditionNames.length > 0) {
+      combined.push(...conditionNames);
+    }
+    if (combined.length === 0) {
+      referenceRegex = null;
+      return;
+    }
+    const escaped = combined
       .sort((a, b) => b.length - a.length)
       .map(name => escapeRegExp(name));
     const pattern = `\\b(${escaped.join('|')})\\b`;
-    spellRegex = new RegExp(pattern, 'gi');
+    referenceRegex = new RegExp(pattern, 'gi');
   }
 
-  function refreshSpellLinks() {
+  function refreshReferenceLinks() {
     if (currentNpc) {
       renderStatBlock(elements.resultStatblock, currentNpc);
     }
@@ -1264,29 +1310,46 @@ const UI = (function() {
     }
   }
 
-  function linkifySpellText(text) {
-    if (!text || !spellRegex || !spellIndex) {
+  function linkifyText(text) {
+    if (!text || !referenceRegex) {
       return text || '';
     }
 
-    return String(text).replace(spellRegex, match => {
+    return String(text).replace(referenceRegex, match => {
       const key = normalizeSpellKey(match);
-      if (!spellIndex.has(key)) {
-        return match;
+      if (spellIndex && spellIndex.has(key)) {
+        const safe = escapeAttribute(match);
+        return `<button class="spell-link" type="button" data-spell="${safe}">${match}</button>`;
       }
-      const safe = escapeAttribute(match);
-      return `<button class="spell-link" type="button" data-spell="${safe}">${match}</button>`;
+      if (conditionIndex && conditionIndex.has(key)) {
+        const safe = escapeAttribute(match);
+        return `<button class="condition-link" type="button" data-condition="${safe}">${match}</button>`;
+      }
+      return match;
     });
   }
 
-  function handleSpellLinkClick(event) {
-    const button = event.target.closest('.spell-link');
-    if (!button) return;
-    event.preventDefault();
-    event.stopPropagation();
-    const spellName = button.dataset.spell;
-    if (!spellName) return;
-    void openSpellModalByName(spellName);
+  function handleReferenceLinkClick(event) {
+    const spellButton = event.target.closest('.spell-link');
+    if (spellButton) {
+      event.preventDefault();
+      event.stopPropagation();
+      const spellName = spellButton.dataset.spell;
+      if (spellName) {
+        void openSpellModalByName(spellName);
+      }
+      return;
+    }
+
+    const conditionButton = event.target.closest('.condition-link');
+    if (conditionButton) {
+      event.preventDefault();
+      event.stopPropagation();
+      const conditionName = conditionButton.dataset.condition;
+      if (conditionName) {
+        void openConditionModalByName(conditionName);
+      }
+    }
   }
 
   async function openSpellModalByName(name) {
@@ -1363,6 +1426,53 @@ const UI = (function() {
     if (!elements.spellModal) return;
     elements.spellModal.classList.add('hidden');
     spellModalOpen = false;
+  }
+
+  let conditionModalOpen = false;
+
+  async function openConditionModalByName(name) {
+    if (!conditionIndex) {
+      await prepareConditionIndex();
+    }
+    if (!conditionIndex) {
+      showToast('Conditions not loaded yet');
+      return;
+    }
+    const key = normalizeSpellKey(name);
+    const condition = conditionIndex.get(key);
+    if (!condition) {
+      showToast('Condition not found');
+      return;
+    }
+    showConditionModal(condition);
+  }
+
+  function showConditionModal(condition) {
+    if (!elements.conditionModal || !condition) return;
+    elements.conditionTitle.textContent = condition.name;
+    elements.conditionDescription.textContent = condition.description || '';
+
+    elements.conditionModal.classList.remove('hidden');
+    conditionModalOpen = true;
+    setTimeout(() => {
+      document.addEventListener('click', handleConditionOutsideClick, { once: true });
+    }, 0);
+  }
+
+  function handleConditionOutsideClick(event) {
+    if (!conditionModalOpen) return;
+    const content = elements.conditionModal.querySelector('.modal-content');
+    if (content && content.contains(event.target)) {
+      document.addEventListener('click', handleConditionOutsideClick, { once: true });
+      return;
+    }
+    hideConditionModal();
+  }
+
+  function hideConditionModal() {
+    if (!elements.conditionModal) return;
+    elements.conditionModal.classList.add('hidden');
+    conditionModalOpen = false;
   }
 
   function formatComponents(components) {
@@ -1447,7 +1557,7 @@ const UI = (function() {
     }
     container.innerHTML = items.map(item => `
       <div class="statblock-entry">
-        <span class="entry-name">${item.name}.</span> ${linkifySpellText(item.text)}
+        <span class="entry-name">${item.name}.</span> ${linkifyText(item.text)}
       </div>
     `).join('');
   }
@@ -1464,7 +1574,7 @@ const UI = (function() {
       return `
         <div class="statblock-entry statblock-action" data-roll='${item.roll ? JSON.stringify(item.roll) : ''}'>
           <div class="statblock-action-text">
-            <span class="entry-name">${item.name}.</span> ${linkifySpellText(item.text)}
+            <span class="entry-name">${item.name}.</span> ${linkifyText(item.text)}
           </div>
           ${rollButton}
         </div>
@@ -1753,6 +1863,13 @@ const UI = (function() {
     }
     cachedSpells = await DataLoader.getSpells();
     return cachedSpells;
+  }
+
+  async function getConditions() {
+    if (conditionIndex) {
+      return Array.from(conditionIndex.values());
+    }
+    return await DataLoader.getConditions();
   }
 
   function getAbilityMods(npc) {

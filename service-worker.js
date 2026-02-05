@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = 'npc-gen-v23';
+﻿const CACHE_NAME = 'npc-gen-v24';
 
 const ASSETS = [
   './',
@@ -26,6 +26,7 @@ const ASSETS = [
   './data/psych_evil.json',
   './data/monsters_srd.json',
   './data/spells_2024.json',
+  './data/conditions_2024.json',
   './data/faces/face_01.png',
   './data/faces/face_02.png',
   './data/faces/face_03.png',
@@ -112,6 +113,7 @@ self.addEventListener('fetch', event => {
     })
   );
 });
+
 
 
 
