@@ -1530,12 +1530,75 @@ const UI = (function() {
     return `Spell DC ${values.saveDc} \u00b7 Spell Attack ${formatSigned(values.attackBonus)}`;
   }
 
-  function buildMetaLines(primary, secondary = null) {
-    const lines = [`<div class="statblock-meta-line">${primary}</div>`];
-    if (secondary) {
-      lines.push(`<div class="statblock-meta-line statblock-meta-spell">${secondary}</div>`);
+  function buildMetaLines(lines) {
+    const items = Array.isArray(lines) ? lines.filter(Boolean) : [lines].filter(Boolean);
+    return items.map(line => {
+      const spellClass = String(line).startsWith('Spell DC') ? ' statblock-meta-spell' : '';
+      return `<div class="statblock-meta-line${spellClass}">${line}</div>`;
+    }).join('');
+  }
+
+  function getXpLine(crValue) {
+    const xp = getXpForCr(crValue);
+    if (!xp) return null;
+    return `XP ${formatNumber(xp)}`;
+  }
+
+  function getXpForCr(crValue) {
+    const table = [
+      { cr: 0, label: '0', xp: 10 },
+      { cr: 0.125, label: '1/8', xp: 25 },
+      { cr: 0.25, label: '1/4', xp: 50 },
+      { cr: 0.5, label: '1/2', xp: 100 },
+      { cr: 1, label: '1', xp: 200 },
+      { cr: 2, label: '2', xp: 450 },
+      { cr: 3, label: '3', xp: 700 },
+      { cr: 4, label: '4', xp: 1100 },
+      { cr: 5, label: '5', xp: 1800 },
+      { cr: 6, label: '6', xp: 2300 },
+      { cr: 7, label: '7', xp: 2900 },
+      { cr: 8, label: '8', xp: 3900 },
+      { cr: 9, label: '9', xp: 5000 },
+      { cr: 10, label: '10', xp: 5900 },
+      { cr: 11, label: '11', xp: 7200 },
+      { cr: 12, label: '12', xp: 8400 },
+      { cr: 13, label: '13', xp: 10000 },
+      { cr: 14, label: '14', xp: 11500 },
+      { cr: 15, label: '15', xp: 13000 },
+      { cr: 16, label: '16', xp: 15000 },
+      { cr: 17, label: '17', xp: 18000 },
+      { cr: 18, label: '18', xp: 20000 },
+      { cr: 19, label: '19', xp: 22000 },
+      { cr: 20, label: '20', xp: 25000 },
+      { cr: 21, label: '21', xp: 33000 },
+      { cr: 22, label: '22', xp: 41000 },
+      { cr: 23, label: '23', xp: 50000 },
+      { cr: 24, label: '24', xp: 62000 },
+      { cr: 25, label: '25', xp: 75000 },
+      { cr: 26, label: '26', xp: 90000 },
+      { cr: 27, label: '27', xp: 105000 },
+      { cr: 28, label: '28', xp: 120000 },
+      { cr: 29, label: '29', xp: 135000 },
+      { cr: 30, label: '30', xp: 155000 }
+    ];
+
+    if (crValue === undefined || crValue === null) {
+      return null;
     }
-    return lines.join('');
+
+    const label = String(crValue);
+    const byLabel = table.find(entry => entry.label === label);
+    if (byLabel) {
+      return byLabel.xp;
+    }
+
+    const numeric = parseChallengeRating(label);
+    const match = table.find(entry => Math.abs(entry.cr - numeric) < 0.001);
+    return match ? match.xp : null;
+  }
+
+  function formatNumber(value) {
+    return Number(value).toLocaleString('en-US');
   }
 
   function buildSpellAction(spell, npc) {
@@ -1718,8 +1781,9 @@ const UI = (function() {
 
     if (target.meta) {
       const metaLine = npc.metaLine || `PB ${formatSigned(pb)} \u00b7 CR ${cr}`;
+      const xpLine = getXpLine(cr);
       const spellMeta = spellActions.length > 0 ? getSpellcastingMeta(npc) : null;
-      target.meta.innerHTML = buildMetaLines(metaLine, spellMeta);
+      target.meta.innerHTML = buildMetaLines([metaLine, xpLine, spellMeta]);
     }
   }
 
