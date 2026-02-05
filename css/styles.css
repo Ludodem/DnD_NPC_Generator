@@ -629,6 +629,26 @@ button {
   margin-bottom: var(--space-sm);
 }
 
+.statblock-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.statblock-toggle {
+  border: none;
+  background: none;
+  color: var(--color-accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.statblock-toggle:active {
+  color: var(--color-accent-hover);
+}
+
 .statblock-list {
   display: flex;
   flex-direction: column;
@@ -659,6 +679,17 @@ button {
 
 .statblock-action-text {
   flex: 1;
+}
+
+.spell-entry-meta {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin: 2px 0 4px;
+}
+
+.spell-entry-text {
+  display: block;
 }
 
 .action-roll {

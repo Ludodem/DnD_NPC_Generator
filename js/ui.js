@@ -85,6 +85,7 @@ const UI = (function() {
     elements.resultTabs = document.querySelectorAll('#screen-result .view-tab');
     elements.resultTabContents = document.querySelectorAll('#screen-result .view-tab-content');
     elements.resultStatblock = {
+      key: 'result',
       ac: document.getElementById('result-statblock-ac'),
       hp: document.getElementById('result-statblock-hp'),
       speed: document.getElementById('result-statblock-speed'),
@@ -93,6 +94,9 @@ const UI = (function() {
       abilities: document.getElementById('result-statblock-abilities'),
       traits: document.getElementById('result-statblock-traits'),
       actions: document.getElementById('result-statblock-actions'),
+      spellsSection: document.getElementById('result-statblock-spells-section'),
+      spellsToggle: document.getElementById('result-statblock-spells-toggle'),
+      spells: document.getElementById('result-statblock-spells'),
       reactions: document.getElementById('result-statblock-reactions')
     };
     elements.btnBack = document.getElementById('btn-back');
@@ -142,6 +146,7 @@ const UI = (function() {
     elements.detailOverviewContent = document.querySelector('#screen-library-detail .view-tab-content[data-tab="overview"]');
     elements.detailStatblockContent = document.querySelector('#screen-library-detail .view-tab-content[data-tab="statblock"]');
     elements.detailStatblock = {
+      key: 'detail',
       ac: document.getElementById('detail-statblock-ac'),
       hp: document.getElementById('detail-statblock-hp'),
       speed: document.getElementById('detail-statblock-speed'),
@@ -150,6 +155,9 @@ const UI = (function() {
       abilities: document.getElementById('detail-statblock-abilities'),
       traits: document.getElementById('detail-statblock-traits'),
       actions: document.getElementById('detail-statblock-actions'),
+      spellsSection: document.getElementById('detail-statblock-spells-section'),
+      spellsToggle: document.getElementById('detail-statblock-spells-toggle'),
+      spells: document.getElementById('detail-statblock-spells'),
       reactions: document.getElementById('detail-statblock-reactions')
     };
     elements.btnBackLibrary = document.getElementById('btn-back-library');
@@ -1484,6 +1492,155 @@ const UI = (function() {
     return String(name || '').trim().toLowerCase();
   }
 
+  function deriveSpellActions(npc) {
+    if (!spellIndex || !referenceRegex) {
+      return [];
+    }
+    const texts = [];
+    (npc.traits || []).forEach(item => {
+      if (item && item.text) texts.push(item.text);
+    });
+    (npc.actions || []).forEach(item => {
+      if (item && item.text) texts.push(item.text);
+    });
+    (npc.reactions || []).forEach(item => {
+      if (item && item.text) texts.push(item.text);
+    });
+
+    const found = new Map();
+    texts.forEach(text => {
+      if (!text) return;
+      const regex = new RegExp(referenceRegex.source, 'gi');
+      let match = null;
+      while ((match = regex.exec(text)) !== null) {
+        const key = normalizeSpellKey(match[0]);
+        if (spellIndex.has(key)) {
+          const spell = spellIndex.get(key);
+          found.set(key, spell);
+        }
+      }
+    });
+
+    const spells = Array.from(found.values());
+    return spells.map(spell => buildSpellAction(spell, npc));
+  }
+
+  function buildSpellAction(spell, npc) {
+    const summary = getFirstSentence(spell.description || '');
+    const metaParts = [
+      formatSpellLevel(spell.level),
+      toTitleCase(spell.school),
+      toTitleCase(spell.actionType)
+    ];
+    const rollInfo = buildSpellRollInfo(spell, npc);
+    if (rollInfo.meta) {
+      metaParts.push(rollInfo.meta);
+    }
+
+    return {
+      name: spell.name,
+      text: summary,
+      meta: metaParts.filter(Boolean).join(' \u00b7 '),
+      roll: rollInfo.roll
+    };
+  }
+
+  function buildSpellRollInfo(spell, npc) {
+    if (!spell || !spell.description) {
+      return { roll: null, meta: null };
+    }
+    const description = spell.description;
+    const lower = description.toLowerCase();
+    const hasSpellAttack = lower.includes('spell attack');
+    const hasSave = lower.includes('saving throw');
+
+    const { attackBonus, saveDc } = computeSpellAttackValues(npc);
+    const metaParts = [];
+    if (hasSpellAttack) {
+      metaParts.push(`Attack ${formatSigned(attackBonus)}`);
+    } else if (hasSave) {
+      metaParts.push(`Save DC ${saveDc}`);
+    }
+
+    const damageDice = extractDamageDice(description);
+    if (hasSpellAttack && damageDice) {
+      return {
+        roll: {
+          attackBonus: attackBonus,
+          damageDice: damageDice,
+          bonusDice: null,
+          damageMod: 0
+        },
+        meta: metaParts.join(' \u00b7 ')
+      };
+    }
+
+    return {
+      roll: null,
+      meta: metaParts.join(' \u00b7 ')
+    };
+  }
+
+  function extractDamageDice(text) {
+    if (!text) return null;
+    const regex = /\b\d+d\d+(?:\s*\+\s*\d+)?\b/gi;
+    const parts = [];
+    let match = null;
+    while ((match = regex.exec(text)) !== null) {
+      parts.push(match[0]);
+    }
+    if (parts.length === 0) {
+      return null;
+    }
+    return parts.join(' + ');
+  }
+
+  function computeSpellAttackValues(npc) {
+    const mods = getAbilityMods(npc);
+    const pb = npc.proficiencyBonus || 0;
+    const ability = getSpellcastingAbility(npc, mods);
+    const mod = mods[ability] || 0;
+    return {
+      attackBonus: mod + pb,
+      saveDc: 8 + mod + pb
+    };
+  }
+
+  function getSpellcastingAbility(npc, mods) {
+    if (npc && npc.spellcastingAbility) {
+      return npc.spellcastingAbility;
+    }
+    if (npc && npc.archetype === 'cleric') {
+      return 'WIS';
+    }
+    if (npc && npc.archetype === 'caster') {
+      return 'INT';
+    }
+    if (npc && npc.archetype === 'rogue') {
+      return 'INT';
+    }
+    const mental = ['INT', 'WIS', 'CHA'];
+    let best = 'INT';
+    let bestValue = -999;
+    mental.forEach(key => {
+      const value = mods[key] !== undefined ? mods[key] : 0;
+      if (value > bestValue) {
+        bestValue = value;
+        best = key;
+      }
+    });
+    return best;
+  }
+
+  function getFirstSentence(text) {
+    if (!text) return '';
+    const match = String(text).match(/(.+?[.!?])(\s|$)/);
+    if (match) {
+      return match[1];
+    }
+    return text;
+  }
+
   function escapeRegExp(value) {
     return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
@@ -1546,6 +1703,7 @@ const UI = (function() {
 
     renderEntryList(target.traits, npc.traits);
     renderActionList(target.actions, npc.actions);
+    renderSpellActions(target, npc);
     renderEntryList(target.reactions, npc.reactions);
   }
 
@@ -1581,6 +1739,69 @@ const UI = (function() {
       `;
     }).join('');
 
+    bindActionRolls(container);
+  }
+
+  const spellSectionExpanded = {
+    result: false,
+    detail: false
+  };
+
+  function renderSpellActions(target, npc) {
+    if (!target || !target.spellsSection || !target.spells) return;
+
+    const spells = deriveSpellActions(npc);
+    if (!spells || spells.length === 0) {
+      target.spellsSection.classList.add('hidden');
+      return;
+    }
+
+    target.spellsSection.classList.remove('hidden');
+    target.currentNpcRef = npc;
+    const key = target.key || 'result';
+    const expanded = spellSectionExpanded[key] === true;
+    const visibleCount = expanded ? spells.length : Math.min(3, spells.length);
+    const visible = spells.slice(0, visibleCount);
+
+    target.spells.innerHTML = visible.map(spell => {
+      const rollButton = spell.roll ? `<button class="action-roll" type="button">Roll</button>` : '';
+      const meta = spell.meta ? `<div class="spell-entry-meta">${spell.meta}</div>` : '';
+      return `
+        <div class="statblock-entry statblock-action" data-roll='${spell.roll ? JSON.stringify(spell.roll) : ''}'>
+          <div class="statblock-action-text">
+            <span class="entry-name">${spell.name}.</span>
+            ${meta}
+            <div class="spell-entry-text">${linkifyText(spell.text)}</div>
+          </div>
+          ${rollButton}
+        </div>
+      `;
+    }).join('');
+
+    bindActionRolls(target.spells);
+
+    if (target.spellsToggle) {
+      if (!target.spellsToggle.dataset.bound) {
+        target.spellsToggle.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const targetKey = target.key || 'result';
+          spellSectionExpanded[targetKey] = !spellSectionExpanded[targetKey];
+          renderSpellActions(target, target.currentNpcRef);
+        });
+        target.spellsToggle.dataset.bound = 'true';
+      }
+
+      if (spells.length <= 3) {
+        target.spellsToggle.classList.add('hidden');
+      } else {
+        target.spellsToggle.classList.remove('hidden');
+        target.spellsToggle.textContent = expanded ? 'Show less' : `Show all (${spells.length})`;
+      }
+    }
+  }
+
+  function bindActionRolls(container) {
     container.querySelectorAll('.action-roll').forEach(button => {
       button.addEventListener('click', (event) => {
         event.preventDefault();
