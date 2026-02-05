@@ -692,6 +692,10 @@ button {
   display: block;
 }
 
+.spell-entry-link {
+  font-weight: 700;
+}
+
 .action-roll {
   border: none;
   background-color: #3a2a18;

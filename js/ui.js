@@ -1766,10 +1766,13 @@ const UI = (function() {
     target.spells.innerHTML = visible.map(spell => {
       const rollButton = spell.roll ? `<button class="action-roll" type="button">Roll</button>` : '';
       const meta = spell.meta ? `<div class="spell-entry-meta">${spell.meta}</div>` : '';
+      const safeName = escapeAttribute(spell.name);
       return `
         <div class="statblock-entry statblock-action" data-roll='${spell.roll ? JSON.stringify(spell.roll) : ''}'>
           <div class="statblock-action-text">
-            <span class="entry-name">${spell.name}.</span>
+            <span class="entry-name">
+              <button class="spell-link spell-entry-link" type="button" data-spell="${safeName}">${spell.name}</button>.
+            </span>
             ${meta}
             <div class="spell-entry-text">${linkifyText(spell.text)}</div>
           </div>
