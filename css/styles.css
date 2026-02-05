@@ -561,6 +561,7 @@ button {
 
 .statblock-abilities {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-xs);
 }
 
@@ -614,6 +615,12 @@ button {
 
 .statblock-ability-row.proficient .statblock-save {
   background-color: var(--color-accent);
+}
+
+@media (max-width: 360px) {
+  .statblock-abilities {
+    grid-template-columns: 1fr;
+  }
 }
 
 .statblock-section h2 {
