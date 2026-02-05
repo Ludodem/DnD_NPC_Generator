@@ -557,6 +557,18 @@ button {
   text-align: center;
   color: var(--color-text-muted);
   font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.statblock-meta-line {
+  line-height: 1.3;
+}
+
+.statblock-meta-spell {
+  color: var(--color-accent);
+  font-weight: 600;
 }
 
 .statblock-abilities {

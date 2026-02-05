@@ -1525,6 +1525,19 @@ const UI = (function() {
     return spells.map(spell => buildSpellAction(spell, npc));
   }
 
+  function getSpellcastingMeta(npc) {
+    const values = computeSpellAttackValues(npc);
+    return `Spell DC ${values.saveDc} \u00b7 Spell Attack ${formatSigned(values.attackBonus)}`;
+  }
+
+  function buildMetaLines(primary, secondary = null) {
+    const lines = [`<div class="statblock-meta-line">${primary}</div>`];
+    if (secondary) {
+      lines.push(`<div class="statblock-meta-line statblock-meta-spell">${secondary}</div>`);
+    }
+    return lines.join('');
+  }
+
   function buildSpellAction(spell, npc) {
     const summary = getFirstSentence(spell.description || '');
     const metaParts = [
@@ -1663,10 +1676,6 @@ const UI = (function() {
     if (target.hp) target.hp.textContent = npc.hitPoints || 0;
     if (target.speed) target.speed.textContent = npc.speed || '30 ft.';
     if (target.init) target.init.textContent = formatSigned(npc.initiative || 0);
-    if (target.meta) {
-      const metaLine = npc.metaLine || `PB ${formatSigned(pb)} \u00b7 CR ${cr}`;
-      target.meta.textContent = metaLine;
-    }
 
     if (target.abilities) {
       const mods = getAbilityMods(npc);
@@ -1703,8 +1712,15 @@ const UI = (function() {
 
     renderEntryList(target.traits, npc.traits);
     renderActionList(target.actions, npc.actions);
-    renderSpellActions(target, npc);
+    const spellActions = deriveSpellActions(npc);
+    renderSpellActions(target, npc, spellActions);
     renderEntryList(target.reactions, npc.reactions);
+
+    if (target.meta) {
+      const metaLine = npc.metaLine || `PB ${formatSigned(pb)} \u00b7 CR ${cr}`;
+      const spellMeta = spellActions.length > 0 ? getSpellcastingMeta(npc) : null;
+      target.meta.innerHTML = buildMetaLines(metaLine, spellMeta);
+    }
   }
 
   function renderEntryList(container, items) {
@@ -1747,10 +1763,10 @@ const UI = (function() {
     detail: false
   };
 
-  function renderSpellActions(target, npc) {
+  function renderSpellActions(target, npc, spellActions = null) {
     if (!target || !target.spellsSection || !target.spells) return;
 
-    const spells = deriveSpellActions(npc);
+    const spells = spellActions || deriveSpellActions(npc);
     if (!spells || spells.length === 0) {
       target.spellsSection.classList.add('hidden');
       return;
