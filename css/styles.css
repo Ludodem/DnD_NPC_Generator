@@ -1,4 +1,4 @@
-/* ========================================
+﻿/* ========================================
    D&D NPC Generator - Styles
    Clean Fantasy Theme
    ======================================== */
@@ -208,25 +208,32 @@ button {
   margin: 0 auto;
 }
 
-#screen-result .screen-header,
-#screen-library-detail .screen-header {
+.screen-header.with-back {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  align-items: center;
+}
+
+.screen-header.with-back .btn-icon {
+  justify-self: start;
+}
+
+.screen-header.with-back .title-box {
+  display: flex;
+  align-items: center;
   justify-content: center;
-  position: relative;
+  min-width: 0;
+}
+
+.screen-header.with-back .title-box h1 {
+  width: 100%;
   text-align: center;
 }
 
 #screen-library .screen-header {
   justify-content: center;
   text-align: center;
-}
-
-#screen-result .screen-header .btn-icon,
-#screen-library-detail .screen-header .btn-icon {
-  position: absolute;
-  left: var(--space-md);
-}
-
-.screen-content {
+}.screen-content {
   flex: 1;
   padding: var(--space-md);
   overflow-y: auto;
@@ -1140,3 +1147,4 @@ button {
 .btn-saved:hover {
   background-color: var(--color-success);
 }
+
