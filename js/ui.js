@@ -40,6 +40,7 @@ const UI = (function() {
     setupGeneratorScreen();
     setupResultScreen();
     setupLibraryScreen();
+    setupScenariosScreen();
     setupModal();
     setupViewTabs();
 
@@ -60,7 +61,9 @@ const UI = (function() {
       generator: document.getElementById('screen-generator'),
       result: document.getElementById('screen-result'),
       library: document.getElementById('screen-library'),
-      libraryDetail: document.getElementById('screen-library-detail')
+      libraryDetail: document.getElementById('screen-library-detail'),
+      scenarios: document.getElementById('screen-scenarios'),
+      scenarioDetail: document.getElementById('screen-scenario-detail')
     };
 
     // Generator
@@ -199,6 +202,15 @@ const UI = (function() {
     elements.conditionModal = document.getElementById('condition-modal');
     elements.conditionTitle = document.getElementById('condition-title');
     elements.conditionDescription = document.getElementById('condition-description');
+
+    // Scenarios
+    elements.scenarioList = document.getElementById('scenario-list');
+    elements.scenarioEmpty = document.getElementById('scenario-empty');
+    elements.btnNewScenario = document.getElementById('btn-new-scenario');
+    elements.btnNewScenarioEmpty = document.getElementById('btn-new-scenario-empty');
+    elements.btnBackScenario = document.getElementById('btn-back-scenario');
+    elements.scenarioDetailHeading = document.getElementById('scenario-detail-heading');
+    elements.scenarioDetailContent = document.getElementById('scenario-detail-content');
   }
 
   /**
@@ -215,6 +227,9 @@ const UI = (function() {
         if (screen === 'library') {
           showScreen('library');
           renderActiveLibrarySection();
+        } else if (screen === 'scenarios') {
+          showScreen('scenarios');
+          renderScenarioList();
         } else {
           showScreen(screen);
         }
@@ -232,7 +247,9 @@ const UI = (function() {
       'generator': 'generator',
       'result': 'generator',
       'library': 'library',
-      'libraryDetail': 'library'
+      'libraryDetail': 'library',
+      'scenarios': 'scenarios',
+      'scenarioDetail': 'scenarios'
     };
 
     const navTarget = navMap[activeScreen] || activeScreen;
@@ -550,6 +567,39 @@ const UI = (function() {
     } else {
       showToast(result.error || 'Failed to save NPC');
     }
+  }
+
+  /**
+   * Set up scenarios screen (skeleton — editor wired in later commit)
+   */
+  function setupScenariosScreen() {
+    const openNew = () => openScenarioDetail(null);
+    if (elements.btnNewScenario) elements.btnNewScenario.addEventListener('click', openNew);
+    if (elements.btnNewScenarioEmpty) elements.btnNewScenarioEmpty.addEventListener('click', openNew);
+    if (elements.btnBackScenario) {
+      elements.btnBackScenario.addEventListener('click', () => {
+        showScreen('scenarios');
+        renderScenarioList();
+      });
+    }
+  }
+
+  /**
+   * Render the scenarios list (placeholder until storage module lands)
+   */
+  function renderScenarioList() {
+    const hasScenarios = false; // TODO: wire to Scenarios.getAll() in next commit
+    elements.scenarioList.innerHTML = '';
+    elements.scenarioEmpty.classList.toggle('hidden', hasScenarios);
+  }
+
+  /**
+   * Open a scenario in the detail screen (null = new)
+   */
+  function openScenarioDetail(scenarioId) {
+    elements.scenarioDetailHeading.textContent = scenarioId ? 'Edit Scenario' : 'New Scenario';
+    showScreen('scenarioDetail');
+    updateNavigation('scenarioDetail');
   }
 
   /**

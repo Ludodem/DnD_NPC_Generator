@@ -1202,3 +1202,19 @@ button {
   background-color: var(--color-success);
 }
 
+/* ----------------------------------------
+   Scenarios
+   ---------------------------------------- */
+.scenarios-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--space-md);
+}
+
+.placeholder-text {
+  color: var(--color-text-muted, #6b6258);
+  font-style: italic;
+  text-align: center;
+  padding: var(--space-lg) var(--space-md);
+}
+

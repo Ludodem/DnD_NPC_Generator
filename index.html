@@ -33,6 +33,10 @@
         <span class="nav-icon">&#128214;</span>
         <span class="nav-label">Library</span>
       </button>
+      <button class="nav-btn" data-screen="scenarios">
+        <span class="nav-icon">&#x1F4DC;</span>
+        <span class="nav-label">Scenarios</span>
+      </button>
       <button class="nav-btn" data-action="settings" aria-label="Settings">
         <span class="nav-icon">&#9881;</span>
         <span class="nav-label">Settings</span>
@@ -395,6 +399,38 @@
                 <div id="detail-statblock-reactions" class="statblock-list"></div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Scenarios Screen -->
+      <section id="screen-scenarios" class="screen">
+        <header class="screen-header">
+          <h1>Scenarios</h1>
+        </header>
+        <div class="screen-content">
+          <div class="scenarios-toolbar">
+            <button id="btn-new-scenario" class="btn btn-primary">+ New Scenario</button>
+          </div>
+          <div id="scenario-list"></div>
+          <div id="scenario-empty" class="empty-state">
+            <p>No scenarios yet</p>
+            <button id="btn-new-scenario-empty" class="btn btn-primary">Create your first scenario</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Scenario Detail Screen -->
+      <section id="screen-scenario-detail" class="screen">
+        <header class="screen-header with-back">
+          <button id="btn-back-scenario" class="btn-icon">&larr;</button>
+          <div class="title-box">
+            <h1 id="scenario-detail-heading">New Scenario</h1>
+          </div>
+        </header>
+        <div class="screen-content">
+          <div id="scenario-detail-content">
+            <p class="placeholder-text">Editor coming next.</p>
           </div>
         </div>
       </section>
