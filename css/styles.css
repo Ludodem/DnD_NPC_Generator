@@ -19,6 +19,8 @@
   --color-danger: #a94442;
   --color-danger-hover: #c9302c;
   --color-success: #3c763d;
+  --color-scenario-accent: #9c2f2f;
+  --color-scenario-accent-light: #d4a3a3;
 
   /* Typography */
   --font-heading: 'Crimson Text', Georgia, serif;
@@ -1658,88 +1660,103 @@ button {
 .rarity-badge.rarity-legendary { background: #ffe7b3; color: #8a5a00; border-color: #e6c87a; }
 .rarity-badge.rarity-artifact { background: #ffd0d0; color: #8a1a1a; border-color: #d97a7a; }
 
-/* Reader (read view) — flat hierarchy, typography-driven */
+/* Reader (read view) — flat hierarchy, typography-driven, manual-feel */
 .scenario-reader {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+  gap: var(--space-xl);
   padding-bottom: var(--space-xl);
 }
 
 .reader-header {
   text-align: center;
-  border-bottom: 3px double var(--color-accent);
-  padding-bottom: var(--space-md);
+  padding: var(--space-md) 0 var(--space-lg);
+  border-bottom: 1px solid var(--color-scenario-accent);
 }
 
 .reader-title {
   font-family: var(--font-heading);
-  font-size: 30px;
+  font-size: 34px;
   font-weight: 700;
-  color: var(--color-accent);
+  color: var(--color-scenario-accent);
   margin: 0;
-  line-height: 1.15;
-  letter-spacing: 0.5px;
+  line-height: 1.1;
+  letter-spacing: 2px;
+  font-variant: small-caps;
 }
 
 .reader-subtitle {
   font-family: var(--font-heading);
-  font-size: 16px;
-  font-style: italic;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--color-text-muted);
-  margin: var(--space-xs) 0 0;
+  margin: var(--space-sm) 0 0;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
 }
 
 .reader-meta {
-  font-size: 13px;
-  color: var(--color-text-muted);
-  margin-top: var(--space-sm);
-  font-weight: 500;
+  font-family: var(--font-heading);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--color-text);
+  margin-top: var(--space-xs);
 }
 
 .reader-toc {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: var(--space-xs) var(--space-sm);
+  gap: var(--space-xs) var(--space-md);
   margin-top: var(--space-md);
   padding-top: var(--space-sm);
-  border-top: 1px solid var(--color-border);
 }
 
 .reader-toc-item {
+  font-family: var(--font-heading);
   font-size: 12px;
   font-weight: 600;
-  color: var(--color-accent);
+  color: var(--color-scenario-accent);
   text-decoration: none;
-  border: 1px solid var(--color-accent-light);
-  padding: 2px 10px;
-  border-radius: 999px;
-  transition: background 0.1s;
+  letter-spacing: 0.5px;
+  border-bottom: 1px dashed transparent;
+  padding: 2px 0;
+  transition: border-color 0.1s;
 }
 
 .reader-toc-item:hover {
-  background: var(--color-accent);
-  color: white;
+  border-bottom-color: var(--color-scenario-accent);
 }
 
 /* Top-level sections (Context / Structure / Magic Items) */
 .reader-section {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: var(--space-md);
 }
 
 .reader-section-heading {
   font-family: var(--font-heading);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
-  color: var(--color-accent);
+  color: var(--color-scenario-accent);
   margin: 0;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
+  letter-spacing: 2px;
   padding-bottom: var(--space-xs);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-scenario-accent);
+  width: 100%;
+}
+
+.reader-section-header {
+  border-bottom: 1px solid var(--color-scenario-accent);
+  padding-bottom: var(--space-xs);
+  align-items: baseline;
+}
+
+.reader-section-header > .reader-section-heading {
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
 .reader-prose {
@@ -1790,67 +1807,119 @@ button {
   margin-top: var(--space-xs);
 }
 
-/* Acts: top-level chapter feel */
+/* Acts: top-level chapter, centered title with rules above and below */
 .reader-act {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
   scroll-margin-top: var(--space-md);
+  margin-top: var(--space-lg);
 }
 
 .reader-act-heading {
   font-family: var(--font-heading);
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 700;
-  color: var(--color-accent);
+  color: var(--color-scenario-accent);
   margin: 0;
-  padding-bottom: var(--space-xs);
-  border-bottom: 2px solid var(--color-accent);
+  padding: var(--space-md) 0;
+  border-top: 1px solid var(--color-scenario-accent);
+  border-bottom: 1px solid var(--color-scenario-accent);
+  text-align: center;
+  letter-spacing: 1px;
+  font-variant: small-caps;
+}
+
+.reader-act-header {
+  border: none;
+  padding-bottom: 0;
+  position: relative;
+}
+
+.reader-act-header > .reader-act-heading {
+  flex: 1;
+  width: 100%;
+}
+
+.reader-act-header > .affordance-inline {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  margin-left: 0;
+  z-index: 1;
+  background: var(--color-bg);
+  padding-left: 4px;
 }
 
 .reader-act-description {
   font-style: italic;
-  color: var(--color-text-muted);
+  color: var(--color-text);
+  font-family: var(--font-heading);
+  font-size: 15px;
+  text-align: center;
+  padding: 0 var(--space-md);
 }
 
-/* Scenes: indented, no card */
+/* Scenes: indented with subtle left rule, small-caps red heading */
 .reader-scene {
   padding-left: var(--space-md);
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
-  border-left: 2px solid var(--color-accent-light);
+  border-left: 2px solid var(--color-scenario-accent-light);
+  margin-top: var(--space-md);
 }
 
 .reader-scene-heading {
   font-family: var(--font-heading);
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
-  color: var(--color-text);
+  color: var(--color-scenario-accent);
   margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  border-bottom: 1px solid var(--color-scenario-accent-light);
+  padding-bottom: var(--space-xs);
 }
 
 .reader-scene-marker {
-  color: var(--color-accent);
+  color: var(--color-scenario-accent);
   margin-right: 4px;
 }
 
-/* Combats: emphasis without card */
+.reader-scene-header {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.reader-scene-header > .reader-scene-heading {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+/* The scene header gets the rule when affordances are present */
+.reader-scene > .reader-scene-header {
+  border-bottom: 1px solid var(--color-scenario-accent-light);
+  padding-bottom: var(--space-xs);
+}
+
+/* Combats: small-caps red, slight emphasis */
 .reader-combat {
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
-  margin-top: var(--space-sm);
+  margin-top: var(--space-md);
 }
 
 .reader-combat-heading {
   font-family: var(--font-heading);
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
-  color: var(--color-danger);
+  color: var(--color-scenario-accent);
   margin: 0;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1.5px;
 }
 
 .reader-combat-marker {
