@@ -1203,7 +1203,7 @@ button {
 }
 
 /* ----------------------------------------
-   Scenarios
+   Scenarios — list + editor
    ---------------------------------------- */
 .scenarios-toolbar {
   display: flex;
@@ -1212,9 +1212,248 @@ button {
 }
 
 .placeholder-text {
-  color: var(--color-text-muted, #6b6258);
+  color: var(--color-text-muted);
   font-style: italic;
   text-align: center;
   padding: var(--space-lg) var(--space-md);
+}
+
+.scenario-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.editor-section {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.editor-section > summary {
+  padding: var(--space-md);
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-accent);
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  user-select: none;
+}
+
+.editor-section > summary::-webkit-details-marker {
+  display: none;
+}
+
+.editor-section > summary::before {
+  content: '▸';
+  font-size: 14px;
+  transition: transform 0.15s;
+  color: var(--color-text-muted);
+}
+
+.editor-section[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.editor-section-body {
+  padding: 0 var(--space-md) var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.field-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.field-input,
+.field-textarea {
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.field-textarea {
+  resize: vertical;
+  min-height: 60px;
+  line-height: 1.5;
+}
+
+.field-input:focus,
+.field-textarea:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(139, 69, 19, 0.15);
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+}
+
+.cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.cards-list.nested {
+  margin-top: var(--space-sm);
+  padding-left: var(--space-sm);
+  border-left: 2px solid var(--color-accent-light);
+}
+
+.act-card,
+.scene-card,
+.combat-card,
+.magic-item-card {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.act-card {
+  border-left: 4px solid var(--color-accent);
+}
+
+.scene-card {
+  border-left: 3px solid var(--color-accent-light);
+  background: var(--color-bg-card);
+}
+
+.combat-card {
+  border-left: 3px solid var(--color-danger);
+  background: var(--color-bg-card);
+}
+
+.magic-item-card {
+  border-left: 3px solid var(--color-accent-light);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.card-index {
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.card-title-input {
+  flex: 1;
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+  background: transparent;
+  border: none;
+  border-bottom: 1px dashed var(--color-border);
+  padding: var(--space-xs) 0;
+}
+
+.card-title-input:focus {
+  outline: none;
+  border-bottom-color: var(--color-accent);
+}
+
+.btn-remove {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-danger);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-remove:hover {
+  background: var(--color-danger);
+  color: white;
+  border-color: var(--color-danger);
+}
+
+.btn-add {
+  align-self: flex-start;
+  margin-top: var(--space-xs);
+}
+
+.btn-tertiary {
+  background: transparent;
+  color: var(--color-accent);
+  border: 1px dashed var(--color-accent-light);
+  padding: var(--space-xs) var(--space-md);
+  font-size: 13px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.btn-tertiary:hover {
+  background: var(--color-bg);
+  border-style: solid;
+}
+
+.combat-enemies-placeholder {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--color-text-muted);
+  padding: var(--space-sm);
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.editor-actions {
+  margin-top: var(--space-md);
+  position: sticky;
+  bottom: var(--nav-height);
+  background: var(--color-bg);
+  padding: var(--space-md) 0;
+  border-top: 1px solid var(--color-border);
+  z-index: 5;
+}
+
+.scenario-card .npc-card-name em {
+  color: var(--color-text-muted);
+  font-weight: normal;
 }
 

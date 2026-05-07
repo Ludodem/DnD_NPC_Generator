@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = 'npc-gen-v33';
+﻿const CACHE_NAME = 'npc-gen-v34';
 
 const ASSETS = [
   './',
@@ -8,6 +8,7 @@ const ASSETS = [
   './js/data-loader.js',
   './js/generator.js',
   './js/storage.js',
+  './js/scenarios.js',
   './js/ui.js',
   './data/races.json',
   './data/archetypes.json',
