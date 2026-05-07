@@ -430,16 +430,7 @@
           <span id="autosave-indicator" class="autosave-indicator autosave-hidden"></span>
         </header>
         <div class="screen-content">
-          <div class="view-tabs">
-            <button class="view-tab active" data-tab="edit">Edit</button>
-            <button class="view-tab" data-tab="read">Read</button>
-          </div>
-          <div class="view-tab-content active" data-tab="edit">
-            <div id="scenario-editor-container"></div>
-          </div>
-          <div class="view-tab-content" data-tab="read">
-            <div id="scenario-reader-container"></div>
-          </div>
+          <div id="scenario-view"></div>
         </div>
       </section>
     </main>
@@ -503,6 +494,24 @@
       <div class="modal-content condition-modal-content">
         <h2 id="condition-title"></h2>
         <div id="condition-description" class="condition-description"></div>
+      </div>
+    </div>
+
+    <!-- Item Editor Modal -->
+    <div id="item-editor-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content item-editor-content">
+        <div class="item-editor-header">
+          <h2 id="item-editor-title">Edit</h2>
+          <button id="item-editor-close" class="btn-icon" aria-label="Close">&times;</button>
+        </div>
+        <div id="item-editor-body" class="item-editor-body"></div>
+        <div class="item-editor-footer">
+          <button id="item-editor-delete" class="btn btn-danger" hidden>Delete</button>
+          <span class="item-editor-spacer"></span>
+          <button id="item-editor-cancel" class="btn btn-secondary">Cancel</button>
+          <button id="item-editor-save" class="btn btn-primary">Save</button>
+        </div>
       </div>
     </div>
 

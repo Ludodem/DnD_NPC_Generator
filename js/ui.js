@@ -210,10 +210,14 @@ const UI = (function() {
     elements.btnNewScenarioEmpty = document.getElementById('btn-new-scenario-empty');
     elements.btnBackScenario = document.getElementById('btn-back-scenario');
     elements.scenarioDetailHeading = document.getElementById('scenario-detail-heading');
-    elements.scenarioEditorContainer = document.getElementById('scenario-editor-container');
-    elements.scenarioReaderContainer = document.getElementById('scenario-reader-container');
-    elements.scenarioTabs = document.querySelectorAll('#screen-scenario-detail .view-tab');
-    elements.scenarioTabContents = document.querySelectorAll('#screen-scenario-detail .view-tab-content');
+    elements.scenarioView = document.getElementById('scenario-view');
+    elements.itemEditorModal = document.getElementById('item-editor-modal');
+    elements.itemEditorTitle = document.getElementById('item-editor-title');
+    elements.itemEditorBody = document.getElementById('item-editor-body');
+    elements.btnItemEditorClose = document.getElementById('item-editor-close');
+    elements.btnItemEditorCancel = document.getElementById('item-editor-cancel');
+    elements.btnItemEditorSave = document.getElementById('item-editor-save');
+    elements.btnItemEditorDelete = document.getElementById('item-editor-delete');
     elements.enemyPickerModal = document.getElementById('enemy-picker-modal');
     elements.enemyPickerTabs = document.querySelectorAll('.enemy-picker-tab');
     elements.enemyPickerSearch = document.getElementById('enemy-picker-search');
@@ -577,9 +581,8 @@ const UI = (function() {
     }
   }
 
-  // Scenario editor state
+  // Scenario state
   let editingScenario = null;
-  let pickerTarget = null; // { actId, sceneId, combatId }
   let pickerSource = 'srd'; // 'srd' | 'npc'
   let cachedScenarioMonsters = null;
   let autosaveActive = false;
@@ -599,22 +602,13 @@ const UI = (function() {
       });
     }
 
-    // Scenario detail tabs (Edit / Read)
-    elements.scenarioTabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        const target = tab.dataset.tab;
-        elements.scenarioTabs.forEach(t => t.classList.toggle('active', t.dataset.tab === target));
-        elements.scenarioTabContents.forEach(c => c.classList.toggle('active', c.dataset.tab === target));
-        if (target === 'read') void renderScenarioReader();
-      });
-    });
+    // Click delegation on the single scenario view (handles + Add, edit, delete affordances)
+    if (elements.scenarioView) {
+      elements.scenarioView.addEventListener('click', handleScenarioViewClick);
+    }
 
+    setupItemEditor();
     setupEnemyPicker();
-  }
-
-  function setActiveScenarioTab(tab) {
-    elements.scenarioTabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
-    elements.scenarioTabContents.forEach(c => c.classList.toggle('active', c.dataset.tab === tab));
   }
 
   function renderScenarioList() {
@@ -695,192 +689,8 @@ const UI = (function() {
     elements.scenarioDetailHeading.textContent = editingScenario.title || 'New Scenario';
     showScreen('scenarioDetail');
     updateNavigation('scenarioDetail');
-    setActiveScenarioTab('edit');
-    renderScenarioEditor();
+    void renderScenarioView();
     setAutosaveIndicator(autosaveActive ? 'saved' : 'idle');
-  }
-
-  function renderScenarioEditor() {
-    if (!editingScenario) return;
-    const s = editingScenario;
-    const isExisting = !!Scenarios.getById(s.id);
-
-    elements.scenarioEditorContainer.innerHTML = `
-      <form class="scenario-editor" autocomplete="off" novalidate>
-        ${renderEditorMetaSection(s)}
-        ${renderEditorTextSection('Narrative Context', 'context', s.context, 'Set the scene, describe the world state...')}
-        ${renderEditorTextSection('Scenario Structure', 'structure', s.structure, 'Overview of acts, pacing notes...')}
-        ${renderEditorMagicItemsSection(s.magicItems)}
-        ${renderEditorActsSection(s.acts)}
-        <div class="action-buttons editor-actions">
-          ${isExisting ? '<button type="button" class="btn btn-danger" data-action="delete-scenario">Delete</button>' : ''}
-          <button type="button" class="btn btn-primary" data-action="save-scenario">Save</button>
-        </div>
-      </form>
-    `;
-
-    const form = elements.scenarioEditorContainer.querySelector('.scenario-editor');
-    form.addEventListener('input', handleEditorInput);
-    form.addEventListener('change', handleEditorInput); // for <select> rarity
-    form.addEventListener('click', handleEditorClick);
-  }
-
-  function renderEditorMetaSection(s) {
-    return `
-      <details class="editor-section" data-section="meta" open>
-        <summary>Title &amp; Info</summary>
-        <div class="editor-section-body">
-          <label class="field-row">
-            <span class="field-label">Title</span>
-            <input type="text" data-field="title" value="${escapeAttr(s.title)}" placeholder="Scenario title" class="field-input">
-          </label>
-          <label class="field-row">
-            <span class="field-label">Subtitle</span>
-            <input type="text" data-field="subtitle" value="${escapeAttr(s.subtitle)}" placeholder="Optional subtitle" class="field-input">
-          </label>
-          <div class="field-grid">
-            <label class="field-row">
-              <span class="field-label">Players</span>
-              <input type="text" data-field="players" value="${escapeAttr(s.players)}" placeholder="e.g. 4-5" class="field-input">
-            </label>
-            <label class="field-row">
-              <span class="field-label">Level</span>
-              <input type="text" data-field="level" value="${escapeAttr(s.level)}" placeholder="e.g. 5" class="field-input">
-            </label>
-            <label class="field-row">
-              <span class="field-label">Duration</span>
-              <input type="text" data-field="duration" value="${escapeAttr(s.duration)}" placeholder="e.g. 3-4h" class="field-input">
-            </label>
-            <label class="field-row">
-              <span class="field-label">Campaign</span>
-              <input type="text" data-field="campaign" value="${escapeAttr(s.campaign)}" placeholder="Campaign name" class="field-input">
-            </label>
-          </div>
-        </div>
-      </details>
-    `;
-  }
-
-  function renderEditorTextSection(heading, field, value, placeholder) {
-    return `
-      <details class="editor-section" data-section="${field}">
-        <summary>${heading}</summary>
-        <div class="editor-section-body">
-          <textarea data-field="${field}" rows="6" placeholder="${escapeAttr(placeholder)}" class="field-textarea">${escapeHtml(value)}</textarea>
-        </div>
-      </details>
-    `;
-  }
-
-  function renderEditorMagicItemsSection(items) {
-    const itemsHtml = items.map(item => {
-      const options = ['<option value=""' + (item.rarity ? '' : ' selected') + '>— Rarity —</option>']
-        .concat(RARITIES.map(r => `<option value="${r}"${item.rarity === r ? ' selected' : ''}>${r}</option>`))
-        .join('');
-      return `
-        <div class="magic-item-card" data-item-id="${item.id}">
-          <div class="card-header">
-            <input type="text" data-field="name" value="${escapeAttr(item.name)}" placeholder="Item name" class="card-title-input">
-            <button type="button" class="btn-remove" data-action="remove-magic-item" aria-label="Remove">&times;</button>
-          </div>
-          <select data-field="rarity" class="field-input field-select">${options}</select>
-          <textarea data-field="description" rows="2" placeholder="Description / properties" class="field-textarea">${escapeHtml(item.description)}</textarea>
-        </div>
-      `;
-    }).join('');
-
-    return `
-      <details class="editor-section" data-section="magicItems">
-        <summary>Magic Items${items.length ? ` (${items.length})` : ''}</summary>
-        <div class="editor-section-body">
-          <div class="cards-list">${itemsHtml}</div>
-          <button type="button" class="btn btn-secondary btn-add" data-action="add-magic-item">+ Add Magic Item</button>
-        </div>
-      </details>
-    `;
-  }
-
-  function renderEditorActsSection(acts) {
-    const actsHtml = acts.map((act, i) => renderEditorAct(act, i + 1)).join('');
-    return `
-      <details class="editor-section" data-section="acts" open>
-        <summary>Acts${acts.length ? ` (${acts.length})` : ''}</summary>
-        <div class="editor-section-body">
-          <div class="cards-list">${actsHtml}</div>
-          <button type="button" class="btn btn-secondary btn-add" data-action="add-act">+ Add Act</button>
-        </div>
-      </details>
-    `;
-  }
-
-  function renderEditorAct(act, idx) {
-    const scenesHtml = act.scenes.map((scene, j) => renderEditorScene(scene, j + 1)).join('');
-    return `
-      <div class="act-card" data-act-id="${act.id}">
-        <div class="card-header">
-          <span class="card-index">Act ${idx}</span>
-          <input type="text" data-field="title" value="${escapeAttr(act.title)}" placeholder="Act title" class="card-title-input">
-          <button type="button" class="btn-remove" data-action="remove-act" aria-label="Remove act">&times;</button>
-        </div>
-        <textarea data-field="description" rows="2" placeholder="Act overview / themes" class="field-textarea">${escapeHtml(act.description)}</textarea>
-        <div class="cards-list nested">${scenesHtml}</div>
-        <button type="button" class="btn btn-tertiary btn-add" data-action="add-scene">+ Add Scene</button>
-      </div>
-    `;
-  }
-
-  function renderEditorScene(scene, idx) {
-    const combatsHtml = scene.combats.map((c, k) => renderEditorCombat(c, k + 1)).join('');
-    return `
-      <div class="scene-card" data-scene-id="${scene.id}">
-        <div class="card-header">
-          <span class="card-index">Scene ${idx}</span>
-          <input type="text" data-field="title" value="${escapeAttr(scene.title)}" placeholder="Scene title" class="card-title-input">
-          <button type="button" class="btn-remove" data-action="remove-scene" aria-label="Remove scene">&times;</button>
-        </div>
-        <textarea data-field="content" rows="4" placeholder="Scene content, beats, NPC notes..." class="field-textarea">${escapeHtml(scene.content)}</textarea>
-        <div class="cards-list nested">${combatsHtml}</div>
-        <button type="button" class="btn btn-tertiary btn-add" data-action="add-combat">+ Add Combat</button>
-      </div>
-    `;
-  }
-
-  function renderEditorCombat(combat, idx) {
-    return `
-      <div class="combat-card" data-combat-id="${combat.id}">
-        <div class="card-header">
-          <span class="card-index">Combat ${idx}</span>
-          <input type="text" data-field="name" value="${escapeAttr(combat.name)}" placeholder="Combat name" class="card-title-input">
-          <button type="button" class="btn-remove" data-action="remove-combat" aria-label="Remove combat">&times;</button>
-        </div>
-        <textarea data-field="description" rows="2" placeholder="Terrain, hooks, tactics..." class="field-textarea">${escapeHtml(combat.description)}</textarea>
-        <div class="enemy-list">
-          ${combat.enemies.map(enemy => renderEditorEnemyChip(enemy)).join('')}
-        </div>
-        <button type="button" class="btn btn-tertiary btn-add" data-action="add-enemy">+ Add Enemy</button>
-      </div>
-    `;
-  }
-
-  function renderEditorEnemyChip(enemy) {
-    const info = lookupEnemyInfo(enemy);
-    const label = info ? escapeHtml(info.name) : '<em>(missing)</em>';
-    const sub = info
-      ? `${info.kindLabel}${info.cr ? ` &middot; CR ${escapeHtml(info.cr)}` : ''}`
-      : 'Reference broken';
-    return `
-      <div class="enemy-chip" data-enemy-id="${enemy.id}">
-        <div class="enemy-chip-info">
-          <div class="enemy-chip-name">${label}</div>
-          <div class="enemy-chip-sub">${sub}</div>
-        </div>
-        <label class="enemy-chip-count">
-          <span>×</span>
-          <input type="number" min="1" max="99" data-action="change-enemy-count" value="${enemy.count || 1}">
-        </label>
-        <button type="button" class="btn-remove" data-action="remove-enemy" aria-label="Remove enemy">&times;</button>
-      </div>
-    `;
   }
 
   function lookupEnemyInfo(enemy) {
@@ -906,189 +716,6 @@ const UI = (function() {
       };
     }
     return null;
-  }
-
-  function handleEditorInput(e) {
-    const target = e.target;
-
-    // Special: enemy count
-    if (target.dataset.action === 'change-enemy-count') {
-      const enemyEl = target.closest('[data-enemy-id]');
-      const combatEl = target.closest('[data-combat-id]');
-      const sceneEl = target.closest('[data-scene-id]');
-      const actEl = target.closest('[data-act-id]');
-      if (!enemyEl || !combatEl || !sceneEl || !actEl) return;
-      const act = editingScenario.acts.find(a => a.id === actEl.dataset.actId);
-      const scene = act && act.scenes.find(s => s.id === sceneEl.dataset.sceneId);
-      const combat = scene && scene.combats.find(c => c.id === combatEl.dataset.combatId);
-      const enemy = combat && combat.enemies.find(en => en.id === enemyEl.dataset.enemyId);
-      if (enemy) {
-        const n = parseInt(target.value, 10);
-        enemy.count = isNaN(n) || n < 1 ? 1 : Math.min(99, n);
-      }
-      editingScenario.updatedAt = new Date().toISOString();
-      scheduleAutosave();
-      return;
-    }
-
-    const field = target.dataset.field;
-    if (!field) return;
-
-    const obj = resolveEditorTarget(target);
-    if (!obj) return;
-    obj[field] = target.value;
-
-    if (obj === editingScenario && field === 'title') {
-      elements.scenarioDetailHeading.textContent = target.value || 'New Scenario';
-    }
-    editingScenario.updatedAt = new Date().toISOString();
-    scheduleAutosave();
-  }
-
-  function resolveEditorTarget(input) {
-    const combatEl = input.closest('[data-combat-id]');
-    const sceneEl = input.closest('[data-scene-id]');
-    const actEl = input.closest('[data-act-id]');
-    const itemEl = input.closest('[data-item-id]');
-
-    if (combatEl && sceneEl && actEl) {
-      const act = editingScenario.acts.find(a => a.id === actEl.dataset.actId);
-      const scene = act && act.scenes.find(s => s.id === sceneEl.dataset.sceneId);
-      return scene && scene.combats.find(c => c.id === combatEl.dataset.combatId);
-    }
-    if (sceneEl && actEl) {
-      const act = editingScenario.acts.find(a => a.id === actEl.dataset.actId);
-      return act && act.scenes.find(s => s.id === sceneEl.dataset.sceneId);
-    }
-    if (actEl) {
-      return editingScenario.acts.find(a => a.id === actEl.dataset.actId);
-    }
-    if (itemEl) {
-      return editingScenario.magicItems.find(i => i.id === itemEl.dataset.itemId);
-    }
-    return editingScenario;
-  }
-
-  function handleEditorClick(e) {
-    const button = e.target.closest('[data-action]');
-    if (!button) return;
-    const action = button.dataset.action;
-    const actEl = button.closest('[data-act-id]');
-    const sceneEl = button.closest('[data-scene-id]');
-    const combatEl = button.closest('[data-combat-id]');
-    const itemEl = button.closest('[data-item-id]');
-
-    switch (action) {
-      case 'add-magic-item':
-        editingScenario.magicItems.push(Scenarios.createMagicItem());
-        renderScenarioEditor();
-        scheduleAutosave();
-        break;
-      case 'remove-magic-item':
-        editingScenario.magicItems = editingScenario.magicItems.filter(i => i.id !== itemEl.dataset.itemId);
-        renderScenarioEditor();
-        scheduleAutosave();
-        break;
-      case 'add-act':
-        editingScenario.acts.push(Scenarios.createAct());
-        renderScenarioEditor();
-        scheduleAutosave();
-        break;
-      case 'remove-act':
-        editingScenario.acts = editingScenario.acts.filter(a => a.id !== actEl.dataset.actId);
-        renderScenarioEditor();
-        scheduleAutosave();
-        break;
-      case 'add-scene': {
-        const act = editingScenario.acts.find(a => a.id === actEl.dataset.actId);
-        if (act) act.scenes.push(Scenarios.createScene());
-        renderScenarioEditor();
-        scheduleAutosave();
-        break;
-      }
-      case 'remove-scene': {
-        const act = editingScenario.acts.find(a => a.id === actEl.dataset.actId);
-        if (act) act.scenes = act.scenes.filter(s => s.id !== sceneEl.dataset.sceneId);
-        renderScenarioEditor();
-        scheduleAutosave();
-        break;
-      }
-      case 'add-combat': {
-        const act = editingScenario.acts.find(a => a.id === actEl.dataset.actId);
-        const scene = act && act.scenes.find(s => s.id === sceneEl.dataset.sceneId);
-        if (scene) scene.combats.push(Scenarios.createCombat());
-        renderScenarioEditor();
-        scheduleAutosave();
-        break;
-      }
-      case 'remove-combat': {
-        const act = editingScenario.acts.find(a => a.id === actEl.dataset.actId);
-        const scene = act && act.scenes.find(s => s.id === sceneEl.dataset.sceneId);
-        if (scene) scene.combats = scene.combats.filter(c => c.id !== combatEl.dataset.combatId);
-        renderScenarioEditor();
-        scheduleAutosave();
-        break;
-      }
-      case 'add-enemy':
-        if (actEl && sceneEl && combatEl) {
-          void openEnemyPicker(actEl.dataset.actId, sceneEl.dataset.sceneId, combatEl.dataset.combatId);
-        }
-        break;
-      case 'remove-enemy': {
-        const act = editingScenario.acts.find(a => a.id === actEl.dataset.actId);
-        const scene = act && act.scenes.find(s => s.id === sceneEl.dataset.sceneId);
-        const combat = scene && scene.combats.find(c => c.id === combatEl.dataset.combatId);
-        const enemyEl = button.closest('[data-enemy-id]');
-        if (combat && enemyEl) {
-          combat.enemies = combat.enemies.filter(en => en.id !== enemyEl.dataset.enemyId);
-        }
-        renderScenarioEditor();
-        scheduleAutosave();
-        break;
-      }
-      case 'save-scenario':
-        handleSaveScenario();
-        break;
-      case 'delete-scenario':
-        handleDeleteScenario();
-        break;
-    }
-  }
-
-  function handleSaveScenario() {
-    if (!editingScenario.title.trim()) {
-      showToast('Please add a title before saving');
-      return;
-    }
-    const wasFirstSave = !autosaveActive;
-    const result = Scenarios.save(editingScenario);
-    if (result.success) {
-      autosaveActive = true;
-      setAutosaveIndicator('saved');
-      showToast('Scenario saved');
-      if (wasFirstSave) {
-        // Re-render so Delete button appears now that the scenario is persisted
-        renderScenarioEditor();
-      }
-    } else {
-      setAutosaveIndicator('error', result.error);
-      showModal('Save failed', result.error || 'Unknown error', null);
-    }
-  }
-
-  function handleDeleteScenario() {
-    if (!editingScenario || !Scenarios.getById(editingScenario.id)) return;
-    showModal(
-      'Delete scenario',
-      `Delete "${editingScenario.title || 'this scenario'}"? This cannot be undone.`,
-      () => {
-        Scenarios.remove(editingScenario.id);
-        editingScenario = null;
-        showToast('Scenario deleted');
-        showScreen('scenarios');
-        renderScenarioList();
-      }
-    );
   }
 
   function escapeHtml(str) {
@@ -1123,12 +750,12 @@ const UI = (function() {
     elements.enemyPickerList.addEventListener('click', (e) => {
       const item = e.target.closest('[data-pick-id]');
       if (!item) return;
-      addEnemyToCombat(item.dataset.pickType, item.dataset.pickId);
+      addEnemyToDraft(item.dataset.pickType, item.dataset.pickId);
     });
   }
 
-  async function openEnemyPicker(actId, sceneId, combatId) {
-    pickerTarget = { actId, sceneId, combatId };
+  async function openEnemyPicker() {
+    if (!editingItem || editingItem.type !== 'combat') return;
     pickerSource = 'srd';
     if (!cachedScenarioMonsters) cachedScenarioMonsters = await getMonsters();
     elements.enemyPickerSearch.value = '';
@@ -1139,7 +766,6 @@ const UI = (function() {
 
   function hideEnemyPicker() {
     elements.enemyPickerModal.classList.add('hidden');
-    pickerTarget = null;
   }
 
   function renderEnemyPickerList() {
@@ -1179,30 +805,24 @@ const UI = (function() {
     `).join('');
   }
 
-  function addEnemyToCombat(sourceType, sourceId) {
-    if (!pickerTarget) return;
-    const act = editingScenario.acts.find(a => a.id === pickerTarget.actId);
-    const scene = act && act.scenes.find(s => s.id === pickerTarget.sceneId);
-    const combat = scene && scene.combats.find(c => c.id === pickerTarget.combatId);
-    if (!combat) {
-      hideEnemyPicker();
-      return;
-    }
-    combat.enemies.push({
+  function addEnemyToDraft(sourceType, sourceId) {
+    if (!editingItem || editingItem.type !== 'combat') return;
+    editingItem.draft.enemies.push({
       id: 'e_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
       sourceType,
       sourceId,
       count: 1
     });
     hideEnemyPicker();
-    renderScenarioEditor();
-    scheduleAutosave();
+    renderItemEditorBody();
     showToast('Enemy added');
   }
 
-  // ---- Reader view (flat hierarchy) ----
+  // ---- Single scenario view (renders into #scenario-view) ----
 
-  async function renderScenarioReader() {
+  let editingItem = null; // { type, mode, refs, draft }
+
+  async function renderScenarioView() {
     if (!editingScenario) return;
     if (!cachedScenarioMonsters) cachedScenarioMonsters = await getMonsters();
 
@@ -1219,9 +839,10 @@ const UI = (function() {
       label: `Act ${i + 1}${act.title ? ` — ${act.title}` : ''}`
     }));
 
-    const html = `
+    elements.scenarioView.innerHTML = `
       <article class="scenario-reader">
         <header class="reader-header">
+          <button class="affordance-edit affordance-corner" data-action="edit-header" aria-label="Edit info" title="Edit scenario info">&#9998;</button>
           <h1 class="reader-title">${escapeHtml(s.title || 'Untitled scenario')}</h1>
           ${s.subtitle ? `<p class="reader-subtitle">${escapeHtml(s.subtitle)}</p>` : ''}
           ${metaItems.length ? `<div class="reader-meta">${metaItems.join(' &middot; ')}</div>` : ''}
@@ -1232,22 +853,22 @@ const UI = (function() {
           ` : ''}
         </header>
 
-        ${renderReaderTextBlock('Narrative Context', s.context)}
-        ${renderReaderTextBlock('Scenario Structure', s.structure)}
-        ${renderReaderMagicItems(s.magicItems)}
-        ${renderReaderActs(s.acts)}
+        ${renderViewTextSection('Narrative Context', 'narrative', s.context)}
+        ${renderViewTextSection('Scenario Structure', 'structure', s.structure)}
+        ${renderViewMagicItems(s.magicItems)}
+        ${renderViewActs(s.acts)}
+
+        <div class="add-section-wrap">
+          <button class="affordance-add affordance-add-large" data-action="add-act">+ Add Act</button>
+        </div>
       </article>
     `;
 
-    elements.scenarioReaderContainer.innerHTML = html;
-
-    // Render all stat blocks synchronously (always-open in flat reader)
-    elements.scenarioReaderContainer.querySelectorAll('.reader-statblock-mount').forEach(mount => {
+    elements.scenarioView.querySelectorAll('.reader-statblock-mount').forEach(mount => {
       renderReaderStatblockInto(mount);
     });
 
-    // Smooth scroll for TOC
-    elements.scenarioReaderContainer.querySelectorAll('.reader-toc-item').forEach(link => {
+    elements.scenarioView.querySelectorAll('.reader-toc-item').forEach(link => {
       link.addEventListener('click', (e) => {
         e.preventDefault();
         const targetId = link.getAttribute('href').slice(1);
@@ -1257,62 +878,102 @@ const UI = (function() {
     });
   }
 
-  function renderReaderTextBlock(heading, text) {
-    if (!text || !text.trim()) return '';
+  function renderViewTextSection(heading, type, text) {
+    const hasText = text && text.trim();
     return `
       <section class="reader-section">
-        <h2 class="reader-section-heading">${heading}</h2>
-        <div class="reader-prose">${formatMultilineText(text)}</div>
+        <header class="reader-section-header">
+          <h2 class="reader-section-heading">${heading}</h2>
+          <button class="affordance-edit" data-action="edit-${type}" aria-label="Edit ${heading.toLowerCase()}" title="Edit">&#9998;</button>
+        </header>
+        ${hasText
+          ? `<div class="reader-prose">${formatMultilineText(text)}</div>`
+          : `<button class="affordance-add" data-action="edit-${type}">+ Add ${heading.toLowerCase()}</button>`
+        }
       </section>
     `;
   }
 
-  function renderReaderMagicItems(items) {
-    if (!items || items.length === 0) return '';
+  function renderViewMagicItems(items) {
+    const hasItems = items && items.length > 0;
     return `
       <section class="reader-section">
-        <h2 class="reader-section-heading">Magic Items</h2>
-        <ul class="reader-items">
-          ${items.map(item => `
-            <li class="reader-item">
-              <span class="reader-item-name">${escapeHtml(item.name || 'Unnamed item')}</span>
-              ${item.rarity ? `<span class="rarity-badge rarity-${item.rarity.toLowerCase().replace(/\s+/g, '-')}">${escapeHtml(item.rarity)}</span>` : ''}
-              ${item.description ? `<div class="reader-item-description">${formatMultilineText(item.description)}</div>` : ''}
-            </li>
-          `).join('')}
-        </ul>
+        <header class="reader-section-header">
+          <h2 class="reader-section-heading">Magic Items</h2>
+          <button class="affordance-add" data-action="add-magic-item">+ Add</button>
+        </header>
+        ${hasItems
+          ? `<ul class="reader-items">${items.map(item => `
+              <li class="reader-item" data-item-id="${item.id}">
+                <div class="reader-item-header">
+                  <span class="reader-item-name">${escapeHtml(item.name || 'Unnamed item')}</span>
+                  ${item.rarity ? `<span class="rarity-badge rarity-${item.rarity.toLowerCase().replace(/\s+/g, '-')}">${escapeHtml(item.rarity)}</span>` : ''}
+                  <span class="affordance-inline">
+                    <button class="affordance-edit" data-action="edit-magic-item" aria-label="Edit" title="Edit">&#9998;</button>
+                    <button class="affordance-delete" data-action="delete-magic-item" aria-label="Delete" title="Delete">&times;</button>
+                  </span>
+                </div>
+                ${item.description ? `<div class="reader-item-description">${formatMultilineText(item.description)}</div>` : ''}
+              </li>
+            `).join('')}</ul>`
+          : `<div class="reader-empty-hint">No magic items yet.</div>`
+        }
       </section>
     `;
   }
 
-  function renderReaderActs(acts) {
+  function renderViewActs(acts) {
     if (!acts || acts.length === 0) return '';
     return acts.map((act, i) => `
-      <section class="reader-act" id="act-${act.id}">
-        <h2 class="reader-act-heading">Act ${i + 1}${act.title ? ` — ${escapeHtml(act.title)}` : ''}</h2>
+      <section class="reader-act" id="act-${act.id}" data-act-id="${act.id}">
+        <header class="reader-act-header">
+          <h2 class="reader-act-heading">Act ${i + 1}${act.title ? ` — ${escapeHtml(act.title)}` : ''}</h2>
+          <span class="affordance-inline">
+            <button class="affordance-edit" data-action="edit-act" aria-label="Edit act" title="Edit">&#9998;</button>
+            <button class="affordance-delete" data-action="delete-act" aria-label="Delete act" title="Delete">&times;</button>
+          </span>
+        </header>
         ${act.description ? `<div class="reader-prose reader-act-description">${formatMultilineText(act.description)}</div>` : ''}
-        ${act.scenes.map((scene, j) => renderReaderScene(scene, j + 1)).join('')}
+        ${act.scenes.map((scene, j) => renderViewScene(scene, j + 1)).join('')}
+        <div class="add-section-wrap nested">
+          <button class="affordance-add" data-action="add-scene">+ Add Scene</button>
+        </div>
       </section>
     `).join('');
   }
 
-  function renderReaderScene(scene, idx) {
+  function renderViewScene(scene, idx) {
     return `
-      <section class="reader-scene">
-        <h3 class="reader-scene-heading"><span class="reader-scene-marker">▸</span> Scene ${idx}${scene.title ? ` — ${escapeHtml(scene.title)}` : ''}</h3>
+      <section class="reader-scene" data-scene-id="${scene.id}">
+        <header class="reader-scene-header">
+          <h3 class="reader-scene-heading"><span class="reader-scene-marker">▸</span> Scene ${idx}${scene.title ? ` — ${escapeHtml(scene.title)}` : ''}</h3>
+          <span class="affordance-inline">
+            <button class="affordance-edit" data-action="edit-scene" aria-label="Edit scene" title="Edit">&#9998;</button>
+            <button class="affordance-delete" data-action="delete-scene" aria-label="Delete scene" title="Delete">&times;</button>
+          </span>
+        </header>
         ${scene.content ? `<div class="reader-prose">${formatMultilineText(scene.content)}</div>` : ''}
-        ${scene.combats.map((combat, k) => renderReaderCombat(combat, k + 1)).join('')}
+        ${scene.combats.map((combat, k) => renderViewCombat(combat, k + 1)).join('')}
+        <div class="add-section-wrap nested">
+          <button class="affordance-add" data-action="add-combat">+ Add Combat</button>
+        </div>
       </section>
     `;
   }
 
-  function renderReaderCombat(combat, idx) {
+  function renderViewCombat(combat, idx) {
     const enemiesHtml = combat.enemies.length === 0
       ? '<div class="reader-empty">No enemies defined.</div>'
       : combat.enemies.map(enemy => renderReaderEnemyBlock(enemy)).join('');
     return `
-      <section class="reader-combat">
-        <h4 class="reader-combat-heading"><span class="reader-combat-marker">&#9876;</span> Combat${combat.name ? ` — ${escapeHtml(combat.name)}` : ''}</h4>
+      <section class="reader-combat" data-combat-id="${combat.id}">
+        <header class="reader-combat-header">
+          <h4 class="reader-combat-heading"><span class="reader-combat-marker">&#9876;</span> Combat${combat.name ? ` — ${escapeHtml(combat.name)}` : ''}</h4>
+          <span class="affordance-inline">
+            <button class="affordance-edit" data-action="edit-combat" aria-label="Edit combat" title="Edit">&#9998;</button>
+            <button class="affordance-delete" data-action="delete-combat" aria-label="Delete combat" title="Delete">&times;</button>
+          </span>
+        </header>
         ${combat.description ? `<div class="reader-prose reader-combat-description">${formatMultilineText(combat.description)}</div>` : ''}
         ${enemiesHtml}
       </section>
@@ -1327,12 +988,410 @@ const UI = (function() {
       : 'Source removed';
     const countLabel = enemy.count > 1 ? ` × ${enemy.count}` : '';
     return `
-      <div class="reader-enemy" data-enemy-id="${enemy.id}" data-source-type="${enemy.sourceType}" data-source-id="${escapeAttr(enemy.sourceId)}">
+      <div class="reader-enemy" data-source-type="${enemy.sourceType}" data-source-id="${escapeAttr(enemy.sourceId)}">
         <div class="reader-enemy-header">
           <span class="reader-enemy-name">${label}${countLabel}</span>
           <span class="reader-enemy-sub">${sub}</span>
         </div>
         <div class="reader-statblock-mount"></div>
+      </div>
+    `;
+  }
+
+  // ---- Click handler for the view (event delegation) ----
+
+  function handleScenarioViewClick(e) {
+    const button = e.target.closest('[data-action]');
+    if (!button) return;
+    const action = button.dataset.action;
+    const actEl = button.closest('[data-act-id]');
+    const sceneEl = button.closest('[data-scene-id]');
+    const combatEl = button.closest('[data-combat-id]');
+    const itemEl = button.closest('[data-item-id]');
+    const refs = {};
+    if (actEl) refs.actId = actEl.dataset.actId;
+    if (sceneEl) refs.sceneId = sceneEl.dataset.sceneId;
+    if (combatEl) refs.combatId = combatEl.dataset.combatId;
+    if (itemEl) refs.itemId = itemEl.dataset.itemId;
+
+    switch (action) {
+      case 'edit-header':       openItemEditor('header', {}, 'edit'); break;
+      case 'edit-narrative':    openItemEditor('narrative', {}, 'edit'); break;
+      case 'edit-structure':    openItemEditor('structure', {}, 'edit'); break;
+      case 'add-magic-item':    openItemEditor('magic-item', {}, 'create'); break;
+      case 'edit-magic-item':   openItemEditor('magic-item', refs, 'edit'); break;
+      case 'delete-magic-item': confirmDeleteItem('magic-item', refs); break;
+      case 'add-act':           openItemEditor('act', {}, 'create'); break;
+      case 'edit-act':          openItemEditor('act', refs, 'edit'); break;
+      case 'delete-act':        confirmDeleteItem('act', refs); break;
+      case 'add-scene':         openItemEditor('scene', refs, 'create'); break;
+      case 'edit-scene':        openItemEditor('scene', refs, 'edit'); break;
+      case 'delete-scene':      confirmDeleteItem('scene', refs); break;
+      case 'add-combat':        openItemEditor('combat', refs, 'create'); break;
+      case 'edit-combat':       openItemEditor('combat', refs, 'edit'); break;
+      case 'delete-combat':     confirmDeleteItem('combat', refs); break;
+    }
+  }
+
+  function findItem(type, refs) {
+    switch (type) {
+      case 'header': return editingScenario;
+      case 'narrative': return { value: editingScenario.context || '' };
+      case 'structure': return { value: editingScenario.structure || '' };
+      case 'magic-item': return editingScenario.magicItems.find(i => i.id === refs.itemId);
+      case 'act': return editingScenario.acts.find(a => a.id === refs.actId);
+      case 'scene': {
+        const act = editingScenario.acts.find(a => a.id === refs.actId);
+        return act && act.scenes.find(s => s.id === refs.sceneId);
+      }
+      case 'combat': {
+        const act = editingScenario.acts.find(a => a.id === refs.actId);
+        const scene = act && act.scenes.find(s => s.id === refs.sceneId);
+        return scene && scene.combats.find(c => c.id === refs.combatId);
+      }
+    }
+    return null;
+  }
+
+  function confirmDeleteItem(type, refs) {
+    const item = findItem(type, refs);
+    if (!item) return;
+    const label = item.title || item.name || `this ${type}`;
+    showModal(
+      `Delete ${type.replace('-', ' ')}`,
+      `Delete "${label}"? This cannot be undone.`,
+      () => {
+        deleteItemFromModel(type, refs);
+        editingScenario.updatedAt = new Date().toISOString();
+        scheduleAutosave();
+        void renderScenarioView();
+      }
+    );
+  }
+
+  function deleteItemFromModel(type, refs) {
+    switch (type) {
+      case 'magic-item':
+        editingScenario.magicItems = editingScenario.magicItems.filter(i => i.id !== refs.itemId);
+        break;
+      case 'act':
+        editingScenario.acts = editingScenario.acts.filter(a => a.id !== refs.actId);
+        break;
+      case 'scene': {
+        const act = editingScenario.acts.find(a => a.id === refs.actId);
+        if (act) act.scenes = act.scenes.filter(s => s.id !== refs.sceneId);
+        break;
+      }
+      case 'combat': {
+        const act = editingScenario.acts.find(a => a.id === refs.actId);
+        const scene = act && act.scenes.find(s => s.id === refs.sceneId);
+        if (scene) scene.combats = scene.combats.filter(c => c.id !== refs.combatId);
+        break;
+      }
+    }
+  }
+
+  // ---- Item editor modal ----
+
+  function setupItemEditor() {
+    if (!elements.itemEditorModal) return;
+
+    elements.btnItemEditorCancel.addEventListener('click', closeItemEditor);
+    elements.btnItemEditorClose.addEventListener('click', closeItemEditor);
+    const backdrop = elements.itemEditorModal.querySelector('.modal-backdrop');
+    if (backdrop) backdrop.addEventListener('click', closeItemEditor);
+
+    elements.btnItemEditorSave.addEventListener('click', handleItemEditorSave);
+    elements.btnItemEditorDelete.addEventListener('click', handleItemEditorDelete);
+
+    elements.itemEditorBody.addEventListener('input', handleItemEditorInput);
+    elements.itemEditorBody.addEventListener('change', handleItemEditorInput);
+    elements.itemEditorBody.addEventListener('click', handleItemEditorBodyClick);
+  }
+
+  function openItemEditor(type, refs, mode) {
+    let draft;
+    if (mode === 'edit') {
+      const original = findItem(type, refs);
+      if (!original) {
+        showToast('Item not found');
+        return;
+      }
+      draft = JSON.parse(JSON.stringify(original));
+    } else {
+      if (type === 'magic-item') draft = Scenarios.createMagicItem();
+      else if (type === 'act') draft = Scenarios.createAct();
+      else if (type === 'scene') draft = Scenarios.createScene();
+      else if (type === 'combat') draft = Scenarios.createCombat();
+      else return;
+    }
+    editingItem = { type, mode, refs: refs || {}, draft };
+    renderItemEditorBody();
+    elements.itemEditorModal.classList.remove('hidden');
+  }
+
+  function closeItemEditor() {
+    elements.itemEditorModal.classList.add('hidden');
+    editingItem = null;
+  }
+
+  function renderItemEditorBody() {
+    if (!editingItem) return;
+    const { type, mode, draft } = editingItem;
+    let title, body;
+    switch (type) {
+      case 'header':
+        title = 'Edit Scenario Info';
+        body = renderHeaderForm(draft);
+        break;
+      case 'narrative':
+        title = 'Edit Narrative Context';
+        body = renderTextOnlyForm(draft.value, 'value', 'Set the scene, describe the world state...', 14);
+        break;
+      case 'structure':
+        title = 'Edit Scenario Structure';
+        body = renderTextOnlyForm(draft.value, 'value', 'Overview of acts, pacing notes...', 14);
+        break;
+      case 'magic-item':
+        title = mode === 'create' ? 'Add Magic Item' : 'Edit Magic Item';
+        body = renderMagicItemForm(draft);
+        break;
+      case 'act':
+        title = mode === 'create' ? 'Add Act' : 'Edit Act';
+        body = renderActForm(draft);
+        break;
+      case 'scene':
+        title = mode === 'create' ? 'Add Scene' : 'Edit Scene';
+        body = renderSceneForm(draft);
+        break;
+      case 'combat':
+        title = mode === 'create' ? 'Add Combat' : 'Edit Combat';
+        body = renderCombatForm(draft);
+        break;
+    }
+    elements.itemEditorTitle.textContent = title;
+    elements.itemEditorBody.innerHTML = body;
+    const canDelete = mode === 'edit' && ['magic-item', 'act', 'scene', 'combat'].includes(type);
+    elements.btnItemEditorDelete.hidden = !canDelete;
+  }
+
+  function handleItemEditorInput(e) {
+    if (!editingItem) return;
+    const target = e.target;
+    const field = target.dataset.field;
+    if (!field) return;
+
+    // Enemy count input within a combat form
+    if (field === 'count') {
+      const enemyEl = target.closest('[data-enemy-id]');
+      if (!enemyEl || !editingItem.draft.enemies) return;
+      const enemy = editingItem.draft.enemies.find(en => en.id === enemyEl.dataset.enemyId);
+      if (enemy) {
+        const n = parseInt(target.value, 10);
+        enemy.count = isNaN(n) || n < 1 ? 1 : Math.min(99, n);
+      }
+      return;
+    }
+
+    editingItem.draft[field] = target.value;
+  }
+
+  function handleItemEditorBodyClick(e) {
+    if (!editingItem) return;
+    const button = e.target.closest('[data-action]');
+    if (!button) return;
+    const action = button.dataset.action;
+
+    if (action === 'remove-enemy') {
+      const enemyEl = button.closest('[data-enemy-id]');
+      if (!enemyEl || !editingItem.draft.enemies) return;
+      editingItem.draft.enemies = editingItem.draft.enemies.filter(en => en.id !== enemyEl.dataset.enemyId);
+      renderItemEditorBody();
+    } else if (action === 'add-enemy') {
+      void openEnemyPicker();
+    }
+  }
+
+  function handleItemEditorSave() {
+    if (!editingItem) return;
+    const { type, mode, refs, draft } = editingItem;
+
+    if (type === 'header' && !(draft.title || '').trim()) {
+      showToast('Title cannot be empty');
+      return;
+    }
+
+    switch (type) {
+      case 'header':
+        ['title', 'subtitle', 'players', 'level', 'duration', 'campaign'].forEach(f => {
+          editingScenario[f] = draft[f] || '';
+        });
+        elements.scenarioDetailHeading.textContent = editingScenario.title || 'New Scenario';
+        break;
+      case 'narrative':
+        editingScenario.context = draft.value || '';
+        break;
+      case 'structure':
+        editingScenario.structure = draft.value || '';
+        break;
+      case 'magic-item':
+        if (mode === 'create') editingScenario.magicItems.push(draft);
+        else {
+          const idx = editingScenario.magicItems.findIndex(i => i.id === refs.itemId);
+          if (idx !== -1) editingScenario.magicItems[idx] = draft;
+        }
+        break;
+      case 'act':
+        if (mode === 'create') editingScenario.acts.push(draft);
+        else {
+          const idx = editingScenario.acts.findIndex(a => a.id === refs.actId);
+          if (idx !== -1) editingScenario.acts[idx] = draft;
+        }
+        break;
+      case 'scene': {
+        const act = editingScenario.acts.find(a => a.id === refs.actId);
+        if (!act) break;
+        if (mode === 'create') act.scenes.push(draft);
+        else {
+          const idx = act.scenes.findIndex(s => s.id === refs.sceneId);
+          if (idx !== -1) act.scenes[idx] = draft;
+        }
+        break;
+      }
+      case 'combat': {
+        const act = editingScenario.acts.find(a => a.id === refs.actId);
+        const scene = act && act.scenes.find(s => s.id === refs.sceneId);
+        if (!scene) break;
+        if (mode === 'create') scene.combats.push(draft);
+        else {
+          const idx = scene.combats.findIndex(c => c.id === refs.combatId);
+          if (idx !== -1) scene.combats[idx] = draft;
+        }
+        break;
+      }
+    }
+
+    editingScenario.updatedAt = new Date().toISOString();
+
+    // First save activates autosave; subsequent saves are debounced
+    if (!autosaveActive) {
+      const result = Scenarios.save(editingScenario);
+      if (result.success) {
+        autosaveActive = true;
+        setAutosaveIndicator('saved');
+      } else {
+        setAutosaveIndicator('error', result.error);
+        showModal('Save failed', result.error || 'Unknown error', null);
+        return;
+      }
+    } else {
+      scheduleAutosave();
+    }
+
+    closeItemEditor();
+    void renderScenarioView();
+  }
+
+  function handleItemEditorDelete() {
+    if (!editingItem || editingItem.mode !== 'edit') return;
+    const { type, refs } = editingItem;
+    closeItemEditor();
+    confirmDeleteItem(type, refs);
+  }
+
+  // ---- Form renderers ----
+
+  function renderHeaderForm(draft) {
+    return `
+      <label class="field-row">
+        <span class="field-label">Title</span>
+        <input type="text" data-field="title" value="${escapeAttr(draft.title)}" placeholder="Scenario title" class="field-input" autofocus>
+      </label>
+      <label class="field-row">
+        <span class="field-label">Subtitle</span>
+        <input type="text" data-field="subtitle" value="${escapeAttr(draft.subtitle)}" placeholder="Optional subtitle" class="field-input">
+      </label>
+      <div class="field-grid">
+        <label class="field-row"><span class="field-label">Players</span>
+          <input type="text" data-field="players" value="${escapeAttr(draft.players)}" placeholder="e.g. 4-5" class="field-input"></label>
+        <label class="field-row"><span class="field-label">Level</span>
+          <input type="text" data-field="level" value="${escapeAttr(draft.level)}" placeholder="e.g. 5" class="field-input"></label>
+        <label class="field-row"><span class="field-label">Duration</span>
+          <input type="text" data-field="duration" value="${escapeAttr(draft.duration)}" placeholder="e.g. 3-4h" class="field-input"></label>
+        <label class="field-row"><span class="field-label">Campaign</span>
+          <input type="text" data-field="campaign" value="${escapeAttr(draft.campaign)}" placeholder="Campaign name" class="field-input"></label>
+      </div>
+    `;
+  }
+
+  function renderTextOnlyForm(value, field, placeholder, rows) {
+    return `
+      <textarea data-field="${field}" rows="${rows}" placeholder="${escapeAttr(placeholder)}" class="field-textarea full-height" autofocus>${escapeHtml(value || '')}</textarea>
+    `;
+  }
+
+  function renderMagicItemForm(draft) {
+    const options = ['<option value=""' + (draft.rarity ? '' : ' selected') + '>— Rarity —</option>']
+      .concat(RARITIES.map(r => `<option value="${r}"${draft.rarity === r ? ' selected' : ''}>${r}</option>`))
+      .join('');
+    return `
+      <label class="field-row"><span class="field-label">Name</span>
+        <input type="text" data-field="name" value="${escapeAttr(draft.name)}" placeholder="Item name" class="field-input" autofocus></label>
+      <label class="field-row"><span class="field-label">Rarity</span>
+        <select data-field="rarity" class="field-input field-select">${options}</select></label>
+      <label class="field-row"><span class="field-label">Description</span>
+        <textarea data-field="description" rows="6" placeholder="Description / properties" class="field-textarea">${escapeHtml(draft.description)}</textarea></label>
+    `;
+  }
+
+  function renderActForm(draft) {
+    return `
+      <label class="field-row"><span class="field-label">Title</span>
+        <input type="text" data-field="title" value="${escapeAttr(draft.title)}" placeholder="Act title" class="field-input" autofocus></label>
+      <label class="field-row"><span class="field-label">Description</span>
+        <textarea data-field="description" rows="6" placeholder="Act overview / themes" class="field-textarea">${escapeHtml(draft.description)}</textarea></label>
+    `;
+  }
+
+  function renderSceneForm(draft) {
+    return `
+      <label class="field-row"><span class="field-label">Title</span>
+        <input type="text" data-field="title" value="${escapeAttr(draft.title)}" placeholder="Scene title" class="field-input" autofocus></label>
+      <label class="field-row"><span class="field-label">Content</span>
+        <textarea data-field="content" rows="12" placeholder="Scene content, beats, NPC notes..." class="field-textarea">${escapeHtml(draft.content)}</textarea></label>
+    `;
+  }
+
+  function renderCombatForm(draft) {
+    const enemiesHtml = draft.enemies.map(enemy => {
+      const info = lookupEnemyInfo(enemy);
+      const label = info ? escapeHtml(info.name) : '<em>(missing)</em>';
+      const sub = info
+        ? `${info.kindLabel}${info.cr ? ` &middot; CR ${escapeHtml(info.cr)}` : ''}`
+        : 'Reference broken';
+      return `
+        <div class="enemy-chip" data-enemy-id="${enemy.id}">
+          <div class="enemy-chip-info">
+            <div class="enemy-chip-name">${label}</div>
+            <div class="enemy-chip-sub">${sub}</div>
+          </div>
+          <label class="enemy-chip-count">
+            <span>×</span>
+            <input type="number" min="1" max="99" data-field="count" value="${enemy.count || 1}">
+          </label>
+          <button type="button" class="btn-remove" data-action="remove-enemy" aria-label="Remove enemy">&times;</button>
+        </div>
+      `;
+    }).join('');
+    return `
+      <label class="field-row"><span class="field-label">Name</span>
+        <input type="text" data-field="name" value="${escapeAttr(draft.name)}" placeholder="Combat name" class="field-input" autofocus></label>
+      <label class="field-row"><span class="field-label">Description</span>
+        <textarea data-field="description" rows="4" placeholder="Terrain, hooks, tactics..." class="field-textarea">${escapeHtml(draft.description)}</textarea></label>
+      <div class="field-row">
+        <span class="field-label">Enemies</span>
+        <div class="enemy-list">${enemiesHtml}</div>
+        <button type="button" class="btn btn-tertiary btn-add" data-action="add-enemy">+ Add Enemy</button>
       </div>
     `;
   }
