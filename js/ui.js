@@ -210,7 +210,15 @@ const UI = (function() {
     elements.btnNewScenarioEmpty = document.getElementById('btn-new-scenario-empty');
     elements.btnBackScenario = document.getElementById('btn-back-scenario');
     elements.scenarioDetailHeading = document.getElementById('scenario-detail-heading');
-    elements.scenarioDetailContent = document.getElementById('scenario-detail-content');
+    elements.scenarioEditorContainer = document.getElementById('scenario-editor-container');
+    elements.scenarioReaderContainer = document.getElementById('scenario-reader-container');
+    elements.scenarioTabs = document.querySelectorAll('#screen-scenario-detail .view-tab');
+    elements.scenarioTabContents = document.querySelectorAll('#screen-scenario-detail .view-tab-content');
+    elements.enemyPickerModal = document.getElementById('enemy-picker-modal');
+    elements.enemyPickerTabs = document.querySelectorAll('.enemy-picker-tab');
+    elements.enemyPickerSearch = document.getElementById('enemy-picker-search');
+    elements.enemyPickerList = document.getElementById('enemy-picker-list');
+    elements.btnEnemyPickerClose = document.getElementById('enemy-picker-close');
   }
 
   /**
@@ -571,6 +579,11 @@ const UI = (function() {
 
   // Scenario editor state
   let editingScenario = null;
+  let pickerTarget = null; // { actId, sceneId, combatId }
+  let pickerSource = 'srd'; // 'srd' | 'npc'
+  let cachedScenarioMonsters = null;
+
+  const RARITIES = ['Common', 'Uncommon', 'Rare', 'Very Rare', 'Legendary', 'Artifact'];
 
   function setupScenariosScreen() {
     const openNew = () => openScenarioDetail(null);
@@ -582,6 +595,23 @@ const UI = (function() {
         renderScenarioList();
       });
     }
+
+    // Scenario detail tabs (Edit / Read)
+    elements.scenarioTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.dataset.tab;
+        elements.scenarioTabs.forEach(t => t.classList.toggle('active', t.dataset.tab === target));
+        elements.scenarioTabContents.forEach(c => c.classList.toggle('active', c.dataset.tab === target));
+        if (target === 'read') void renderScenarioReader();
+      });
+    });
+
+    setupEnemyPicker();
+  }
+
+  function setActiveScenarioTab(tab) {
+    elements.scenarioTabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    elements.scenarioTabContents.forEach(c => c.classList.toggle('active', c.dataset.tab === tab));
   }
 
   function renderScenarioList() {
@@ -639,7 +669,7 @@ const UI = (function() {
     });
   }
 
-  function openScenarioDetail(scenarioId) {
+  async function openScenarioDetail(scenarioId) {
     if (scenarioId) {
       const existing = Scenarios.getById(scenarioId);
       if (!existing) {
@@ -650,9 +680,13 @@ const UI = (function() {
     } else {
       editingScenario = Scenarios.createEmptyScenario();
     }
+    if (!cachedScenarioMonsters) {
+      cachedScenarioMonsters = await getMonsters();
+    }
     elements.scenarioDetailHeading.textContent = editingScenario.title || 'New Scenario';
     showScreen('scenarioDetail');
     updateNavigation('scenarioDetail');
+    setActiveScenarioTab('edit');
     renderScenarioEditor();
   }
 
@@ -661,7 +695,7 @@ const UI = (function() {
     const s = editingScenario;
     const isExisting = !!Scenarios.getById(s.id);
 
-    elements.scenarioDetailContent.innerHTML = `
+    elements.scenarioEditorContainer.innerHTML = `
       <form class="scenario-editor" autocomplete="off" novalidate>
         ${renderEditorMetaSection(s)}
         ${renderEditorTextSection('Narrative Context', 'context', s.context, 'Set the scene, describe the world state...')}
@@ -675,8 +709,9 @@ const UI = (function() {
       </form>
     `;
 
-    const form = elements.scenarioDetailContent.querySelector('.scenario-editor');
+    const form = elements.scenarioEditorContainer.querySelector('.scenario-editor');
     form.addEventListener('input', handleEditorInput);
+    form.addEventListener('change', handleEditorInput); // for <select> rarity
     form.addEventListener('click', handleEditorClick);
   }
 
@@ -728,16 +763,21 @@ const UI = (function() {
   }
 
   function renderEditorMagicItemsSection(items) {
-    const itemsHtml = items.map(item => `
-      <div class="magic-item-card" data-item-id="${item.id}">
-        <div class="card-header">
-          <input type="text" data-field="name" value="${escapeAttr(item.name)}" placeholder="Item name" class="card-title-input">
-          <button type="button" class="btn-remove" data-action="remove-magic-item" aria-label="Remove">&times;</button>
+    const itemsHtml = items.map(item => {
+      const options = ['<option value=""' + (item.rarity ? '' : ' selected') + '>— Rarity —</option>']
+        .concat(RARITIES.map(r => `<option value="${r}"${item.rarity === r ? ' selected' : ''}>${r}</option>`))
+        .join('');
+      return `
+        <div class="magic-item-card" data-item-id="${item.id}">
+          <div class="card-header">
+            <input type="text" data-field="name" value="${escapeAttr(item.name)}" placeholder="Item name" class="card-title-input">
+            <button type="button" class="btn-remove" data-action="remove-magic-item" aria-label="Remove">&times;</button>
+          </div>
+          <select data-field="rarity" class="field-input field-select">${options}</select>
+          <textarea data-field="description" rows="2" placeholder="Description / properties" class="field-textarea">${escapeHtml(item.description)}</textarea>
         </div>
-        <input type="text" data-field="rarity" value="${escapeAttr(item.rarity)}" placeholder="Rarity (Common, Rare, Legendary...)" class="field-input">
-        <textarea data-field="description" rows="2" placeholder="Description / properties" class="field-textarea">${escapeHtml(item.description)}</textarea>
-      </div>
-    `).join('');
+      `;
+    }).join('');
 
     return `
       <details class="editor-section" data-section="magicItems">
@@ -804,13 +844,82 @@ const UI = (function() {
           <button type="button" class="btn-remove" data-action="remove-combat" aria-label="Remove combat">&times;</button>
         </div>
         <textarea data-field="description" rows="2" placeholder="Terrain, hooks, tactics..." class="field-textarea">${escapeHtml(combat.description)}</textarea>
-        <div class="combat-enemies-placeholder">Enemy picker coming next.</div>
+        <div class="enemy-list">
+          ${combat.enemies.map(enemy => renderEditorEnemyChip(enemy)).join('')}
+        </div>
+        <button type="button" class="btn btn-tertiary btn-add" data-action="add-enemy">+ Add Enemy</button>
       </div>
     `;
   }
 
+  function renderEditorEnemyChip(enemy) {
+    const info = lookupEnemyInfo(enemy);
+    const label = info ? escapeHtml(info.name) : '<em>(missing)</em>';
+    const sub = info
+      ? `${info.kindLabel}${info.cr ? ` &middot; CR ${escapeHtml(info.cr)}` : ''}`
+      : 'Reference broken';
+    return `
+      <div class="enemy-chip" data-enemy-id="${enemy.id}">
+        <div class="enemy-chip-info">
+          <div class="enemy-chip-name">${label}</div>
+          <div class="enemy-chip-sub">${sub}</div>
+        </div>
+        <label class="enemy-chip-count">
+          <span>×</span>
+          <input type="number" min="1" max="99" data-action="change-enemy-count" value="${enemy.count || 1}">
+        </label>
+        <button type="button" class="btn-remove" data-action="remove-enemy" aria-label="Remove enemy">&times;</button>
+      </div>
+    `;
+  }
+
+  function lookupEnemyInfo(enemy) {
+    if (!enemy) return null;
+    if (enemy.sourceType === 'srd') {
+      const monster = (cachedScenarioMonsters || []).find(m => m.name === enemy.sourceId);
+      if (!monster) return null;
+      return {
+        name: monster.name,
+        kindLabel: 'SRD',
+        cr: monster.challenge_rating !== undefined ? String(monster.challenge_rating) : '',
+        profile: buildMonsterProfile(monster)
+      };
+    }
+    if (enemy.sourceType === 'npc') {
+      const npc = Storage.getById(enemy.sourceId);
+      if (!npc) return null;
+      return {
+        name: npc.name,
+        kindLabel: 'NPC',
+        cr: npc.cr !== undefined ? String(npc.cr) : '',
+        profile: npc
+      };
+    }
+    return null;
+  }
+
   function handleEditorInput(e) {
     const target = e.target;
+
+    // Special: enemy count
+    if (target.dataset.action === 'change-enemy-count') {
+      const enemyEl = target.closest('[data-enemy-id]');
+      const combatEl = target.closest('[data-combat-id]');
+      const sceneEl = target.closest('[data-scene-id]');
+      const actEl = target.closest('[data-act-id]');
+      if (!enemyEl || !combatEl || !sceneEl || !actEl) return;
+      const act = editingScenario.acts.find(a => a.id === actEl.dataset.actId);
+      const scene = act && act.scenes.find(s => s.id === sceneEl.dataset.sceneId);
+      const combat = scene && scene.combats.find(c => c.id === combatEl.dataset.combatId);
+      const enemy = combat && combat.enemies.find(en => en.id === enemyEl.dataset.enemyId);
+      if (enemy) {
+        const n = parseInt(target.value, 10);
+        enemy.count = isNaN(n) || n < 1 ? 1 : Math.min(99, n);
+      }
+      editingScenario.updatedAt = new Date().toISOString();
+      return;
+    }
+
     const field = target.dataset.field;
     if (!field) return;
 
@@ -900,6 +1009,22 @@ const UI = (function() {
         renderScenarioEditor();
         break;
       }
+      case 'add-enemy':
+        if (actEl && sceneEl && combatEl) {
+          void openEnemyPicker(actEl.dataset.actId, sceneEl.dataset.sceneId, combatEl.dataset.combatId);
+        }
+        break;
+      case 'remove-enemy': {
+        const act = editingScenario.acts.find(a => a.id === actEl.dataset.actId);
+        const scene = act && act.scenes.find(s => s.id === sceneEl.dataset.sceneId);
+        const combat = scene && scene.combats.find(c => c.id === combatEl.dataset.combatId);
+        const enemyEl = button.closest('[data-enemy-id]');
+        if (combat && enemyEl) {
+          combat.enemies = combat.enemies.filter(en => en.id !== enemyEl.dataset.enemyId);
+        }
+        renderScenarioEditor();
+        break;
+      }
       case 'save-scenario':
         handleSaveScenario();
         break;
@@ -947,6 +1072,285 @@ const UI = (function() {
   function escapeAttr(str) {
     if (str == null) return '';
     return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  // ---- Enemy picker ----
+
+  function setupEnemyPicker() {
+    if (!elements.enemyPickerModal) return;
+
+    elements.enemyPickerTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        pickerSource = tab.dataset.source;
+        elements.enemyPickerTabs.forEach(t => t.classList.toggle('active', t === tab));
+        renderEnemyPickerList();
+      });
+    });
+
+    elements.enemyPickerSearch.addEventListener('input', renderEnemyPickerList);
+    elements.btnEnemyPickerClose.addEventListener('click', hideEnemyPicker);
+
+    const backdrop = elements.enemyPickerModal.querySelector('.modal-backdrop');
+    if (backdrop) backdrop.addEventListener('click', hideEnemyPicker);
+
+    elements.enemyPickerList.addEventListener('click', (e) => {
+      const item = e.target.closest('[data-pick-id]');
+      if (!item) return;
+      addEnemyToCombat(item.dataset.pickType, item.dataset.pickId);
+    });
+  }
+
+  async function openEnemyPicker(actId, sceneId, combatId) {
+    pickerTarget = { actId, sceneId, combatId };
+    pickerSource = 'srd';
+    if (!cachedScenarioMonsters) cachedScenarioMonsters = await getMonsters();
+    elements.enemyPickerSearch.value = '';
+    elements.enemyPickerTabs.forEach(t => t.classList.toggle('active', t.dataset.source === 'srd'));
+    renderEnemyPickerList();
+    elements.enemyPickerModal.classList.remove('hidden');
+  }
+
+  function hideEnemyPicker() {
+    elements.enemyPickerModal.classList.add('hidden');
+    pickerTarget = null;
+  }
+
+  function renderEnemyPickerList() {
+    const query = (elements.enemyPickerSearch.value || '').trim().toLowerCase();
+    let items;
+    if (pickerSource === 'srd') {
+      items = (cachedScenarioMonsters || [])
+        .filter(m => !query || m.name.toLowerCase().includes(query))
+        .slice(0, 100)
+        .map(m => ({
+          type: 'srd',
+          id: m.name,
+          name: m.name,
+          sub: `${formatMonsterTypeLine(m)} · CR ${m.challenge_rating !== undefined ? m.challenge_rating : '0'}`
+        }));
+    } else {
+      items = Storage.getAll()
+        .filter(n => !query || (n.name || '').toLowerCase().includes(query))
+        .map(n => ({
+          type: 'npc',
+          id: n.id,
+          name: n.name || 'Unnamed NPC',
+          sub: [n.race, n.tier, n.archetypeLabel].filter(Boolean).join(' · ') || 'NPC'
+        }));
+    }
+
+    if (items.length === 0) {
+      elements.enemyPickerList.innerHTML = '<div class="picker-empty">No matches</div>';
+      return;
+    }
+
+    elements.enemyPickerList.innerHTML = items.map(it => `
+      <div class="enemy-picker-item" data-pick-type="${it.type}" data-pick-id="${escapeAttr(it.id)}">
+        <div class="enemy-picker-item-name">${escapeHtml(it.name)}</div>
+        <div class="enemy-picker-item-sub">${escapeHtml(it.sub)}</div>
+      </div>
+    `).join('');
+  }
+
+  function addEnemyToCombat(sourceType, sourceId) {
+    if (!pickerTarget) return;
+    const act = editingScenario.acts.find(a => a.id === pickerTarget.actId);
+    const scene = act && act.scenes.find(s => s.id === pickerTarget.sceneId);
+    const combat = scene && scene.combats.find(c => c.id === pickerTarget.combatId);
+    if (!combat) {
+      hideEnemyPicker();
+      return;
+    }
+    combat.enemies.push({
+      id: 'e_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+      sourceType,
+      sourceId,
+      count: 1
+    });
+    hideEnemyPicker();
+    renderScenarioEditor();
+    showToast('Enemy added');
+  }
+
+  // ---- Reader view ----
+
+  async function renderScenarioReader() {
+    if (!editingScenario) return;
+    if (!cachedScenarioMonsters) cachedScenarioMonsters = await getMonsters();
+
+    const s = editingScenario;
+    const metaItems = [
+      s.subtitle && { label: 'Subtitle', value: s.subtitle },
+      s.players && { label: 'Players', value: s.players },
+      s.level && { label: 'Level', value: s.level },
+      s.duration && { label: 'Duration', value: s.duration },
+      s.campaign && { label: 'Campaign', value: s.campaign }
+    ].filter(Boolean);
+
+    const html = `
+      <article class="scenario-reader">
+        <header class="reader-title-block">
+          <h1 class="reader-title">${escapeHtml(s.title || 'Untitled scenario')}</h1>
+          ${metaItems.length ? `
+            <div class="reader-meta">
+              ${metaItems.map(m => `<span class="reader-meta-item"><span class="reader-meta-label">${m.label}</span> <span class="reader-meta-value">${escapeHtml(m.value)}</span></span>`).join('')}
+            </div>
+          ` : ''}
+        </header>
+
+        ${renderReaderTextBlock('Narrative Context', s.context)}
+        ${renderReaderTextBlock('Scenario Structure', s.structure)}
+        ${renderReaderMagicItems(s.magicItems)}
+        ${renderReaderActs(s.acts)}
+      </article>
+    `;
+
+    elements.scenarioReaderContainer.innerHTML = html;
+
+    // Wire stat block expansion + render stat blocks for any expanded combats
+    elements.scenarioReaderContainer.querySelectorAll('details.reader-statblock').forEach(detailsEl => {
+      detailsEl.addEventListener('toggle', () => {
+        if (detailsEl.open && !detailsEl.dataset.rendered) {
+          renderReaderStatblockInto(detailsEl);
+          detailsEl.dataset.rendered = '1';
+        }
+      });
+    });
+  }
+
+  function renderReaderTextBlock(heading, text) {
+    if (!text || !text.trim()) return '';
+    return `
+      <section class="reader-section">
+        <h2 class="reader-section-heading">${heading}</h2>
+        <div class="reader-prose">${formatMultilineText(text)}</div>
+      </section>
+    `;
+  }
+
+  function renderReaderMagicItems(items) {
+    if (!items || items.length === 0) return '';
+    return `
+      <section class="reader-section">
+        <h2 class="reader-section-heading">Magic Items</h2>
+        <div class="reader-items">
+          ${items.map(item => `
+            <div class="reader-item">
+              <div class="reader-item-header">
+                <span class="reader-item-name">${escapeHtml(item.name || 'Unnamed item')}</span>
+                ${item.rarity ? `<span class="rarity-badge rarity-${item.rarity.toLowerCase().replace(/\s+/g, '-')}">${escapeHtml(item.rarity)}</span>` : ''}
+              </div>
+              ${item.description ? `<div class="reader-item-description">${formatMultilineText(item.description)}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      </section>
+    `;
+  }
+
+  function renderReaderActs(acts) {
+    if (!acts || acts.length === 0) return '';
+    return acts.map((act, i) => `
+      <section class="reader-act">
+        <h2 class="reader-act-heading">Act ${i + 1}${act.title ? ` — ${escapeHtml(act.title)}` : ''}</h2>
+        ${act.description ? `<div class="reader-prose reader-act-description">${formatMultilineText(act.description)}</div>` : ''}
+        ${act.scenes.map((scene, j) => renderReaderScene(scene, j + 1)).join('')}
+      </section>
+    `).join('');
+  }
+
+  function renderReaderScene(scene, idx) {
+    return `
+      <section class="reader-scene">
+        <h3 class="reader-scene-heading">Scene ${idx}${scene.title ? ` — ${escapeHtml(scene.title)}` : ''}</h3>
+        ${scene.content ? `<div class="reader-prose">${formatMultilineText(scene.content)}</div>` : ''}
+        ${scene.combats.map((combat, k) => renderReaderCombat(combat, k + 1)).join('')}
+      </section>
+    `;
+  }
+
+  function renderReaderCombat(combat, idx) {
+    return `
+      <div class="reader-combat">
+        <h4 class="reader-combat-heading">⚔ Combat ${idx}${combat.name ? ` — ${escapeHtml(combat.name)}` : ''}</h4>
+        ${combat.description ? `<div class="reader-prose reader-combat-description">${formatMultilineText(combat.description)}</div>` : ''}
+        ${combat.enemies.length === 0 ? '<div class="reader-empty">No enemies defined.</div>' : combat.enemies.map(enemy => renderReaderEnemyContainer(enemy)).join('')}
+      </div>
+    `;
+  }
+
+  function renderReaderEnemyContainer(enemy) {
+    const info = lookupEnemyInfo(enemy);
+    const label = info ? info.name : 'Missing reference';
+    const sub = info ? `${info.kindLabel}${info.cr ? ` &middot; CR ${info.cr}` : ''}` : 'Source removed';
+    const countLabel = enemy.count > 1 ? ` × ${enemy.count}` : '';
+    return `
+      <details class="reader-statblock" data-enemy-id="${enemy.id}" data-source-type="${enemy.sourceType}" data-source-id="${escapeAttr(enemy.sourceId)}">
+        <summary>
+          <span class="reader-enemy-name">${escapeHtml(label)}${countLabel}</span>
+          <span class="reader-enemy-sub">${sub}</span>
+        </summary>
+        <div class="reader-statblock-body"></div>
+      </details>
+    `;
+  }
+
+  function renderReaderStatblockInto(detailsEl) {
+    const body = detailsEl.querySelector('.reader-statblock-body');
+    if (!body) return;
+    const sourceType = detailsEl.dataset.sourceType;
+    const sourceId = detailsEl.dataset.sourceId;
+    const enemy = { sourceType, sourceId };
+    const info = lookupEnemyInfo(enemy);
+    if (!info) {
+      body.innerHTML = '<div class="reader-empty">Stat block source not found.</div>';
+      return;
+    }
+    const profile = info.profile;
+    const uid = detailsEl.dataset.enemyId || ('sb_' + Math.random().toString(36).slice(2, 8));
+    body.innerHTML = `
+      <div class="statblock">
+        <div class="statblock-top">
+          <div class="statblock-item"><span class="statblock-label">AC</span><span id="${uid}-ac" class="statblock-value">12</span></div>
+          <div class="statblock-item"><span class="statblock-label">HP</span><span id="${uid}-hp" class="statblock-value">10</span></div>
+          <div class="statblock-item"><span class="statblock-label">Speed</span><span id="${uid}-speed" class="statblock-value">30 ft.</span></div>
+          <div class="statblock-item"><span class="statblock-label">Init</span><span id="${uid}-init" class="statblock-value">+0</span></div>
+        </div>
+        <div id="${uid}-meta" class="statblock-meta"></div>
+        <div id="${uid}-abilities" class="statblock-abilities"></div>
+        <div class="statblock-section"><h2>Traits</h2><div id="${uid}-traits" class="statblock-list"></div></div>
+        <div class="statblock-section"><h2>Actions</h2><div id="${uid}-actions" class="statblock-list"></div></div>
+        <div class="statblock-section hidden" id="${uid}-spells-section">
+          <div class="statblock-section-header"><h2>Spells</h2><button id="${uid}-spells-toggle" class="statblock-toggle" type="button"></button></div>
+          <div id="${uid}-spells" class="statblock-list"></div>
+        </div>
+        <div class="statblock-section"><h2>Reactions</h2><div id="${uid}-reactions" class="statblock-list"></div></div>
+      </div>
+    `;
+    const target = {
+      key: uid,
+      ac: document.getElementById(uid + '-ac'),
+      hp: document.getElementById(uid + '-hp'),
+      speed: document.getElementById(uid + '-speed'),
+      init: document.getElementById(uid + '-init'),
+      meta: document.getElementById(uid + '-meta'),
+      abilities: document.getElementById(uid + '-abilities'),
+      traits: document.getElementById(uid + '-traits'),
+      actions: document.getElementById(uid + '-actions'),
+      spellsSection: document.getElementById(uid + '-spells-section'),
+      spellsToggle: document.getElementById(uid + '-spells-toggle'),
+      spells: document.getElementById(uid + '-spells'),
+      reactions: document.getElementById(uid + '-reactions')
+    };
+    renderStatBlock(target, profile);
+  }
+
+  function formatMultilineText(text) {
+    if (!text) return '';
+    return escapeHtml(text)
+      .split(/\n{2,}/)
+      .map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`)
+      .join('');
   }
 
   /**

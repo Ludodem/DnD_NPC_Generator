@@ -1457,3 +1457,410 @@ button {
   font-weight: normal;
 }
 
+.field-select {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--color-text-muted) 50%),
+                    linear-gradient(135deg, var(--color-text-muted) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 50%, calc(100% - 12px) 50%;
+  background-size: 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 32px;
+  cursor: pointer;
+}
+
+/* Enemy chips in editor */
+.enemy-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.enemy-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-xs) var(--space-sm);
+}
+
+.enemy-chip-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.enemy-chip-name {
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.enemy-chip-sub {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.enemy-chip-count {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.enemy-chip-count input {
+  width: 44px;
+  text-align: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 2px 4px;
+  font-size: 13px;
+  background: var(--color-bg-card);
+}
+
+/* Enemy picker modal */
+.enemy-picker-content {
+  width: 92%;
+  max-width: 460px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.enemy-picker-tabs {
+  display: flex;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-sm);
+}
+
+.enemy-picker-tab {
+  flex: 1;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  padding: var(--space-sm);
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.enemy-picker-tab.active {
+  background: var(--color-accent);
+  color: white;
+  border-color: var(--color-accent);
+}
+
+.enemy-picker-list {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  margin-top: var(--space-sm);
+  min-height: 200px;
+  max-height: 50vh;
+}
+
+.enemy-picker-item {
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+}
+
+.enemy-picker-item:last-child {
+  border-bottom: none;
+}
+
+.enemy-picker-item:hover {
+  background: var(--color-bg-card);
+}
+
+.enemy-picker-item-name {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.enemy-picker-item-sub {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.picker-empty {
+  padding: var(--space-lg);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+/* Rarity badges */
+.rarity-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.rarity-badge.rarity-common { background: #e8e8e8; color: #555; border-color: #ccc; }
+.rarity-badge.rarity-uncommon { background: #d4edda; color: #1e6f3a; border-color: #88c19a; }
+.rarity-badge.rarity-rare { background: #cfe2ff; color: #1a4d8c; border-color: #8fb6e6; }
+.rarity-badge.rarity-very-rare { background: #e0d4ff; color: #5e3aa1; border-color: #b89eea; }
+.rarity-badge.rarity-legendary { background: #ffe7b3; color: #8a5a00; border-color: #e6c87a; }
+.rarity-badge.rarity-artifact { background: #ffd0d0; color: #8a1a1a; border-color: #d97a7a; }
+
+/* Reader (read view) */
+.scenario-reader {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.reader-title-block {
+  border-bottom: 2px solid var(--color-accent);
+  padding-bottom: var(--space-md);
+}
+
+.reader-title {
+  font-family: var(--font-heading);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-accent);
+  margin: 0 0 var(--space-sm);
+  line-height: 1.2;
+}
+
+.reader-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm) var(--space-md);
+  font-size: 13px;
+}
+
+.reader-meta-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.reader-meta-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.reader-meta-value {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.reader-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.reader-section-heading {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-accent);
+  margin: 0;
+  padding-bottom: var(--space-xs);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.reader-prose {
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--color-text);
+}
+
+.reader-prose p {
+  margin: 0 0 var(--space-sm);
+}
+
+.reader-prose p:last-child {
+  margin-bottom: 0;
+}
+
+.reader-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.reader-item {
+  background: var(--color-bg);
+  border-left: 3px solid var(--color-accent-light);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+}
+
+.reader-item-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xs);
+}
+
+.reader-item-name {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.reader-item-description {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text);
+}
+
+.reader-act {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.reader-act-heading {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-accent);
+  margin: 0;
+}
+
+.reader-act-description {
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+
+.reader-scene {
+  background: var(--color-bg);
+  border-left: 3px solid var(--color-accent-light);
+  padding: var(--space-md);
+  border-radius: var(--radius-sm);
+  margin-top: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.reader-scene-heading {
+  font-family: var(--font-heading);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.reader-combat {
+  background: var(--color-bg-card);
+  border-left: 3px solid var(--color-danger);
+  padding: var(--space-md);
+  border-radius: var(--radius-sm);
+  margin-top: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.reader-combat-heading {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-danger);
+  margin: 0;
+}
+
+.reader-combat-description {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.reader-empty {
+  font-size: 13px;
+  font-style: italic;
+  color: var(--color-text-muted);
+  padding: var(--space-sm);
+  text-align: center;
+}
+
+.reader-statblock {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.reader-statblock > summary {
+  padding: var(--space-sm) var(--space-md);
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  user-select: none;
+}
+
+.reader-statblock > summary::-webkit-details-marker {
+  display: none;
+}
+
+.reader-statblock > summary::before {
+  content: '▸';
+  color: var(--color-text-muted);
+  font-size: 12px;
+  transition: transform 0.15s;
+}
+
+.reader-statblock[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.reader-enemy-name {
+  flex: 1;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.reader-enemy-sub {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-muted);
+}
+
+.reader-statblock-body {
+  padding: 0 var(--space-md) var(--space-md);
+}
+
+.reader-statblock-body .statblock {
+  background: var(--color-bg-card);
+  padding: var(--space-md);
+  border-radius: var(--radius-sm);
+}
+

@@ -429,8 +429,15 @@
           </div>
         </header>
         <div class="screen-content">
-          <div id="scenario-detail-content">
-            <p class="placeholder-text">Editor coming next.</p>
+          <div class="view-tabs">
+            <button class="view-tab active" data-tab="edit">Edit</button>
+            <button class="view-tab" data-tab="read">Read</button>
+          </div>
+          <div class="view-tab-content active" data-tab="edit">
+            <div id="scenario-editor-container"></div>
+          </div>
+          <div class="view-tab-content" data-tab="read">
+            <div id="scenario-reader-container"></div>
           </div>
         </div>
       </section>
@@ -495,6 +502,23 @@
       <div class="modal-content condition-modal-content">
         <h2 id="condition-title"></h2>
         <div id="condition-description" class="condition-description"></div>
+      </div>
+    </div>
+
+    <!-- Enemy Picker Modal -->
+    <div id="enemy-picker-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content enemy-picker-content">
+        <h2>Add Enemy</h2>
+        <div class="enemy-picker-tabs">
+          <button class="enemy-picker-tab active" data-source="srd">SRD Monsters</button>
+          <button class="enemy-picker-tab" data-source="npc">My NPCs</button>
+        </div>
+        <input id="enemy-picker-search" class="filter-input" type="search" placeholder="Search by name...">
+        <div id="enemy-picker-list" class="enemy-picker-list"></div>
+        <div class="modal-actions">
+          <button id="enemy-picker-close" class="btn btn-secondary">Close</button>
+        </div>
       </div>
     </div>
 

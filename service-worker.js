@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = 'npc-gen-v34';
+﻿const CACHE_NAME = 'npc-gen-v35';
 
 const ASSETS = [
   './',
