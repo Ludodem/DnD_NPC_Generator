@@ -1621,58 +1621,72 @@ button {
 .rarity-badge.rarity-legendary { background: #ffe7b3; color: #8a5a00; border-color: #e6c87a; }
 .rarity-badge.rarity-artifact { background: #ffd0d0; color: #8a1a1a; border-color: #d97a7a; }
 
-/* Reader (read view) */
+/* Reader (read view) — flat hierarchy, typography-driven */
 .scenario-reader {
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-lg);
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);
-  box-shadow: var(--shadow-sm);
+  padding-bottom: var(--space-xl);
 }
 
-.reader-title-block {
-  border-bottom: 2px solid var(--color-accent);
+.reader-header {
+  text-align: center;
+  border-bottom: 3px double var(--color-accent);
   padding-bottom: var(--space-md);
 }
 
 .reader-title {
   font-family: var(--font-heading);
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 700;
   color: var(--color-accent);
-  margin: 0 0 var(--space-sm);
-  line-height: 1.2;
-}
-
-.reader-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-sm) var(--space-md);
-  font-size: 13px;
-}
-
-.reader-meta-item {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 4px;
-}
-
-.reader-meta-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
+  margin: 0;
+  line-height: 1.15;
   letter-spacing: 0.5px;
 }
 
-.reader-meta-value {
-  color: var(--color-text);
-  font-weight: 600;
+.reader-subtitle {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-style: italic;
+  color: var(--color-text-muted);
+  margin: var(--space-xs) 0 0;
 }
 
+.reader-meta {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-top: var(--space-sm);
+  font-weight: 500;
+}
+
+.reader-toc {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-xs) var(--space-sm);
+  margin-top: var(--space-md);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-border);
+}
+
+.reader-toc-item {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-accent);
+  text-decoration: none;
+  border: 1px solid var(--color-accent-light);
+  padding: 2px 10px;
+  border-radius: 999px;
+  transition: background 0.1s;
+}
+
+.reader-toc-item:hover {
+  background: var(--color-accent);
+  color: white;
+}
+
+/* Top-level sections (Context / Structure / Magic Items) */
 .reader-section {
   display: flex;
   flex-direction: column;
@@ -1681,10 +1695,12 @@ button {
 
 .reader-section-heading {
   font-family: var(--font-heading);
-  font-size: 20px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--color-accent);
   margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
   padding-bottom: var(--space-xs);
   border-bottom: 1px solid var(--color-border);
 }
@@ -1703,24 +1719,23 @@ button {
   margin-bottom: 0;
 }
 
+/* Magic items: clean list, no heavy cards */
 .reader-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
 }
 
 .reader-item {
-  background: var(--color-bg);
-  border-left: 3px solid var(--color-accent-light);
-  padding: var(--space-sm) var(--space-md);
-  border-radius: var(--radius-sm);
+  padding: var(--space-xs) 0;
+  border-bottom: 1px dashed var(--color-border);
 }
 
-.reader-item-header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  margin-bottom: var(--space-xs);
+.reader-item:last-child {
+  border-bottom: none;
 }
 
 .reader-item-name {
@@ -1728,28 +1743,32 @@ button {
   font-size: 16px;
   font-weight: 700;
   color: var(--color-text);
+  margin-right: var(--space-sm);
 }
 
 .reader-item-description {
   font-size: 14px;
   line-height: 1.5;
   color: var(--color-text);
+  margin-top: var(--space-xs);
 }
 
+/* Acts: top-level chapter feel */
 .reader-act {
-  border-top: 1px solid var(--color-border);
-  padding-top: var(--space-md);
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: var(--space-md);
+  scroll-margin-top: var(--space-md);
 }
 
 .reader-act-heading {
   font-family: var(--font-heading);
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
   color: var(--color-accent);
   margin: 0;
+  padding-bottom: var(--space-xs);
+  border-bottom: 2px solid var(--color-accent);
 }
 
 .reader-act-description {
@@ -1757,34 +1776,34 @@ button {
   color: var(--color-text-muted);
 }
 
+/* Scenes: indented, no card */
 .reader-scene {
-  background: var(--color-bg);
-  border-left: 3px solid var(--color-accent-light);
-  padding: var(--space-md);
-  border-radius: var(--radius-sm);
-  margin-top: var(--space-sm);
+  padding-left: var(--space-md);
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
+  border-left: 2px solid var(--color-accent-light);
 }
 
 .reader-scene-heading {
   font-family: var(--font-heading);
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--color-text);
   margin: 0;
 }
 
+.reader-scene-marker {
+  color: var(--color-accent);
+  margin-right: 4px;
+}
+
+/* Combats: emphasis without card */
 .reader-combat {
-  background: var(--color-bg-card);
-  border-left: 3px solid var(--color-danger);
-  padding: var(--space-md);
-  border-radius: var(--radius-sm);
-  margin-top: var(--space-sm);
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
+  margin-top: var(--space-sm);
 }
 
 .reader-combat-heading {
@@ -1793,6 +1812,12 @@ button {
   font-weight: 700;
   color: var(--color-danger);
   margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.reader-combat-marker {
+  margin-right: 6px;
 }
 
 .reader-combat-description {
@@ -1804,45 +1829,26 @@ button {
   font-size: 13px;
   font-style: italic;
   color: var(--color-text-muted);
-  padding: var(--space-sm);
-  text-align: center;
+  padding: var(--space-sm) 0;
 }
 
-.reader-statblock {
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
+/* Enemy: header line + always-open stat block */
+.reader-enemy {
+  margin-top: var(--space-sm);
 }
 
-.reader-statblock > summary {
-  padding: var(--space-sm) var(--space-md);
-  cursor: pointer;
-  list-style: none;
+.reader-enemy-header {
   display: flex;
-  align-items: center;
+  align-items: baseline;
+  flex-wrap: wrap;
   gap: var(--space-sm);
-  user-select: none;
-}
-
-.reader-statblock > summary::-webkit-details-marker {
-  display: none;
-}
-
-.reader-statblock > summary::before {
-  content: '▸';
-  color: var(--color-text-muted);
-  font-size: 12px;
-  transition: transform 0.15s;
-}
-
-.reader-statblock[open] > summary::before {
-  transform: rotate(90deg);
+  padding-bottom: var(--space-xs);
+  margin-bottom: var(--space-xs);
 }
 
 .reader-enemy-name {
-  flex: 1;
   font-family: var(--font-heading);
+  font-size: 17px;
   font-weight: 700;
   color: var(--color-text);
 }
@@ -1854,13 +1860,54 @@ button {
   color: var(--color-text-muted);
 }
 
-.reader-statblock-body {
-  padding: 0 var(--space-md) var(--space-md);
+.reader-statblock-mount {
+  display: block;
 }
 
-.reader-statblock-body .statblock {
+.reader-statblock-card {
   background: var(--color-bg-card);
-  padding: var(--space-md);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
+  padding: var(--space-md);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Scenario detail header has an extra slot for the autosave indicator */
+#screen-scenario-detail .screen-header.with-back {
+  grid-template-columns: 44px 1fr auto;
+}
+
+/* Autosave indicator */
+.autosave-indicator {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  padding: 4px 10px;
+  border-radius: 999px;
+  transition: opacity 0.2s;
+}
+
+.autosave-indicator.autosave-hidden {
+  display: none;
+}
+
+.autosave-indicator.autosave-pending {
+  color: var(--color-text-muted);
+  background: transparent;
+}
+
+.autosave-indicator.autosave-saving {
+  color: var(--color-accent);
+  background: rgba(139, 69, 19, 0.08);
+}
+
+.autosave-indicator.autosave-saved {
+  color: var(--color-success);
+  background: rgba(60, 118, 61, 0.1);
+}
+
+.autosave-indicator.autosave-error {
+  color: var(--color-danger);
+  background: rgba(169, 68, 66, 0.1);
 }
 

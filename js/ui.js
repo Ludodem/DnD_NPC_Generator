@@ -582,8 +582,11 @@ const UI = (function() {
   let pickerTarget = null; // { actId, sceneId, combatId }
   let pickerSource = 'srd'; // 'srd' | 'npc'
   let cachedScenarioMonsters = null;
+  let autosaveActive = false;
+  let autosaveTimer = null;
 
   const RARITIES = ['Common', 'Uncommon', 'Rare', 'Very Rare', 'Legendary', 'Artifact'];
+  const AUTOSAVE_DELAY_MS = 500;
 
   function setupScenariosScreen() {
     const openNew = () => openScenarioDetail(null);
@@ -677,8 +680,14 @@ const UI = (function() {
         return;
       }
       editingScenario = existing;
+      autosaveActive = true;
     } else {
       editingScenario = Scenarios.createEmptyScenario();
+      autosaveActive = false;
+    }
+    if (autosaveTimer) {
+      clearTimeout(autosaveTimer);
+      autosaveTimer = null;
     }
     if (!cachedScenarioMonsters) {
       cachedScenarioMonsters = await getMonsters();
@@ -688,6 +697,7 @@ const UI = (function() {
     updateNavigation('scenarioDetail');
     setActiveScenarioTab('edit');
     renderScenarioEditor();
+    setAutosaveIndicator(autosaveActive ? 'saved' : 'idle');
   }
 
   function renderScenarioEditor() {
@@ -917,6 +927,7 @@ const UI = (function() {
         enemy.count = isNaN(n) || n < 1 ? 1 : Math.min(99, n);
       }
       editingScenario.updatedAt = new Date().toISOString();
+      scheduleAutosave();
       return;
     }
 
@@ -931,6 +942,7 @@ const UI = (function() {
       elements.scenarioDetailHeading.textContent = target.value || 'New Scenario';
     }
     editingScenario.updatedAt = new Date().toISOString();
+    scheduleAutosave();
   }
 
   function resolveEditorTarget(input) {
@@ -970,29 +982,35 @@ const UI = (function() {
       case 'add-magic-item':
         editingScenario.magicItems.push(Scenarios.createMagicItem());
         renderScenarioEditor();
+        scheduleAutosave();
         break;
       case 'remove-magic-item':
         editingScenario.magicItems = editingScenario.magicItems.filter(i => i.id !== itemEl.dataset.itemId);
         renderScenarioEditor();
+        scheduleAutosave();
         break;
       case 'add-act':
         editingScenario.acts.push(Scenarios.createAct());
         renderScenarioEditor();
+        scheduleAutosave();
         break;
       case 'remove-act':
         editingScenario.acts = editingScenario.acts.filter(a => a.id !== actEl.dataset.actId);
         renderScenarioEditor();
+        scheduleAutosave();
         break;
       case 'add-scene': {
         const act = editingScenario.acts.find(a => a.id === actEl.dataset.actId);
         if (act) act.scenes.push(Scenarios.createScene());
         renderScenarioEditor();
+        scheduleAutosave();
         break;
       }
       case 'remove-scene': {
         const act = editingScenario.acts.find(a => a.id === actEl.dataset.actId);
         if (act) act.scenes = act.scenes.filter(s => s.id !== sceneEl.dataset.sceneId);
         renderScenarioEditor();
+        scheduleAutosave();
         break;
       }
       case 'add-combat': {
@@ -1000,6 +1018,7 @@ const UI = (function() {
         const scene = act && act.scenes.find(s => s.id === sceneEl.dataset.sceneId);
         if (scene) scene.combats.push(Scenarios.createCombat());
         renderScenarioEditor();
+        scheduleAutosave();
         break;
       }
       case 'remove-combat': {
@@ -1007,6 +1026,7 @@ const UI = (function() {
         const scene = act && act.scenes.find(s => s.id === sceneEl.dataset.sceneId);
         if (scene) scene.combats = scene.combats.filter(c => c.id !== combatEl.dataset.combatId);
         renderScenarioEditor();
+        scheduleAutosave();
         break;
       }
       case 'add-enemy':
@@ -1023,6 +1043,7 @@ const UI = (function() {
           combat.enemies = combat.enemies.filter(en => en.id !== enemyEl.dataset.enemyId);
         }
         renderScenarioEditor();
+        scheduleAutosave();
         break;
       }
       case 'save-scenario':
@@ -1039,12 +1060,18 @@ const UI = (function() {
       showToast('Please add a title before saving');
       return;
     }
+    const wasFirstSave = !autosaveActive;
     const result = Scenarios.save(editingScenario);
     if (result.success) {
+      autosaveActive = true;
+      setAutosaveIndicator('saved');
       showToast('Scenario saved');
-      showScreen('scenarios');
-      renderScenarioList();
+      if (wasFirstSave) {
+        // Re-render so Delete button appears now that the scenario is persisted
+        renderScenarioEditor();
+      }
     } else {
+      setAutosaveIndicator('error', result.error);
       showModal('Save failed', result.error || 'Unknown error', null);
     }
   }
@@ -1169,10 +1196,11 @@ const UI = (function() {
     });
     hideEnemyPicker();
     renderScenarioEditor();
+    scheduleAutosave();
     showToast('Enemy added');
   }
 
-  // ---- Reader view ----
+  // ---- Reader view (flat hierarchy) ----
 
   async function renderScenarioReader() {
     if (!editingScenario) return;
@@ -1180,21 +1208,27 @@ const UI = (function() {
 
     const s = editingScenario;
     const metaItems = [
-      s.subtitle && { label: 'Subtitle', value: s.subtitle },
-      s.players && { label: 'Players', value: s.players },
-      s.level && { label: 'Level', value: s.level },
-      s.duration && { label: 'Duration', value: s.duration },
-      s.campaign && { label: 'Campaign', value: s.campaign }
+      s.players && `${escapeHtml(s.players)} players`,
+      s.level && `Level ${escapeHtml(s.level)}`,
+      s.duration && escapeHtml(s.duration),
+      s.campaign && escapeHtml(s.campaign)
     ].filter(Boolean);
+
+    const tocItems = (s.acts || []).map((act, i) => ({
+      id: `act-${act.id}`,
+      label: `Act ${i + 1}${act.title ? ` — ${act.title}` : ''}`
+    }));
 
     const html = `
       <article class="scenario-reader">
-        <header class="reader-title-block">
+        <header class="reader-header">
           <h1 class="reader-title">${escapeHtml(s.title || 'Untitled scenario')}</h1>
-          ${metaItems.length ? `
-            <div class="reader-meta">
-              ${metaItems.map(m => `<span class="reader-meta-item"><span class="reader-meta-label">${m.label}</span> <span class="reader-meta-value">${escapeHtml(m.value)}</span></span>`).join('')}
-            </div>
+          ${s.subtitle ? `<p class="reader-subtitle">${escapeHtml(s.subtitle)}</p>` : ''}
+          ${metaItems.length ? `<div class="reader-meta">${metaItems.join(' &middot; ')}</div>` : ''}
+          ${tocItems.length > 1 ? `
+            <nav class="reader-toc" aria-label="Acts">
+              ${tocItems.map(t => `<a href="#${t.id}" class="reader-toc-item">${escapeHtml(t.label)}</a>`).join('')}
+            </nav>
           ` : ''}
         </header>
 
@@ -1207,13 +1241,18 @@ const UI = (function() {
 
     elements.scenarioReaderContainer.innerHTML = html;
 
-    // Wire stat block expansion + render stat blocks for any expanded combats
-    elements.scenarioReaderContainer.querySelectorAll('details.reader-statblock').forEach(detailsEl => {
-      detailsEl.addEventListener('toggle', () => {
-        if (detailsEl.open && !detailsEl.dataset.rendered) {
-          renderReaderStatblockInto(detailsEl);
-          detailsEl.dataset.rendered = '1';
-        }
+    // Render all stat blocks synchronously (always-open in flat reader)
+    elements.scenarioReaderContainer.querySelectorAll('.reader-statblock-mount').forEach(mount => {
+      renderReaderStatblockInto(mount);
+    });
+
+    // Smooth scroll for TOC
+    elements.scenarioReaderContainer.querySelectorAll('.reader-toc-item').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const targetId = link.getAttribute('href').slice(1);
+        const target = document.getElementById(targetId);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     });
   }
@@ -1233,17 +1272,15 @@ const UI = (function() {
     return `
       <section class="reader-section">
         <h2 class="reader-section-heading">Magic Items</h2>
-        <div class="reader-items">
+        <ul class="reader-items">
           ${items.map(item => `
-            <div class="reader-item">
-              <div class="reader-item-header">
-                <span class="reader-item-name">${escapeHtml(item.name || 'Unnamed item')}</span>
-                ${item.rarity ? `<span class="rarity-badge rarity-${item.rarity.toLowerCase().replace(/\s+/g, '-')}">${escapeHtml(item.rarity)}</span>` : ''}
-              </div>
+            <li class="reader-item">
+              <span class="reader-item-name">${escapeHtml(item.name || 'Unnamed item')}</span>
+              ${item.rarity ? `<span class="rarity-badge rarity-${item.rarity.toLowerCase().replace(/\s+/g, '-')}">${escapeHtml(item.rarity)}</span>` : ''}
               ${item.description ? `<div class="reader-item-description">${formatMultilineText(item.description)}</div>` : ''}
-            </div>
+            </li>
           `).join('')}
-        </div>
+        </ul>
       </section>
     `;
   }
@@ -1251,7 +1288,7 @@ const UI = (function() {
   function renderReaderActs(acts) {
     if (!acts || acts.length === 0) return '';
     return acts.map((act, i) => `
-      <section class="reader-act">
+      <section class="reader-act" id="act-${act.id}">
         <h2 class="reader-act-heading">Act ${i + 1}${act.title ? ` — ${escapeHtml(act.title)}` : ''}</h2>
         ${act.description ? `<div class="reader-prose reader-act-description">${formatMultilineText(act.description)}</div>` : ''}
         ${act.scenes.map((scene, j) => renderReaderScene(scene, j + 1)).join('')}
@@ -1262,7 +1299,7 @@ const UI = (function() {
   function renderReaderScene(scene, idx) {
     return `
       <section class="reader-scene">
-        <h3 class="reader-scene-heading">Scene ${idx}${scene.title ? ` — ${escapeHtml(scene.title)}` : ''}</h3>
+        <h3 class="reader-scene-heading"><span class="reader-scene-marker">▸</span> Scene ${idx}${scene.title ? ` — ${escapeHtml(scene.title)}` : ''}</h3>
         ${scene.content ? `<div class="reader-prose">${formatMultilineText(scene.content)}</div>` : ''}
         ${scene.combats.map((combat, k) => renderReaderCombat(combat, k + 1)).join('')}
       </section>
@@ -1270,46 +1307,49 @@ const UI = (function() {
   }
 
   function renderReaderCombat(combat, idx) {
+    const enemiesHtml = combat.enemies.length === 0
+      ? '<div class="reader-empty">No enemies defined.</div>'
+      : combat.enemies.map(enemy => renderReaderEnemyBlock(enemy)).join('');
     return `
-      <div class="reader-combat">
-        <h4 class="reader-combat-heading">⚔ Combat ${idx}${combat.name ? ` — ${escapeHtml(combat.name)}` : ''}</h4>
+      <section class="reader-combat">
+        <h4 class="reader-combat-heading"><span class="reader-combat-marker">&#9876;</span> Combat${combat.name ? ` — ${escapeHtml(combat.name)}` : ''}</h4>
         ${combat.description ? `<div class="reader-prose reader-combat-description">${formatMultilineText(combat.description)}</div>` : ''}
-        ${combat.enemies.length === 0 ? '<div class="reader-empty">No enemies defined.</div>' : combat.enemies.map(enemy => renderReaderEnemyContainer(enemy)).join('')}
+        ${enemiesHtml}
+      </section>
+    `;
+  }
+
+  function renderReaderEnemyBlock(enemy) {
+    const info = lookupEnemyInfo(enemy);
+    const label = info ? escapeHtml(info.name) : 'Missing reference';
+    const sub = info
+      ? `${info.kindLabel}${info.cr ? ` &middot; CR ${escapeHtml(info.cr)}` : ''}`
+      : 'Source removed';
+    const countLabel = enemy.count > 1 ? ` × ${enemy.count}` : '';
+    return `
+      <div class="reader-enemy" data-enemy-id="${enemy.id}" data-source-type="${enemy.sourceType}" data-source-id="${escapeAttr(enemy.sourceId)}">
+        <div class="reader-enemy-header">
+          <span class="reader-enemy-name">${label}${countLabel}</span>
+          <span class="reader-enemy-sub">${sub}</span>
+        </div>
+        <div class="reader-statblock-mount"></div>
       </div>
     `;
   }
 
-  function renderReaderEnemyContainer(enemy) {
-    const info = lookupEnemyInfo(enemy);
-    const label = info ? info.name : 'Missing reference';
-    const sub = info ? `${info.kindLabel}${info.cr ? ` &middot; CR ${info.cr}` : ''}` : 'Source removed';
-    const countLabel = enemy.count > 1 ? ` × ${enemy.count}` : '';
-    return `
-      <details class="reader-statblock" data-enemy-id="${enemy.id}" data-source-type="${enemy.sourceType}" data-source-id="${escapeAttr(enemy.sourceId)}">
-        <summary>
-          <span class="reader-enemy-name">${escapeHtml(label)}${countLabel}</span>
-          <span class="reader-enemy-sub">${sub}</span>
-        </summary>
-        <div class="reader-statblock-body"></div>
-      </details>
-    `;
-  }
-
-  function renderReaderStatblockInto(detailsEl) {
-    const body = detailsEl.querySelector('.reader-statblock-body');
-    if (!body) return;
-    const sourceType = detailsEl.dataset.sourceType;
-    const sourceId = detailsEl.dataset.sourceId;
-    const enemy = { sourceType, sourceId };
-    const info = lookupEnemyInfo(enemy);
+  function renderReaderStatblockInto(mountEl) {
+    const enemyEl = mountEl.closest('[data-source-id]');
+    if (!enemyEl) return;
+    const sourceType = enemyEl.dataset.sourceType;
+    const sourceId = enemyEl.dataset.sourceId;
+    const info = lookupEnemyInfo({ sourceType, sourceId });
     if (!info) {
-      body.innerHTML = '<div class="reader-empty">Stat block source not found.</div>';
+      mountEl.innerHTML = '<div class="reader-empty">Stat block source not found.</div>';
       return;
     }
-    const profile = info.profile;
-    const uid = detailsEl.dataset.enemyId || ('sb_' + Math.random().toString(36).slice(2, 8));
-    body.innerHTML = `
-      <div class="statblock">
+    const uid = 'sb_' + Math.random().toString(36).slice(2, 10);
+    mountEl.innerHTML = `
+      <div class="statblock reader-statblock-card">
         <div class="statblock-top">
           <div class="statblock-item"><span class="statblock-label">AC</span><span id="${uid}-ac" class="statblock-value">12</span></div>
           <div class="statblock-item"><span class="statblock-label">HP</span><span id="${uid}-hp" class="statblock-value">10</span></div>
@@ -1342,7 +1382,7 @@ const UI = (function() {
       spells: document.getElementById(uid + '-spells'),
       reactions: document.getElementById(uid + '-reactions')
     };
-    renderStatBlock(target, profile);
+    renderStatBlock(target, info.profile);
   }
 
   function formatMultilineText(text) {
@@ -1351,6 +1391,53 @@ const UI = (function() {
       .split(/\n{2,}/)
       .map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`)
       .join('');
+  }
+
+  // ---- Autosave ----
+
+  function scheduleAutosave() {
+    if (!autosaveActive) return;
+    if (autosaveTimer) clearTimeout(autosaveTimer);
+    setAutosaveIndicator('pending');
+    autosaveTimer = setTimeout(performAutosave, AUTOSAVE_DELAY_MS);
+  }
+
+  function performAutosave() {
+    if (!editingScenario) return;
+    setAutosaveIndicator('saving');
+    const result = Scenarios.save(editingScenario);
+    if (result.success) {
+      setAutosaveIndicator('saved');
+    } else {
+      setAutosaveIndicator('error', result.error);
+    }
+  }
+
+  function setAutosaveIndicator(state, message) {
+    const el = document.getElementById('autosave-indicator');
+    if (!el) return;
+    el.classList.remove('autosave-pending', 'autosave-saving', 'autosave-saved', 'autosave-error', 'autosave-hidden');
+    switch (state) {
+      case 'pending':
+        el.classList.add('autosave-pending');
+        el.textContent = '• Unsaved';
+        break;
+      case 'saving':
+        el.classList.add('autosave-saving');
+        el.textContent = 'Saving…';
+        break;
+      case 'saved':
+        el.classList.add('autosave-saved');
+        el.textContent = '✓ Saved';
+        break;
+      case 'error':
+        el.classList.add('autosave-error');
+        el.textContent = message || 'Save failed';
+        break;
+      default:
+        el.classList.add('autosave-hidden');
+        el.textContent = '';
+    }
   }
 
   /**
