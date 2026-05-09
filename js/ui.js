@@ -602,9 +602,10 @@ const UI = (function() {
       });
     }
 
-    // Click delegation on the single scenario view (handles + Add, edit, delete affordances)
+    // Click and change delegation on the single scenario view
     if (elements.scenarioView) {
       elements.scenarioView.addEventListener('click', handleScenarioViewClick);
+      elements.scenarioView.addEventListener('change', handleScenarioViewChange);
     }
 
     setupItemEditor();
@@ -987,15 +988,74 @@ const UI = (function() {
       ? `${info.kindLabel}${info.cr ? ` &middot; CR ${escapeHtml(info.cr)}` : ''}`
       : 'Source removed';
     const countLabel = enemy.count > 1 ? ` × ${enemy.count}` : '';
+    const maxHp = info && info.profile ? (info.profile.hitPoints || 0) : 0;
+    const showTrackers = info && maxHp > 0 && enemy.count > 0;
+    if (showTrackers) ensureHpInitialized(enemy, maxHp);
     return `
-      <div class="reader-enemy" data-source-type="${enemy.sourceType}" data-source-id="${escapeAttr(enemy.sourceId)}">
+      <div class="reader-enemy" data-enemy-id="${enemy.id}" data-source-type="${enemy.sourceType}" data-source-id="${escapeAttr(enemy.sourceId)}">
         <div class="reader-enemy-header">
           <span class="reader-enemy-name">${label}${countLabel}</span>
           <span class="reader-enemy-sub">${sub}</span>
+          ${showTrackers ? `<button class="hp-reset-btn" data-action="hp-reset" title="Reset all to full HP">&#x21BB; Reset</button>` : ''}
         </div>
+        ${showTrackers ? renderHpTrackers(enemy, maxHp) : ''}
         <div class="reader-statblock-mount"></div>
       </div>
     `;
+  }
+
+  function ensureHpInitialized(enemy, maxHp) {
+    if (!Array.isArray(enemy.currentHp)) enemy.currentHp = [];
+    while (enemy.currentHp.length < enemy.count) {
+      enemy.currentHp.push(maxHp);
+    }
+    if (enemy.currentHp.length > enemy.count) {
+      enemy.currentHp.length = enemy.count;
+    }
+  }
+
+  function renderHpTrackers(enemy, maxHp) {
+    const showInstanceLabels = enemy.count > 1;
+    const rows = [];
+    for (let i = 0; i < enemy.count; i++) {
+      const hp = Math.max(0, Math.min(maxHp, enemy.currentHp[i] != null ? enemy.currentHp[i] : maxHp));
+      enemy.currentHp[i] = hp;
+      const pct = maxHp > 0 ? (hp / maxHp) * 100 : 0;
+      const dead = hp <= 0;
+      const fillClass = pct < 33 ? 'danger' : pct < 66 ? 'warning' : '';
+      rows.push(`
+        <div class="hp-tracker${dead ? ' dead' : ''}" data-instance="${i}">
+          ${showInstanceLabels ? `<span class="hp-instance-label">#${i + 1}</span>` : ''}
+          <div class="hp-bar"><div class="hp-bar-fill ${fillClass}" style="width: ${pct}%;"></div></div>
+          <span class="hp-value">
+            <input type="number" min="0" max="${maxHp}" class="hp-input" data-action="hp-set" value="${hp}" aria-label="Current HP">
+            <span class="hp-max">/ ${maxHp}</span>
+          </span>
+          ${dead
+            ? `<button class="hp-revive-btn" data-action="hp-revive">Revive</button>`
+            : `<span class="hp-buttons">
+                <button class="hp-btn hp-btn-damage" data-action="hp-adjust" data-delta="-5">-5</button>
+                <button class="hp-btn hp-btn-damage" data-action="hp-adjust" data-delta="-1">-1</button>
+                <button class="hp-btn hp-btn-heal" data-action="hp-adjust" data-delta="+1">+1</button>
+                <button class="hp-btn hp-btn-heal" data-action="hp-adjust" data-delta="+5">+5</button>
+              </span>`
+          }
+        </div>
+      `);
+    }
+    return `<div class="hp-trackers">${rows.join('')}</div>`;
+  }
+
+  function findEnemyFromEl(enemyEl) {
+    if (!enemyEl) return null;
+    const combatEl = enemyEl.closest('[data-combat-id]');
+    const sceneEl = enemyEl.closest('[data-scene-id]');
+    const actEl = enemyEl.closest('[data-act-id]');
+    if (!combatEl || !sceneEl || !actEl) return null;
+    const act = editingScenario.acts.find(a => a.id === actEl.dataset.actId);
+    const scene = act && act.scenes.find(s => s.id === sceneEl.dataset.sceneId);
+    const combat = scene && scene.combats.find(c => c.id === combatEl.dataset.combatId);
+    return combat && combat.enemies.find(en => en.id === enemyEl.dataset.enemyId);
   }
 
   // ---- Click handler for the view (event delegation) ----
@@ -1030,7 +1090,80 @@ const UI = (function() {
       case 'add-combat':        openItemEditor('combat', refs, 'create'); break;
       case 'edit-combat':       openItemEditor('combat', refs, 'edit'); break;
       case 'delete-combat':     confirmDeleteItem('combat', refs); break;
+      case 'hp-adjust':         handleHpAdjust(button); break;
+      case 'hp-revive':         handleHpRevive(button); break;
+      case 'hp-reset':          handleHpReset(button); break;
     }
+  }
+
+  function handleHpAdjust(button) {
+    const enemyEl = button.closest('[data-enemy-id]');
+    const trackerEl = button.closest('[data-instance]');
+    if (!enemyEl || !trackerEl) return;
+    const enemy = findEnemyFromEl(enemyEl);
+    if (!enemy) return;
+    const info = lookupEnemyInfo(enemy);
+    const maxHp = info && info.profile ? (info.profile.hitPoints || 0) : 0;
+    if (!maxHp) return;
+    const idx = parseInt(trackerEl.dataset.instance, 10);
+    const delta = parseInt(button.dataset.delta, 10) || 0;
+    ensureHpInitialized(enemy, maxHp);
+    enemy.currentHp[idx] = Math.max(0, Math.min(maxHp, (enemy.currentHp[idx] || 0) + delta));
+    editingScenario.updatedAt = new Date().toISOString();
+    scheduleAutosave();
+    void renderScenarioView();
+  }
+
+  function handleHpRevive(button) {
+    const enemyEl = button.closest('[data-enemy-id]');
+    const trackerEl = button.closest('[data-instance]');
+    if (!enemyEl || !trackerEl) return;
+    const enemy = findEnemyFromEl(enemyEl);
+    if (!enemy) return;
+    const info = lookupEnemyInfo(enemy);
+    const maxHp = info && info.profile ? (info.profile.hitPoints || 0) : 0;
+    if (!maxHp) return;
+    const idx = parseInt(trackerEl.dataset.instance, 10);
+    ensureHpInitialized(enemy, maxHp);
+    enemy.currentHp[idx] = maxHp;
+    editingScenario.updatedAt = new Date().toISOString();
+    scheduleAutosave();
+    void renderScenarioView();
+  }
+
+  function handleHpReset(button) {
+    const enemyEl = button.closest('[data-enemy-id]');
+    if (!enemyEl) return;
+    const enemy = findEnemyFromEl(enemyEl);
+    if (!enemy) return;
+    const info = lookupEnemyInfo(enemy);
+    const maxHp = info && info.profile ? (info.profile.hitPoints || 0) : 0;
+    if (!maxHp) return;
+    enemy.currentHp = Array(enemy.count).fill(maxHp);
+    editingScenario.updatedAt = new Date().toISOString();
+    scheduleAutosave();
+    void renderScenarioView();
+  }
+
+  function handleScenarioViewChange(e) {
+    const target = e.target;
+    if (target.dataset.action !== 'hp-set') return;
+    const enemyEl = target.closest('[data-enemy-id]');
+    const trackerEl = target.closest('[data-instance]');
+    if (!enemyEl || !trackerEl) return;
+    const enemy = findEnemyFromEl(enemyEl);
+    if (!enemy) return;
+    const info = lookupEnemyInfo(enemy);
+    const maxHp = info && info.profile ? (info.profile.hitPoints || 0) : 0;
+    if (!maxHp) return;
+    const idx = parseInt(trackerEl.dataset.instance, 10);
+    const value = parseInt(target.value, 10);
+    if (isNaN(value)) return;
+    ensureHpInitialized(enemy, maxHp);
+    enemy.currentHp[idx] = Math.max(0, Math.min(maxHp, value));
+    editingScenario.updatedAt = new Date().toISOString();
+    scheduleAutosave();
+    void renderScenarioView();
   }
 
   function findItem(type, refs) {
