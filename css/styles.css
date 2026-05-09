@@ -1728,6 +1728,28 @@ button {
   border-bottom-color: var(--color-scenario-accent);
 }
 
+/* TOC sub-elements: inline on mobile */
+.toc-act-num {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-scenario-accent);
+}
+
+.toc-act-num::after {
+  content: '\00a0·\00a0';
+  opacity: 0.5;
+}
+
+.toc-act-title {
+  font-variant: small-caps;
+}
+
+.toc-act-desc {
+  display: none;
+}
+
 /* Top-level sections (Context / Structure / Magic Items) */
 .reader-section {
   display: flex;
@@ -1773,23 +1795,21 @@ button {
   margin-bottom: 0;
 }
 
-/* Magic items: clean list, no heavy cards */
+/* Magic items: grid (1-col mobile → 3-col desktop) */
 .reader-items {
   list-style: none;
   padding: 0;
   margin: 0;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: var(--space-sm);
 }
 
 .reader-item {
-  padding: var(--space-xs) 0;
-  border-bottom: 1px dashed var(--color-border);
-}
-
-.reader-item:last-child {
-  border-bottom: none;
+  padding: var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-card);
 }
 
 .reader-item-name {
@@ -2636,6 +2656,74 @@ button {
 
   .reader-act-heading {
     font-size: 28px;
+  }
+
+  /* Magic items: 3-col grid */
+  .reader-items {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* Act TOC: card grid */
+  .reader-toc {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-sm);
+    justify-content: initial;
+  }
+
+  .reader-toc-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-card);
+    box-shadow: var(--shadow-sm);
+    color: var(--color-text);
+    transition: box-shadow 0.15s, border-color 0.15s;
+  }
+
+  .reader-toc-item:hover {
+    border-color: var(--color-scenario-accent);
+    box-shadow: var(--shadow-md);
+  }
+
+  .toc-act-num {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--color-scenario-accent);
+  }
+
+  .toc-act-num::after {
+    content: '';
+  }
+
+  .toc-act-title {
+    font-size: 15px;
+    font-weight: 700;
+    font-variant: small-caps;
+    color: var(--color-text);
+    line-height: 1.2;
+  }
+
+  .toc-act-desc {
+    display: block;
+    font-size: 12px;
+    color: var(--color-text-muted);
+    line-height: 1.4;
+    font-family: var(--font-body);
+    font-weight: 400;
+    font-variant: normal;
+  }
+
+  /* Scenes: 2-col grid within each act */
+  .reader-scenes-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-lg);
+    align-items: start;
   }
 }
 

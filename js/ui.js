@@ -836,8 +836,10 @@ const UI = (function() {
     ].filter(Boolean);
 
     const tocItems = (s.acts || []).map((act, i) => ({
-      id: `act-${act.id}`,
-      label: `Act ${i + 1}${act.title ? ` — ${act.title}` : ''}`
+      id: act.id,
+      num: i + 1,
+      title: act.title || '',
+      desc: act.description ? act.description.replace(/\n/g, ' ').slice(0, 90) : ''
     }));
 
     elements.scenarioView.innerHTML = `
@@ -847,9 +849,15 @@ const UI = (function() {
           <h1 class="reader-title">${escapeHtml(s.title || 'Untitled scenario')}</h1>
           ${s.subtitle ? `<p class="reader-subtitle">${escapeHtml(s.subtitle)}</p>` : ''}
           ${metaItems.length ? `<div class="reader-meta">${metaItems.join(' &middot; ')}</div>` : ''}
-          ${tocItems.length > 1 ? `
+          ${tocItems.length > 0 ? `
             <nav class="reader-toc" aria-label="Acts">
-              ${tocItems.map(t => `<a href="#${t.id}" class="reader-toc-item">${escapeHtml(t.label)}</a>`).join('')}
+              ${tocItems.map(t => `
+                <a href="#act-${t.id}" class="reader-toc-item">
+                  <span class="toc-act-num">Act ${t.num}</span>
+                  ${t.title ? `<span class="toc-act-title">${escapeHtml(t.title)}</span>` : ''}
+                  ${t.desc ? `<span class="toc-act-desc">${escapeHtml(t.desc)}${t.desc.length >= 90 ? '…' : ''}</span>` : ''}
+                </a>
+              `).join('')}
             </nav>
           ` : ''}
         </header>
@@ -935,7 +943,7 @@ const UI = (function() {
           </span>
         </header>
         ${act.description ? `<div class="reader-prose reader-act-description">${formatMultilineText(act.description)}</div>` : ''}
-        ${act.scenes.map((scene, j) => renderViewScene(scene, j + 1)).join('')}
+        ${act.scenes.length > 0 ? `<div class="reader-scenes-grid">${act.scenes.map((scene, j) => renderViewScene(scene, j + 1)).join('')}</div>` : ''}
         <div class="add-section-wrap nested">
           <button class="affordance-add" data-action="add-scene">+ Add Scene</button>
         </div>
