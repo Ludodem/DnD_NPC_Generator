@@ -2211,11 +2211,41 @@ button {
   background: rgba(255,255,255,0.15) !important;
 }
 
+/* Collapsed / expanded toggle */
+.reader-sb .reader-sb-abilities,
+.reader-sb .reader-sb-meta,
+.reader-sb .reader-sb-sections {
+  display: none;
+}
+
+.reader-sb.expanded .reader-sb-abilities {
+  display: grid;
+}
+
+.reader-sb.expanded .reader-sb-meta:not(:empty) {
+  display: block;
+}
+
+.reader-sb.expanded .reader-sb-sections {
+  display: flex;
+}
+
 /* Combat stats strip: AC / HP / Speed / Init */
 .reader-sb-strip {
   display: flex;
   border-bottom: 1px solid #c8a96e;
   background: rgba(156, 47, 47, 0.04);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.12s;
+}
+
+.reader-sb-strip:hover {
+  background: rgba(156, 47, 47, 0.09);
+}
+
+.reader-sb.expanded .reader-sb-strip {
+  border-bottom-color: #c8a96e;
 }
 
 .reader-sb-stat {
@@ -2227,6 +2257,26 @@ button {
 
 .reader-sb-stat:last-child {
   border-right: none;
+}
+
+.reader-sb-chevron-col {
+  flex: 0 0 22px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
+}
+
+.sb-chevron {
+  font-size: 11px;
+  color: #9a7a55;
+  display: block;
+  transition: transform 0.2s ease;
+  line-height: 1;
+}
+
+.reader-sb.expanded .sb-chevron {
+  transform: rotate(180deg);
 }
 
 .sb-label {

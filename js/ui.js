@@ -587,6 +587,7 @@ const UI = (function() {
   let cachedScenarioMonsters = null;
   let autosaveActive = false;
   let autosaveTimer = null;
+  let expandedEnemyIds = new Set();
 
   const RARITIES = ['Common', 'Uncommon', 'Rare', 'Very Rare', 'Legendary', 'Artifact'];
   const AUTOSAVE_DELAY_MS = 500;
@@ -877,6 +878,11 @@ const UI = (function() {
       renderReaderStatblockInto(mount);
     });
 
+    expandedEnemyIds.forEach(id => {
+      const sb = elements.scenarioView.querySelector(`[data-enemy-id="${id}"] .reader-sb`);
+      if (sb) sb.classList.add('expanded');
+    });
+
     elements.scenarioView.querySelectorAll('.reader-toc-item').forEach(link => {
       link.addEventListener('click', (e) => {
         e.preventDefault();
@@ -1092,6 +1098,7 @@ const UI = (function() {
       case 'hp-adjust':         handleHpAdjust(button); break;
       case 'hp-revive':         handleHpRevive(button); break;
       case 'hp-reset':          handleHpReset(button); break;
+      case 'toggle-statblock':  handleToggleStatblock(button); break;
     }
   }
 
@@ -1142,6 +1149,20 @@ const UI = (function() {
     editingScenario.updatedAt = new Date().toISOString();
     scheduleAutosave();
     void renderScenarioView();
+  }
+
+  function handleToggleStatblock(stripEl) {
+    const sbCard = stripEl.closest('.reader-sb');
+    const enemyEl = stripEl.closest('[data-enemy-id]');
+    if (!sbCard || !enemyEl) return;
+    const id = enemyEl.dataset.enemyId;
+    const expanded = sbCard.classList.toggle('expanded');
+    stripEl.setAttribute('aria-expanded', expanded);
+    if (expanded) {
+      expandedEnemyIds.add(id);
+    } else {
+      expandedEnemyIds.delete(id);
+    }
   }
 
   function handleScenarioViewChange(e) {
@@ -1567,11 +1588,12 @@ const UI = (function() {
             ${showReset ? `<button class="hp-reset-btn reader-sb-reset" data-action="hp-reset" title="Reset all HP">&#x21BB;</button>` : ''}
           </span>
         </div>
-        <div class="reader-sb-strip">
+        <div class="reader-sb-strip" data-action="toggle-statblock" role="button" tabindex="0" aria-expanded="false">
           <div class="reader-sb-stat"><span class="sb-label">AC</span><span id="${uid}-ac" class="sb-val">—</span></div>
           <div class="reader-sb-stat"><span class="sb-label">HP</span><span id="${uid}-hp" class="sb-val">—</span></div>
           <div class="reader-sb-stat"><span class="sb-label">Speed</span><span id="${uid}-speed" class="sb-val">—</span></div>
           <div class="reader-sb-stat"><span class="sb-label">Init</span><span id="${uid}-init" class="sb-val">—</span></div>
+          <div class="reader-sb-stat reader-sb-chevron-col"><span class="sb-chevron">&#9660;</span></div>
         </div>
         <div id="${uid}-abilities" class="reader-sb-abilities"></div>
         <div id="${uid}-meta" class="reader-sb-meta"></div>
