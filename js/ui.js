@@ -983,21 +983,12 @@ const UI = (function() {
 
   function renderReaderEnemyBlock(enemy) {
     const info = lookupEnemyInfo(enemy);
-    const label = info ? escapeHtml(info.name) : 'Missing reference';
-    const sub = info
-      ? `${info.kindLabel}${info.cr ? ` &middot; CR ${escapeHtml(info.cr)}` : ''}`
-      : 'Source removed';
-    const countLabel = enemy.count > 1 ? ` × ${enemy.count}` : '';
+    const fallbackLabel = info ? escapeAttr(info.name) : escapeAttr(enemy.sourceId || 'Unknown');
     const maxHp = info && info.profile ? (info.profile.hitPoints || 0) : 0;
     const showTrackers = info && maxHp > 0 && enemy.count > 0;
     if (showTrackers) ensureHpInitialized(enemy, maxHp);
     return `
-      <div class="reader-enemy" data-enemy-id="${enemy.id}" data-source-type="${enemy.sourceType}" data-source-id="${escapeAttr(enemy.sourceId)}">
-        <div class="reader-enemy-header">
-          <span class="reader-enemy-name">${label}${countLabel}</span>
-          <span class="reader-enemy-sub">${sub}</span>
-          ${showTrackers ? `<button class="hp-reset-btn" data-action="hp-reset" title="Reset all to full HP">&#x21BB; Reset</button>` : ''}
-        </div>
+      <div class="reader-enemy" data-enemy-id="${enemy.id}" data-source-type="${enemy.sourceType}" data-source-id="${escapeAttr(enemy.sourceId)}" data-enemy-count="${enemy.count || 1}" data-enemy-label="${fallbackLabel}">
         ${showTrackers ? renderHpTrackers(enemy, maxHp) : ''}
         <div class="reader-statblock-mount"></div>
       </div>
@@ -1535,38 +1526,67 @@ const UI = (function() {
     const sourceType = enemyEl.dataset.sourceType;
     const sourceId = enemyEl.dataset.sourceId;
     const info = lookupEnemyInfo({ sourceType, sourceId });
+
+    const count = parseInt(enemyEl.dataset.enemyCount, 10) || 1;
+    const fallbackName = enemyEl.dataset.enemyLabel || 'Unknown';
+    const nameLabel = info ? escapeHtml(info.name) : escapeHtml(fallbackName);
+    const countLabel = count > 1 ? ` &times; ${count}` : '';
+    const crLabel = info && info.cr ? `CR ${escapeHtml(String(info.cr))}` : '';
+    const maxHp = info && info.profile ? (info.profile.hitPoints || 0) : 0;
+    const showReset = info && maxHp > 0 && count > 0;
+
     if (!info) {
-      mountEl.innerHTML = '<div class="reader-empty">Stat block source not found.</div>';
+      mountEl.innerHTML = `
+        <div class="reader-sb reader-sb-missing">
+          <div class="reader-sb-header">
+            <span class="reader-sb-name">${nameLabel}${countLabel}</span>
+            <span class="reader-sb-header-right">
+              <span class="reader-sb-cr reader-sb-cr-missing">Source removed</span>
+            </span>
+          </div>
+        </div>
+      `;
       return;
     }
+
     const uid = 'sb_' + Math.random().toString(36).slice(2, 10);
     mountEl.innerHTML = `
-      <div class="statblock reader-statblock-card">
-        <div class="statblock-top">
-          <div class="statblock-item"><span class="statblock-label">AC</span><span id="${uid}-ac" class="statblock-value">12</span></div>
-          <div class="statblock-item"><span class="statblock-label">HP</span><span id="${uid}-hp" class="statblock-value">10</span></div>
-          <div class="statblock-item"><span class="statblock-label">Speed</span><span id="${uid}-speed" class="statblock-value">30 ft.</span></div>
-          <div class="statblock-item"><span class="statblock-label">Init</span><span id="${uid}-init" class="statblock-value">+0</span></div>
+      <div class="reader-sb">
+        <div class="reader-sb-header">
+          <span class="reader-sb-name">${nameLabel}${countLabel}</span>
+          <span class="reader-sb-header-right">
+            ${crLabel ? `<span class="reader-sb-cr">${crLabel}</span>` : ''}
+            ${showReset ? `<button class="hp-reset-btn reader-sb-reset" data-action="hp-reset" title="Reset all HP">&#x21BB;</button>` : ''}
+          </span>
         </div>
-        <div id="${uid}-meta" class="statblock-meta"></div>
-        <div id="${uid}-abilities" class="statblock-abilities"></div>
-        <div class="statblock-section"><h2>Traits</h2><div id="${uid}-traits" class="statblock-list"></div></div>
-        <div class="statblock-section"><h2>Actions</h2><div id="${uid}-actions" class="statblock-list"></div></div>
-        <div class="statblock-section hidden" id="${uid}-spells-section">
-          <div class="statblock-section-header"><h2>Spells</h2><button id="${uid}-spells-toggle" class="statblock-toggle" type="button"></button></div>
-          <div id="${uid}-spells" class="statblock-list"></div>
+        <div class="reader-sb-strip">
+          <div class="reader-sb-stat"><span class="sb-label">AC</span><span id="${uid}-ac" class="sb-val">—</span></div>
+          <div class="reader-sb-stat"><span class="sb-label">HP</span><span id="${uid}-hp" class="sb-val">—</span></div>
+          <div class="reader-sb-stat"><span class="sb-label">Speed</span><span id="${uid}-speed" class="sb-val">—</span></div>
+          <div class="reader-sb-stat"><span class="sb-label">Init</span><span id="${uid}-init" class="sb-val">—</span></div>
         </div>
-        <div class="statblock-section"><h2>Reactions</h2><div id="${uid}-reactions" class="statblock-list"></div></div>
+        <div id="${uid}-abilities" class="reader-sb-abilities"></div>
+        <div id="${uid}-meta" class="reader-sb-meta"></div>
+        <div class="reader-sb-sections">
+          <div class="reader-sb-section"><h2>Traits</h2><div id="${uid}-traits" class="statblock-list"></div></div>
+          <div class="reader-sb-section"><h2>Actions</h2><div id="${uid}-actions" class="statblock-list"></div></div>
+          <div class="reader-sb-section hidden" id="${uid}-spells-section">
+            <div class="reader-sb-section-header"><h2>Spells</h2><button id="${uid}-spells-toggle" class="statblock-toggle" type="button"></button></div>
+            <div id="${uid}-spells" class="statblock-list"></div>
+          </div>
+          <div class="reader-sb-section"><h2>Reactions</h2><div id="${uid}-reactions" class="statblock-list"></div></div>
+        </div>
       </div>
     `;
+
     const target = {
       key: uid,
       ac: document.getElementById(uid + '-ac'),
       hp: document.getElementById(uid + '-hp'),
       speed: document.getElementById(uid + '-speed'),
       init: document.getElementById(uid + '-init'),
+      abilities: null,
       meta: document.getElementById(uid + '-meta'),
-      abilities: document.getElementById(uid + '-abilities'),
       traits: document.getElementById(uid + '-traits'),
       actions: document.getElementById(uid + '-actions'),
       spellsSection: document.getElementById(uid + '-spells-section'),
@@ -1574,7 +1594,44 @@ const UI = (function() {
       spells: document.getElementById(uid + '-spells'),
       reactions: document.getElementById(uid + '-reactions')
     };
+
     renderStatBlock(target, info.profile);
+    renderCompactAbilityGrid(document.getElementById(uid + '-abilities'), info.profile);
+  }
+
+  function renderCompactAbilityGrid(container, npc) {
+    if (!container || !npc) return;
+    const tier = npc.tier || 'Novice';
+    const tierInfo = Generator.getTierInfo(tier);
+    const pb = npc.proficiencyBonus || tierInfo.pb;
+    const mods = getAbilityMods(npc);
+    const scores = npc.abilityScores || {};
+    const saves = npc.savingThrows || computeSavingThrows(mods, npc.savingThrowProficiencies || [], pb);
+    const saveProfs = new Set(npc.savingThrowProficiencies || []);
+
+    const cols = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'].map(key => {
+      const score = scores[key] !== undefined ? scores[key] : 10;
+      const mod = mods[key] !== undefined ? mods[key] : 0;
+      const save = saves[key] !== undefined ? saves[key] : mod;
+      const profClass = saveProfs.has(key) ? ' proficient' : '';
+      return `
+        <div class="reader-sb-ability${profClass}">
+          <span class="sb-ab-label">${key}</span>
+          <span class="sb-ab-score">${score} <span class="sb-ab-mod">${formatSigned(mod)}</span></span>
+          <button class="sb-ab-save${profClass}" type="button" data-ability="${key}" aria-label="${key} saving throw">${formatSigned(save)}</button>
+        </div>
+      `;
+    }).join('');
+
+    container.innerHTML = cols;
+
+    container.querySelectorAll('.sb-ab-save').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        rollSavingThrow(npc, btn.dataset.ability);
+      });
+    });
   }
 
   function formatMultilineText(text) {

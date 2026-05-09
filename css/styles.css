@@ -2126,12 +2126,257 @@ button {
   display: block;
 }
 
-.reader-statblock-card {
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border);
+/* ----------------------------------------
+   Reader stat block — Couche 2
+   Cream card · red header · compact abilities
+   ---------------------------------------- */
+
+.reader-sb {
+  background: #fdf6e3;
+  border: 1px solid #c8a96e;
   border-radius: var(--radius-sm);
-  padding: var(--space-md);
-  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.reader-sb-header {
+  background: var(--color-scenario-accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: 6px 10px;
+}
+
+.reader-sb-name {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 700;
+  font-variant: small-caps;
+  letter-spacing: 0.02em;
+  flex: 1;
+  min-width: 0;
+}
+
+.reader-sb-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+}
+
+.reader-sb-cr {
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 0.9;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.reader-sb-cr-missing {
+  opacity: 0.7;
+  font-style: italic;
+}
+
+.reader-sb-reset {
+  color: rgba(255,255,255,0.8) !important;
+  font-size: 14px !important;
+  padding: 2px 4px !important;
+  margin-left: 0 !important;
+}
+
+.reader-sb-reset:hover {
+  color: #fff !important;
+  background: rgba(255,255,255,0.15) !important;
+}
+
+/* Combat stats strip: AC / HP / Speed / Init */
+.reader-sb-strip {
+  display: flex;
+  border-bottom: 1px solid #c8a96e;
+  background: rgba(156, 47, 47, 0.04);
+}
+
+.reader-sb-stat {
+  flex: 1;
+  text-align: center;
+  padding: 5px 4px;
+  border-right: 1px solid #c8a96e;
+}
+
+.reader-sb-stat:last-child {
+  border-right: none;
+}
+
+.sb-label {
+  display: block;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7a5c3c;
+}
+
+.sb-val {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #3a2a18;
+  line-height: 1.2;
+}
+
+/* Compact 6-col ability grid */
+.reader-sb-abilities {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  border-bottom: 1px solid #c8a96e;
+}
+
+.reader-sb-ability {
+  text-align: center;
+  padding: 6px 2px 4px;
+  border-right: 1px solid rgba(200,169,110,0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.reader-sb-ability:last-child {
+  border-right: none;
+}
+
+.reader-sb-ability.proficient {
+  background: rgba(156, 47, 47, 0.05);
+}
+
+.sb-ab-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #7a5c3c;
+}
+
+.sb-ab-score {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #3a2a18;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.sb-ab-mod {
+  font-size: 0.75rem;
+  color: #6b5d4d;
+}
+
+.sb-ab-save {
+  border: none;
+  background: transparent;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #7a5c3c;
+  padding: 1px 3px;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  width: 100%;
+}
+
+.sb-ab-save:hover {
+  background: rgba(156, 47, 47, 0.1);
+}
+
+.sb-ab-save:active {
+  background: rgba(156, 47, 47, 0.2);
+}
+
+.sb-ab-save.proficient {
+  color: var(--color-scenario-accent);
+  font-weight: 700;
+}
+
+/* Meta info line (PB · CR · XP · spell DC) */
+.reader-sb-meta {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #7a5c3c;
+  padding: 4px var(--space-sm);
+  border-bottom: 1px solid rgba(200,169,110,0.4);
+  line-height: 1.5;
+}
+
+.reader-sb-meta:empty {
+  display: none;
+}
+
+/* Traits / Actions / Reactions / Spells sections */
+.reader-sb-sections {
+  padding: var(--space-sm) var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.reader-sb-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.reader-sb-section h2 {
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-variant: small-caps;
+  color: var(--color-scenario-accent);
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid rgba(156, 47, 47, 0.25);
+  padding-bottom: 2px;
+  margin: 0 0 4px;
+}
+
+.reader-sb-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  border-bottom: 1px solid rgba(156, 47, 47, 0.25);
+  padding-bottom: 2px;
+  margin-bottom: 4px;
+}
+
+.reader-sb-section-header h2 {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
+/* Override statblock-entry styling on cream background */
+.reader-sb .statblock-entry {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 3px 0;
+  box-shadow: none;
+  font-size: 0.85rem;
+  color: #3a2a18;
+  line-height: 1.5;
+  border-bottom: 1px solid rgba(200,169,110,0.2);
+}
+
+.reader-sb .statblock-entry:last-child {
+  border-bottom: none;
+}
+
+/* Collapse to 3 cols on very small screens */
+@media (max-width: 360px) {
+  .reader-sb-abilities {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 /* Scenario detail header has an extra slot for the autosave indicator */
@@ -2382,11 +2627,6 @@ button {
 
   .editor-section-body {
     padding: 0 var(--space-lg) var(--space-lg);
-  }
-
-  /* Stat blocks in reader use 3 columns for ability rows on desktop */
-  .reader-statblock-card .statblock-abilities {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   /* Slight title size bump in reader */
