@@ -1211,7 +1211,14 @@ button {
 .scenarios-toolbar {
   display: flex;
   justify-content: flex-end;
+  gap: var(--space-sm);
   margin-bottom: var(--space-md);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .placeholder-text {

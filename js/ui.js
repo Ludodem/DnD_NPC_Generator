@@ -209,6 +209,9 @@ const UI = (function() {
     elements.btnNewScenario = document.getElementById('btn-new-scenario');
     elements.btnNewScenarioEmpty = document.getElementById('btn-new-scenario-empty');
     elements.btnBackScenario = document.getElementById('btn-back-scenario');
+    elements.btnImportScenario = document.getElementById('btn-import-scenario');
+    elements.importScenarioInput = document.getElementById('import-scenario-input');
+    elements.btnExportScenario = document.getElementById('btn-export-scenario');
     elements.scenarioDetailHeading = document.getElementById('scenario-detail-heading');
     elements.scenarioView = document.getElementById('scenario-view');
     elements.itemEditorModal = document.getElementById('item-editor-modal');
@@ -626,6 +629,23 @@ const UI = (function() {
       });
     }
 
+    // Import / Export
+    if (elements.btnImportScenario && elements.importScenarioInput) {
+      elements.btnImportScenario.addEventListener('click', () => elements.importScenarioInput.click());
+      elements.importScenarioInput.addEventListener('change', () => {
+        const file = elements.importScenarioInput.files[0];
+        if (file) {
+          importScenarioFromFile(file);
+          elements.importScenarioInput.value = '';
+        }
+      });
+    }
+    if (elements.btnExportScenario) {
+      elements.btnExportScenario.addEventListener('click', () => {
+        if (editingScenario) exportScenario(editingScenario);
+      });
+    }
+
     // Click and change delegation on the single scenario view
     if (elements.scenarioView) {
       elements.scenarioView.addEventListener('click', handleScenarioViewClick);
@@ -634,6 +654,66 @@ const UI = (function() {
 
     setupItemEditor();
     setupEnemyPicker();
+  }
+
+  function exportScenario(scenario) {
+    const json = JSON.stringify(scenario, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const safeName = (scenario.title || 'scenario')
+      .replace(/[^a-z0-9\-_]+/gi, '_')
+      .replace(/_{2,}/g, '_')
+      .toLowerCase()
+      .slice(0, 60);
+    a.href = url;
+    a.download = safeName + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Scenario exported');
+  }
+
+  function importScenarioFromFile(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      let data;
+      try {
+        data = JSON.parse(e.target.result);
+      } catch {
+        showToast('Invalid file — not valid JSON');
+        return;
+      }
+      if (!data || typeof data !== 'object' || !data.id || !Array.isArray(data.acts)) {
+        showToast('Invalid file — not a scenario export');
+        return;
+      }
+      const existing = Scenarios.getById(data.id);
+      if (existing) {
+        showModal(
+          'Replace scenario?',
+          `"${existing.title || 'Untitled'}" already exists. Replace it with the imported version?`,
+          () => {
+            data.updatedAt = new Date().toISOString();
+            const result = Scenarios.save(data);
+            showToast(result.success ? 'Scenario updated' : (result.error || 'Import failed'));
+            renderScenarioList();
+          }
+        );
+      } else {
+        if (Scenarios.count() >= Scenarios.MAX_SCENARIOS) {
+          showToast(`Library full — max ${Scenarios.MAX_SCENARIOS} scenarios`);
+          return;
+        }
+        data.updatedAt = new Date().toISOString();
+        if (!data.createdAt) data.createdAt = data.updatedAt;
+        const result = Scenarios.save(data);
+        showToast(result.success ? 'Scenario imported' : (result.error || 'Import failed'));
+        if (result.success) renderScenarioList();
+      }
+    };
+    reader.readAsText(file);
   }
 
   function renderScenarioList() {

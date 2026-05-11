@@ -410,8 +410,10 @@
         </header>
         <div class="screen-content">
           <div class="scenarios-toolbar">
+            <button id="btn-import-scenario" class="btn btn-secondary">&#8593; Import JSON</button>
             <button id="btn-new-scenario" class="btn btn-primary">+ New Scenario</button>
           </div>
+          <input type="file" id="import-scenario-input" accept=".json" hidden>
           <div id="scenario-list"></div>
           <div id="scenario-empty" class="empty-state">
             <p>No scenarios yet</p>
@@ -427,7 +429,10 @@
           <div class="title-box">
             <h1 id="scenario-detail-heading">New Scenario</h1>
           </div>
-          <span id="autosave-indicator" class="autosave-indicator autosave-hidden"></span>
+          <div class="header-actions">
+            <button id="btn-export-scenario" class="btn-icon" title="Export as JSON">&#8595;</button>
+            <span id="autosave-indicator" class="autosave-indicator autosave-hidden"></span>
+          </div>
         </header>
         <div class="screen-content">
           <div id="scenario-view"></div>
