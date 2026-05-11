@@ -592,6 +592,29 @@ const UI = (function() {
   const RARITIES = ['Common', 'Uncommon', 'Rare', 'Very Rare', 'Legendary', 'Artifact'];
   const AUTOSAVE_DELAY_MS = 500;
 
+  const SKILLS = [
+    'Acrobatics','Animal Handling','Arcana','Athletics','Deception','History',
+    'Insight','Intimidation','Investigation','Medicine','Nature','Perception',
+    'Performance','Persuasion','Religion','Sleight of Hand','Stealth','Survival',
+    'STR check','DEX check','CON check','INT check','WIS check','CHA check'
+  ];
+
+  const CALLOUT_TYPES = [
+    { value: 'boxed-text', label: '📖 Read Aloud' },
+    { value: 'tip',        label: '💡 DM Tip' },
+    { value: 'trap',       label: '⚠️ Trap' },
+    { value: 'secret',     label: '🔑 Secret' },
+    { value: 'ambiance',   label: '🌫 Ambiance' },
+  ];
+
+  const CALLOUT_META = {
+    'boxed-text': { icon: '📖', label: 'Read Aloud' },
+    'tip':        { icon: '💡', label: 'DM Tip' },
+    'trap':       { icon: '⚠️', label: 'Trap' },
+    'secret':     { icon: '🔑', label: 'Secret' },
+    'ambiance':   { icon: '🌫', label: 'Ambiance' },
+  };
+
   function setupScenariosScreen() {
     const openNew = () => openScenarioDetail(null);
     if (elements.btnNewScenario) elements.btnNewScenario.addEventListener('click', openNew);
@@ -968,11 +991,37 @@ const UI = (function() {
           </span>
         </header>
         ${scene.content ? `<div class="reader-prose">${formatMultilineText(scene.content)}</div>` : ''}
+        ${scene.checks && scene.checks.length > 0 ? renderViewChecks(scene.checks) : ''}
+        ${scene.callouts && scene.callouts.length > 0 ? scene.callouts.map(renderViewCallout).join('') : ''}
         ${scene.combats.map((combat, k) => renderViewCombat(combat, k + 1)).join('')}
         <div class="add-section-wrap nested">
           <button class="affordance-add" data-action="add-combat">+ Add Combat</button>
         </div>
       </section>
+    `;
+  }
+
+  function renderViewChecks(checks) {
+    return `
+      <div class="scene-checks">
+        ${checks.map(c => `
+          <div class="dc-row">
+            <span class="dc-skill">${escapeHtml(c.skill || '—')}</span>
+            <span class="dc-badge">DC ${escapeHtml(String(c.dc || '?'))}</span>
+            ${c.description ? `<span class="dc-desc">${escapeHtml(c.description)}</span>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function renderViewCallout(callout) {
+    const meta = CALLOUT_META[callout.type] || { icon: '💬', label: callout.type || 'Note' };
+    return `
+      <div class="scene-callout scene-callout-${escapeAttr(callout.type || 'tip')}">
+        <span class="callout-label">${meta.icon} ${escapeHtml(meta.label)}</span>
+        <div class="callout-body">${formatMultilineText(callout.text || '')}</div>
+      </div>
     `;
   }
 
@@ -1346,6 +1395,24 @@ const UI = (function() {
       return;
     }
 
+    if (field && field.startsWith('check-')) {
+      const checkEl = target.closest('[data-check-id]');
+      if (checkEl && editingItem.draft.checks) {
+        const check = editingItem.draft.checks.find(c => c.id === checkEl.dataset.checkId);
+        if (check) check[field.slice(6)] = target.value;
+      }
+      return;
+    }
+
+    if (field && field.startsWith('callout-')) {
+      const calloutEl = target.closest('[data-callout-id]');
+      if (calloutEl && editingItem.draft.callouts) {
+        const callout = editingItem.draft.callouts.find(c => c.id === calloutEl.dataset.calloutId);
+        if (callout) callout[field.slice(8)] = target.value;
+      }
+      return;
+    }
+
     editingItem.draft[field] = target.value;
   }
 
@@ -1362,6 +1429,26 @@ const UI = (function() {
       renderItemEditorBody();
     } else if (action === 'add-enemy') {
       void openEnemyPicker();
+    } else if (action === 'add-check') {
+      if (!editingItem.draft.checks) editingItem.draft.checks = [];
+      editingItem.draft.checks.push(Scenarios.createCheck());
+      renderItemEditorBody();
+    } else if (action === 'remove-check') {
+      const checkEl = button.closest('[data-check-id]');
+      if (checkEl && editingItem.draft.checks) {
+        editingItem.draft.checks = editingItem.draft.checks.filter(c => c.id !== checkEl.dataset.checkId);
+        renderItemEditorBody();
+      }
+    } else if (action === 'add-callout') {
+      if (!editingItem.draft.callouts) editingItem.draft.callouts = [];
+      editingItem.draft.callouts.push(Scenarios.createCallout());
+      renderItemEditorBody();
+    } else if (action === 'remove-callout') {
+      const calloutEl = button.closest('[data-callout-id]');
+      if (calloutEl && editingItem.draft.callouts) {
+        editingItem.draft.callouts = editingItem.draft.callouts.filter(c => c.id !== calloutEl.dataset.calloutId);
+        renderItemEditorBody();
+      }
     }
   }
 
@@ -1507,11 +1594,63 @@ const UI = (function() {
   }
 
   function renderSceneForm(draft) {
+    const checks = draft.checks || [];
+    const callouts = draft.callouts || [];
+
+    const skillOptions = SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+
+    const checksHtml = checks.length === 0
+      ? '<p class="list-empty-hint">No checks yet.</p>'
+      : checks.map(c => {
+          const opts = SKILLS.map(s =>
+            `<option value="${s}"${c.skill === s ? ' selected' : ''}>${s}</option>`
+          ).join('');
+          return `
+            <div class="check-chip" data-check-id="${c.id}">
+              <select data-field="check-skill" class="field-input field-select check-skill-select">
+                <option value=""${!c.skill ? ' selected' : ''}>— Skill —</option>
+                ${opts}
+              </select>
+              <input type="number" min="1" max="30" data-field="check-dc" value="${escapeAttr(String(c.dc || ''))}" placeholder="DC" class="field-input check-dc-input">
+              <input type="text" data-field="check-description" value="${escapeAttr(c.description || '')}" placeholder="Result / consequence..." class="field-input check-desc-input">
+              <button type="button" class="btn-remove" data-action="remove-check" aria-label="Remove">&times;</button>
+            </div>
+          `;
+        }).join('');
+
+    const typeOptions = (selected) => CALLOUT_TYPES.map(ct =>
+      `<option value="${ct.value}"${selected === ct.value ? ' selected' : ''}>${ct.label}</option>`
+    ).join('');
+
+    const calloutsHtml = callouts.length === 0
+      ? '<p class="list-empty-hint">No callouts yet.</p>'
+      : callouts.map(c => `
+          <div class="callout-chip" data-callout-id="${c.id}">
+            <div class="callout-chip-header">
+              <select data-field="callout-type" class="field-input field-select callout-type-select">
+                ${typeOptions(c.type || 'tip')}
+              </select>
+              <button type="button" class="btn-remove" data-action="remove-callout" aria-label="Remove">&times;</button>
+            </div>
+            <textarea data-field="callout-text" rows="3" placeholder="Callout text..." class="field-textarea callout-textarea">${escapeHtml(c.text || '')}</textarea>
+          </div>
+        `).join('');
+
     return `
       <label class="field-row"><span class="field-label">Title</span>
         <input type="text" data-field="title" value="${escapeAttr(draft.title)}" placeholder="Scene title" class="field-input" autofocus></label>
       <label class="field-row"><span class="field-label">Content</span>
-        <textarea data-field="content" rows="12" placeholder="Scene content, beats, NPC notes..." class="field-textarea">${escapeHtml(draft.content)}</textarea></label>
+        <textarea data-field="content" rows="8" placeholder="Scene content, beats, NPC notes..." class="field-textarea">${escapeHtml(draft.content)}</textarea></label>
+      <div class="field-row">
+        <span class="field-label">DC Checks</span>
+        <div class="check-list">${checksHtml}</div>
+        <button type="button" class="btn btn-tertiary btn-add" data-action="add-check">+ Add Check</button>
+      </div>
+      <div class="field-row">
+        <span class="field-label">Callouts</span>
+        <div class="callout-list">${calloutsHtml}</div>
+        <button type="button" class="btn btn-tertiary btn-add" data-action="add-callout">+ Add Callout</button>
+      </div>
     `;
   }
 

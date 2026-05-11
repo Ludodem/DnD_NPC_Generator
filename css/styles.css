@@ -1563,6 +1563,211 @@ button {
   background: var(--color-bg-card);
 }
 
+/* Check chips in scene editor */
+.check-list,
+.callout-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-xs);
+}
+
+.list-empty-hint {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.check-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.check-chip:last-child {
+  border-bottom: none;
+}
+
+.check-skill-select {
+  flex: 0 0 150px;
+  font-size: 13px !important;
+  padding: 4px 6px !important;
+}
+
+.check-dc-input {
+  flex: 0 0 52px;
+  font-size: 13px !important;
+  text-align: center;
+  padding: 4px 4px !important;
+}
+
+.check-desc-input {
+  flex: 1;
+  font-size: 13px !important;
+  padding: 4px 6px !important;
+}
+
+/* Callout chips in scene editor */
+.callout-chip {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-xs) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.callout-chip:last-child {
+  border-bottom: none;
+}
+
+.callout-chip-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.callout-type-select {
+  flex: 1;
+  font-size: 13px !important;
+  padding: 4px 6px !important;
+}
+
+.callout-textarea {
+  font-size: 13px !important;
+}
+
+/* ----------------------------------------
+   Reader: DC check rows
+   ---------------------------------------- */
+.scene-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: var(--space-sm) 0;
+}
+
+.dc-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.dc-skill {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  min-width: 130px;
+}
+
+.dc-badge {
+  background: var(--color-scenario-accent);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+}
+
+.dc-desc {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  flex: 1;
+}
+
+/* ----------------------------------------
+   Reader: Callout encarts
+   ---------------------------------------- */
+.scene-callout {
+  margin: var(--space-sm) 0;
+  padding: var(--space-sm) var(--space-md);
+  border-left: 3px solid;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.callout-label {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 5px;
+}
+
+.callout-body {
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.callout-body p {
+  margin: 0 0 var(--space-xs);
+}
+
+.callout-body p:last-child {
+  margin-bottom: 0;
+}
+
+/* Read Aloud: parchment, serif italic */
+.scene-callout-boxed-text {
+  background: #fdf6e3;
+  border-color: #c8a96e;
+  font-family: var(--font-heading);
+}
+
+.scene-callout-boxed-text .callout-label {
+  color: #7a5c3c;
+}
+
+.scene-callout-boxed-text .callout-body {
+  font-style: italic;
+  font-size: 1rem;
+  color: var(--color-text);
+}
+
+/* DM Tip: soft blue */
+.scene-callout-tip {
+  background: #eef5fb;
+  border-color: #5b9ec9;
+}
+
+.scene-callout-tip .callout-label {
+  color: #2c6e94;
+}
+
+/* Trap: amber */
+.scene-callout-trap {
+  background: #fef9ed;
+  border-color: #d4920a;
+}
+
+.scene-callout-trap .callout-label {
+  color: #a06a00;
+}
+
+/* Secret: purple */
+.scene-callout-secret {
+  background: #f5f0fb;
+  border-color: #8b5cf6;
+}
+
+.scene-callout-secret .callout-label {
+  color: #5b21b6;
+}
+
+/* Ambiance: teal */
+.scene-callout-ambiance {
+  background: #edfaf5;
+  border-color: #34b37f;
+}
+
+.scene-callout-ambiance .callout-label {
+  color: #1f7d5a;
+}
+
 /* Enemy picker modal */
 .enemy-picker-content {
   width: 92%;

@@ -109,11 +109,19 @@ const Scenarios = (function() {
   }
 
   function createScene() {
-    return { id: generateId(), title: '', content: '', combats: [] };
+    return { id: generateId(), title: '', content: '', checks: [], callouts: [], combats: [] };
   }
 
   function createCombat() {
     return { id: generateId(), name: '', description: '', enemies: [] };
+  }
+
+  function createCheck() {
+    return { id: generateId(), skill: '', dc: '', description: '' };
+  }
+
+  function createCallout() {
+    return { id: generateId(), type: 'tip', text: '' };
   }
 
   return {
@@ -127,6 +135,8 @@ const Scenarios = (function() {
     createAct,
     createScene,
     createCombat,
+    createCheck,
+    createCallout,
     MAX_SCENARIOS
   };
 })();
