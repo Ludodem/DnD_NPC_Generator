@@ -1446,6 +1446,197 @@ button {
 .stat-ko .pc-counter-btn { background: rgba(91,48,128,0.1); color: #5b3080; }
 .stat-ko .pc-counter-btn:hover { background: rgba(91,48,128,0.2); }
 
+/* DMG OUT — full-width attack-tracking section */
+.pc-dmg-out {
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pc-dmg-out-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pc-dmg-out-top .pc-stat-value {
+  font-size: 1.4rem;
+}
+
+.pc-atk-turn-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-height: 24px;
+}
+
+.pc-turn-badge {
+  font-size: 0.62rem;
+  font-weight: 700;
+  background: rgba(156,47,47,0.12);
+  color: #9c2f2f;
+  padding: 2px 7px;
+  border-radius: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.pc-atk-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  flex: 1;
+  align-items: center;
+}
+
+.pc-atk-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(156,47,47,0.1);
+  color: #9c2f2f;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 1px 4px 1px 8px;
+  border-radius: 12px;
+}
+
+.pc-atk-chip-remove {
+  border: none;
+  background: transparent;
+  color: #9c2f2f;
+  font-size: 11px;
+  padding: 0 1px;
+  cursor: pointer;
+  line-height: 1;
+  opacity: 0.65;
+}
+
+.pc-atk-chip-remove:hover { opacity: 1; }
+
+.pc-atk-empty {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.pc-turn-btn {
+  border: 1px solid rgba(156,47,47,0.3);
+  background: transparent;
+  color: #9c2f2f;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  letter-spacing: 0.04em;
+}
+
+.pc-turn-btn:hover { background: rgba(156,47,47,0.08); }
+
+.pc-dmg-out .pc-stat-add-btn {
+  width: auto;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.pc-atk-derived {
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+  display: flex;
+  gap: var(--space-md);
+}
+
+.pc-atk-derived strong { color: #9c2f2f; }
+
+/* Row stats: DMG IN | HEAL | KO */
+.pc-row-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr 0.8fr;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.pc-row-stats > *:last-child { border-right: none; }
+
+.pc-row-stats .pc-stat-small {
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--space-sm) var(--space-xs);
+  border-right: 1px solid var(--color-border);
+}
+
+/* Kills — full-width expandable section */
+.pc-kills-section {
+  padding: var(--space-sm) var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pc-kills-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pc-kill-add-btn {
+  border: none;
+  background: rgba(107,48,48,0.1);
+  color: #6b3030;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+}
+
+.pc-kill-add-btn:hover { background: rgba(107,48,48,0.2); }
+
+.pc-kill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.pc-kill-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(107,48,48,0.08);
+  color: #6b3030;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 4px 2px 9px;
+  border-radius: 12px;
+}
+
+.pc-kill-cr {
+  font-style: italic;
+  font-weight: 400;
+  opacity: 0.75;
+  font-size: 0.7rem;
+}
+
+.pc-kill-chip-remove {
+  border: none;
+  background: transparent;
+  color: #6b3030;
+  font-size: 11px;
+  padding: 0 1px;
+  cursor: pointer;
+  line-height: 1;
+  opacity: 0.65;
+}
+
+.pc-kill-chip-remove:hover { opacity: 1; }
+
 /* Session setup modal */
 .session-setup-content {
   width: 92%;

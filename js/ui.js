@@ -874,40 +874,105 @@ const UI = (function() {
     el.innerHTML = editingSession.pcs.map(pc => renderPcCard(pc)).join('');
   }
 
-  function renderPcCard(pc) {
-    const bigStats = STAT_DEFS.filter(s => s.big);
-    const smallStats = STAT_DEFS.filter(s => !s.big);
+  function renderDmgOutSection(pc) {
+    const log = pc.dmgLog || [];
+    const currentTurn = pc.currentTurn || 1;
+    const currentAtks = log.filter(e => e.turn === currentTurn);
 
-    const bigHtml = bigStats.map(s => `
-      <div class="pc-stat pc-stat-big ${s.color}" data-stat="${s.key}">
-        <span class="pc-stat-label">${s.icon} ${s.label}</span>
-        <span class="pc-stat-value" id="sv-${pc.id}-${s.key}">${pc[s.key] || 0}</span>
+    const chipsHtml = currentAtks.map(e => {
+      const idx = log.indexOf(e);
+      return `<span class="pc-atk-chip">${e.value}<button class="pc-atk-chip-remove" data-action="atk-remove" data-pc-id="${pc.id}" data-log-idx="${idx}" title="Remove">×</button></span>`;
+    }).join('');
+
+    let derivedHtml = '';
+    if (log.length > 0) {
+      const maxAtk = Math.max(...log.map(e => e.value));
+      const byTurn = {};
+      log.forEach(e => { byTurn[e.turn] = (byTurn[e.turn] || 0) + e.value; });
+      const maxTurn = Math.max(...Object.values(byTurn));
+      derivedHtml = `<div class="pc-atk-derived">Max/atk: <strong>${maxAtk}</strong> &middot; Max/turn: <strong>${maxTurn}</strong></div>`;
+    }
+
+    return `
+      <div class="pc-dmg-out stat-dmg-dealt">
+        <div class="pc-dmg-out-top">
+          <span class="pc-stat-label">⚔ DMG OUT</span>
+          <span class="pc-stat-value" id="sv-${pc.id}-dmgDealt">${pc.dmgDealt || 0}</span>
+        </div>
+        <div class="pc-atk-turn-bar">
+          <span class="pc-turn-badge">T${currentTurn}</span>
+          <div class="pc-atk-chips">${chipsHtml || '<span class="pc-atk-empty">—</span>'}</div>
+          <button class="pc-turn-btn" data-action="turn-next" data-pc-id="${pc.id}">New Turn</button>
+        </div>
         <div class="pc-stat-input-row">
-          <input type="number" min="0" class="pc-stat-input" placeholder="+" id="si-${pc.id}-${s.key}" data-pc-id="${pc.id}" data-stat="${s.key}">
-          <button class="pc-stat-add-btn" data-action="stat-add" data-pc-id="${pc.id}" data-stat="${s.key}">+</button>
+          <input type="number" min="0" class="pc-stat-input" placeholder="Dmg" id="si-${pc.id}-dmgDealt" data-pc-id="${pc.id}" data-stat="dmgDealt">
+          <button class="pc-stat-add-btn" data-action="atk-add" data-pc-id="${pc.id}">+ Atk</button>
         </div>
+        ${derivedHtml}
       </div>
+    `;
+  }
+
+  function renderKillsSection(pc) {
+    const log = pc.killLog || [];
+    const chipsHtml = log.map(k => `
+      <span class="pc-kill-chip">${escapeHtml(k.name)}${k.cr ? ` <em class="pc-kill-cr">CR ${escapeHtml(String(k.cr))}</em>` : ''}<button class="pc-kill-chip-remove" data-action="kill-remove" data-pc-id="${pc.id}" data-kill-id="${k.id}" title="Remove">×</button></span>
     `).join('');
 
-    const smallHtml = smallStats.map(s => `
-      <div class="pc-stat pc-stat-small ${s.color}" data-stat="${s.key}">
-        <span class="pc-stat-label">${s.icon} ${s.label}</span>
-        <div class="pc-stat-counter">
-          <button class="pc-counter-btn" data-action="stat-dec" data-pc-id="${pc.id}" data-stat="${s.key}">−</button>
-          <span class="pc-stat-value" id="sv-${pc.id}-${s.key}">${pc[s.key] || 0}</span>
-          <button class="pc-counter-btn" data-action="stat-inc" data-pc-id="${pc.id}" data-stat="${s.key}">+</button>
+    return `
+      <div class="pc-kills-section stat-kills">
+        <div class="pc-kills-header">
+          <span class="pc-stat-label">💀 KILLS${log.length > 0 ? ` (${log.length})` : ''}</span>
+          <button class="pc-kill-add-btn" data-action="kill-add" data-pc-id="${pc.id}">+ Log Kill</button>
         </div>
+        ${log.length > 0 ? `<div class="pc-kill-list">${chipsHtml}</div>` : ''}
       </div>
-    `).join('');
+    `;
+  }
 
+  function rerenderPcCard(pc) {
+    const card = document.querySelector(`.pc-card[data-pc-id="${pc.id}"]`);
+    if (!card) { renderPcGrid(); return; }
+    const temp = document.createElement('div');
+    temp.innerHTML = renderPcCard(pc);
+    card.replaceWith(temp.firstElementChild);
+  }
+
+  function renderPcCard(pc) {
     return `
       <div class="pc-card" data-pc-id="${pc.id}">
         <div class="pc-card-header">
           <span class="pc-card-name">${escapeHtml(pc.name || 'Unnamed')}</span>
           <button class="pc-reset-btn" data-action="pc-reset" data-pc-id="${pc.id}" title="Reset this PC's stats">↺ Reset</button>
         </div>
-        <div class="pc-big-stats">${bigHtml}</div>
-        <div class="pc-small-stats">${smallHtml}</div>
+        ${renderDmgOutSection(pc)}
+        <div class="pc-row-stats">
+          <div class="pc-stat pc-stat-big stat-dmg-taken">
+            <span class="pc-stat-label">🛡 DMG IN</span>
+            <span class="pc-stat-value" id="sv-${pc.id}-dmgTaken">${pc.dmgTaken || 0}</span>
+            <div class="pc-stat-input-row">
+              <input type="number" min="0" class="pc-stat-input" placeholder="+" id="si-${pc.id}-dmgTaken" data-pc-id="${pc.id}" data-stat="dmgTaken">
+              <button class="pc-stat-add-btn" data-action="stat-add" data-pc-id="${pc.id}" data-stat="dmgTaken">+</button>
+            </div>
+          </div>
+          <div class="pc-stat pc-stat-big stat-heal">
+            <span class="pc-stat-label">💚 HEAL</span>
+            <span class="pc-stat-value" id="sv-${pc.id}-healed">${pc.healed || 0}</span>
+            <div class="pc-stat-input-row">
+              <input type="number" min="0" class="pc-stat-input" placeholder="+" id="si-${pc.id}-healed" data-pc-id="${pc.id}" data-stat="healed">
+              <button class="pc-stat-add-btn" data-action="stat-add" data-pc-id="${pc.id}" data-stat="healed">+</button>
+            </div>
+          </div>
+          <div class="pc-stat pc-stat-small stat-ko">
+            <span class="pc-stat-label">😵 KO</span>
+            <div class="pc-stat-counter">
+              <button class="pc-counter-btn" data-action="stat-dec" data-pc-id="${pc.id}" data-stat="ko">−</button>
+              <span class="pc-stat-value" id="sv-${pc.id}-ko">${pc.ko || 0}</span>
+              <button class="pc-counter-btn" data-action="stat-inc" data-pc-id="${pc.id}" data-stat="ko">+</button>
+            </div>
+          </div>
+        </div>
+        ${renderKillsSection(pc)}
       </div>
     `;
   }
@@ -937,11 +1002,57 @@ const UI = (function() {
       pc[statKey] = Math.max(0, (pc[statKey] || 0) - 1);
       updateStatDisplay(pc, statKey);
       scheduleStatsAutosave();
+    } else if (action === 'atk-add') {
+      const input = document.getElementById(`si-${pcId}-dmgDealt`);
+      const val = input ? parseInt(input.value, 10) : NaN;
+      if (isNaN(val) || val <= 0) { if (input) input.focus(); return; }
+      if (!pc.dmgLog) pc.dmgLog = [];
+      if (!pc.currentTurn) pc.currentTurn = 1;
+      pc.dmgLog.push({ turn: pc.currentTurn, value: val });
+      pc.dmgDealt = (pc.dmgDealt || 0) + val;
+      if (input) input.value = '';
+      rerenderPcCard(pc);
+      scheduleStatsAutosave();
+    } else if (action === 'turn-next') {
+      if (!pc.currentTurn) pc.currentTurn = 1;
+      pc.currentTurn++;
+      rerenderPcCard(pc);
+      scheduleStatsAutosave();
+    } else if (action === 'atk-remove') {
+      const logIdx = parseInt(btn.dataset.logIdx, 10);
+      if (!isNaN(logIdx) && pc.dmgLog && pc.dmgLog[logIdx] !== undefined) {
+        const removed = pc.dmgLog.splice(logIdx, 1)[0];
+        pc.dmgDealt = Math.max(0, (pc.dmgDealt || 0) - removed.value);
+        rerenderPcCard(pc);
+        scheduleStatsAutosave();
+      }
+    } else if (action === 'kill-add') {
+      const name = prompt('Enemy name:');
+      if (!name || !name.trim()) return;
+      const cr = prompt('CR (optional — press Cancel or leave blank to skip):');
+      if (!pc.killLog) pc.killLog = [];
+      pc.killLog.push(SessionStats.createKill(name.trim(), cr ? cr.trim() : ''));
+      pc.kills = (pc.kills || 0) + 1;
+      rerenderPcCard(pc);
+      scheduleStatsAutosave();
+    } else if (action === 'kill-remove') {
+      const killId = btn.dataset.killId;
+      if (!pc.killLog || !killId) return;
+      const idx = pc.killLog.findIndex(k => k.id === killId);
+      if (idx !== -1) {
+        pc.killLog.splice(idx, 1);
+        pc.kills = Math.max(0, (pc.kills || 0) - 1);
+        rerenderPcCard(pc);
+        scheduleStatsAutosave();
+      }
     } else if (action === 'pc-reset') {
       const targetPc = editingSession.pcs.find(p => p.id === pcId);
       if (!targetPc) return;
       showModal('Reset PC stats', `Reset all stats for "${targetPc.name}"?`, () => {
         STAT_DEFS.forEach(s => { targetPc[s.key] = 0; });
+        targetPc.dmgLog = [];
+        targetPc.currentTurn = 1;
+        targetPc.killLog = [];
         renderPcGrid();
         scheduleStatsAutosave();
       });
@@ -949,14 +1060,18 @@ const UI = (function() {
   }
 
   function handlePcGridInput(e) {
-    // Allow Enter on the stat input to trigger the "+" button
     if (e.type === 'keydown' && e.key === 'Enter') {
       const input = e.target;
       if (input.classList.contains('pc-stat-input')) {
         const pcId = input.dataset.pcId;
         const stat = input.dataset.stat;
-        const addBtn = document.querySelector(`[data-action="stat-add"][data-pc-id="${pcId}"][data-stat="${stat}"]`);
-        if (addBtn) addBtn.click();
+        if (stat === 'dmgDealt') {
+          const addBtn = document.querySelector(`[data-action="atk-add"][data-pc-id="${pcId}"]`);
+          if (addBtn) addBtn.click();
+        } else {
+          const addBtn = document.querySelector(`[data-action="stat-add"][data-pc-id="${pcId}"][data-stat="${stat}"]`);
+          if (addBtn) addBtn.click();
+        }
       }
     }
   }

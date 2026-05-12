@@ -82,9 +82,16 @@ const SessionStats = (function() {
       dmgTaken: 0,
       healed: 0,
       kills: 0,
-      ko: 0
+      ko: 0,
+      dmgLog: [],
+      currentTurn: 1,
+      killLog: []
     };
   }
 
-  return { getAll, getById, save, remove, count, createSession, createPc, MAX_SESSIONS };
+  function createKill(name, cr) {
+    return { id: generateId(), name: name || '', cr: cr || '' };
+  }
+
+  return { getAll, getById, save, remove, count, createSession, createPc, createKill, MAX_SESSIONS };
 })();
