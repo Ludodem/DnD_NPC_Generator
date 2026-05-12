@@ -1555,23 +1555,79 @@ button {
 
 .pc-atk-derived strong { color: #9c2f2f; }
 
-/* Row stats: DMG IN | HEAL | KO */
+/* Turn-by-turn detail: (15+7+12) · (13) · (25+28) */
+.pc-turn-detail {
+  font-size: 0.72rem;
+  color: #9c2f2f;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+/* Quick-tap damage buttons */
+.pc-atk-quick {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pc-atk-quick-btn {
+  border: none;
+  background: rgba(156,47,47,0.12);
+  color: #9c2f2f;
+  font-size: 0.85rem;
+  font-weight: 700;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.1s;
+}
+
+.pc-atk-quick-btn:hover { background: rgba(156,47,47,0.22); }
+.pc-atk-quick-btn:active { background: rgba(156,47,47,0.35); transform: scale(0.95); }
+
+.pc-atk-custom-input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Row stats: DMG IN | HEAL (2 cols) */
 .pc-row-stats {
   display: grid;
-  grid-template-columns: 1fr 1fr 0.8fr;
+  grid-template-columns: 1fr 1fr;
   border-bottom: 1px solid var(--color-border);
 }
 
 .pc-row-stats > *:last-child { border-right: none; }
 
-.pc-row-stats .pc-stat-small {
-  flex-direction: column;
-  gap: 4px;
-  padding: var(--space-sm) var(--space-xs);
-  border-right: 1px solid var(--color-border);
+/* Bottom row: KILLS (flex:1) + KO (fixed) */
+.pc-bottom-row {
+  display: flex;
+  align-items: stretch;
 }
 
-/* Kills — full-width expandable section */
+.pc-ko-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: var(--space-sm) var(--space-md);
+  border-left: 1px solid var(--color-border);
+  min-width: 90px;
+  flex-shrink: 0;
+}
+
+.pc-ko-section .pc-stat-value {
+  font-size: 1.3rem;
+  min-width: 28px;
+  text-align: center;
+}
+
+/* Kills — expandable section */
 .pc-kills-section {
   padding: var(--space-sm) var(--space-md);
   display: flex;

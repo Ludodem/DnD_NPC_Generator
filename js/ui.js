@@ -884,14 +884,23 @@ const UI = (function() {
       return `<span class="pc-atk-chip">${e.value}<button class="pc-atk-chip-remove" data-action="atk-remove" data-pc-id="${pc.id}" data-log-idx="${idx}" title="Remove">×</button></span>`;
     }).join('');
 
+    let detailHtml = '';
     let derivedHtml = '';
     if (log.length > 0) {
       const maxAtk = Math.max(...log.map(e => e.value));
+      const turnNums = [...new Set(log.map(e => e.turn))].sort((a, b) => a - b);
       const byTurn = {};
       log.forEach(e => { byTurn[e.turn] = (byTurn[e.turn] || 0) + e.value; });
       const maxTurn = Math.max(...Object.values(byTurn));
+      const turnStr = turnNums.map(t => {
+        const vals = log.filter(e => e.turn === t).map(e => e.value);
+        return vals.length === 1 ? `${vals[0]}` : `(${vals.join('+')})`;
+      }).join(' · ');
+      detailHtml = `<div class="pc-turn-detail">${turnStr}</div>`;
       derivedHtml = `<div class="pc-atk-derived">Max/atk: <strong>${maxAtk}</strong> &middot; Max/turn: <strong>${maxTurn}</strong></div>`;
     }
+
+    const quickVals = [5, 10, 15, 20];
 
     return `
       <div class="pc-dmg-out stat-dmg-dealt">
@@ -899,14 +908,16 @@ const UI = (function() {
           <span class="pc-stat-label">⚔ DMG OUT</span>
           <span class="pc-stat-value" id="sv-${pc.id}-dmgDealt">${pc.dmgDealt || 0}</span>
         </div>
+        ${detailHtml}
         <div class="pc-atk-turn-bar">
           <span class="pc-turn-badge">T${currentTurn}</span>
           <div class="pc-atk-chips">${chipsHtml || '<span class="pc-atk-empty">—</span>'}</div>
           <button class="pc-turn-btn" data-action="turn-next" data-pc-id="${pc.id}">New Turn</button>
         </div>
-        <div class="pc-stat-input-row">
-          <input type="number" min="0" class="pc-stat-input" placeholder="Dmg" id="si-${pc.id}-dmgDealt" data-pc-id="${pc.id}" data-stat="dmgDealt">
-          <button class="pc-stat-add-btn" data-action="atk-add" data-pc-id="${pc.id}">+ Atk</button>
+        <div class="pc-atk-quick">
+          ${quickVals.map(v => `<button class="pc-atk-quick-btn" data-action="atk-quick" data-pc-id="${pc.id}" data-val="${v}">${v}</button>`).join('')}
+          <input type="number" min="0" class="pc-stat-input pc-atk-custom-input" placeholder="…" id="si-${pc.id}-dmgDealt" data-pc-id="${pc.id}" data-stat="dmgDealt">
+          <button class="pc-stat-add-btn" data-action="atk-add" data-pc-id="${pc.id}">+</button>
         </div>
         ${derivedHtml}
       </div>
@@ -963,7 +974,10 @@ const UI = (function() {
               <button class="pc-stat-add-btn" data-action="stat-add" data-pc-id="${pc.id}" data-stat="healed">+</button>
             </div>
           </div>
-          <div class="pc-stat pc-stat-small stat-ko">
+        </div>
+        <div class="pc-bottom-row">
+          ${renderKillsSection(pc)}
+          <div class="pc-ko-section stat-ko">
             <span class="pc-stat-label">😵 KO</span>
             <div class="pc-stat-counter">
               <button class="pc-counter-btn" data-action="stat-dec" data-pc-id="${pc.id}" data-stat="ko">−</button>
@@ -972,7 +986,6 @@ const UI = (function() {
             </div>
           </div>
         </div>
-        ${renderKillsSection(pc)}
       </div>
     `;
   }
@@ -1001,6 +1014,15 @@ const UI = (function() {
     } else if (action === 'stat-dec') {
       pc[statKey] = Math.max(0, (pc[statKey] || 0) - 1);
       updateStatDisplay(pc, statKey);
+      scheduleStatsAutosave();
+    } else if (action === 'atk-quick') {
+      const val = parseInt(btn.dataset.val, 10);
+      if (isNaN(val) || val <= 0) return;
+      if (!pc.dmgLog) pc.dmgLog = [];
+      if (!pc.currentTurn) pc.currentTurn = 1;
+      pc.dmgLog.push({ turn: pc.currentTurn, value: val });
+      pc.dmgDealt = (pc.dmgDealt || 0) + val;
+      rerenderPcCard(pc);
       scheduleStatsAutosave();
     } else if (action === 'atk-add') {
       const input = document.getElementById(`si-${pcId}-dmgDealt`);
