@@ -856,7 +856,24 @@ const UI = (function() {
     if (!el || !s) return;
     const parts = [escapeHtml(s.date)];
     if (s.scenarioTitle) parts.push(escapeHtml(s.scenarioTitle));
-    el.innerHTML = `<p class="stats-session-meta-line">${parts.join(' &middot; ')}</p>`;
+    const round = s.currentRound || 1;
+    el.innerHTML = `
+      <p class="stats-session-meta-line">${parts.join(' &middot; ')}</p>
+      <div class="stats-round-bar">
+        <span class="stats-round-label">Round <strong>${round}</strong></span>
+        <button class="btn-next-round" id="btn-next-round">Next Round →</button>
+      </div>
+    `;
+    document.getElementById('btn-next-round')?.addEventListener('click', handleNextRound);
+  }
+
+  function handleNextRound() {
+    if (!editingSession) return;
+    if (!editingSession.currentRound) editingSession.currentRound = 1;
+    editingSession.currentRound++;
+    renderSessionMeta();
+    renderPcGrid();
+    SessionStats.save(editingSession);
   }
 
   function renderPcGrid() {
@@ -875,10 +892,22 @@ const UI = (function() {
     el.innerHTML = editingSession.pcs.map(pc => renderPcCard(pc)).join('');
   }
 
+  function roundKey(e) { return e.round != null ? e.round : (e.turn != null ? e.turn : 1); }
+
+  function renderRoundDetail(log, colorClass) {
+    if (!log || log.length === 0) return '';
+    const rounds = [...new Set(log.map(roundKey))].sort((a, b) => a - b);
+    const str = rounds.map(r => {
+      const vals = log.filter(e => roundKey(e) === r).map(e => e.value);
+      return vals.length === 1 ? `${vals[0]}` : `(${vals.join('+')})`;
+    }).join(' · ');
+    return `<div class="pc-round-detail${colorClass ? ' ' + colorClass : ''}">${str}</div>`;
+  }
+
   function renderDmgOutSection(pc) {
     const log = pc.dmgLog || [];
-    const currentTurn = pc.currentTurn || 1;
-    const currentAtks = log.filter(e => e.turn === currentTurn);
+    const currentRound = editingSession ? (editingSession.currentRound || 1) : 1;
+    const currentAtks = log.filter(e => roundKey(e) === currentRound);
 
     const chipsHtml = currentAtks.map(e => {
       const idx = log.indexOf(e);
@@ -889,16 +918,11 @@ const UI = (function() {
     let derivedHtml = '';
     if (log.length > 0) {
       const maxAtk = Math.max(...log.map(e => e.value));
-      const turnNums = [...new Set(log.map(e => e.turn))].sort((a, b) => a - b);
-      const byTurn = {};
-      log.forEach(e => { byTurn[e.turn] = (byTurn[e.turn] || 0) + e.value; });
-      const maxTurn = Math.max(...Object.values(byTurn));
-      const turnStr = turnNums.map(t => {
-        const vals = log.filter(e => e.turn === t).map(e => e.value);
-        return vals.length === 1 ? `${vals[0]}` : `(${vals.join('+')})`;
-      }).join(' · ');
-      detailHtml = `<div class="pc-turn-detail">${turnStr}</div>`;
-      derivedHtml = `<div class="pc-atk-derived">Max/atk: <strong>${maxAtk}</strong> &middot; Max/turn: <strong>${maxTurn}</strong></div>`;
+      const byRound = {};
+      log.forEach(e => { const r = roundKey(e); byRound[r] = (byRound[r] || 0) + e.value; });
+      const maxRound = Math.max(...Object.values(byRound));
+      detailHtml = renderRoundDetail(log, '');
+      derivedHtml = `<div class="pc-atk-derived">Max/atk: <strong>${maxAtk}</strong> &middot; Max/round: <strong>${maxRound}</strong></div>`;
     }
 
     return `
@@ -909,9 +933,8 @@ const UI = (function() {
         </div>
         ${detailHtml}
         <div class="pc-atk-turn-bar">
-          <span class="pc-turn-badge">T${currentTurn}</span>
+          <span class="pc-turn-badge">R${currentRound}</span>
           <div class="pc-atk-chips">${chipsHtml || '<span class="pc-atk-empty">—</span>'}</div>
-          <button class="pc-turn-btn" data-action="turn-next" data-pc-id="${pc.id}">New Turn</button>
         </div>
         <div class="pc-atk-stepper">
           <button class="pc-atk-step pc-atk-step-dec" data-action="atk-dec" data-pc-id="${pc.id}" data-val="5">−5</button>
@@ -964,6 +987,7 @@ const UI = (function() {
           <div class="pc-stat pc-stat-big stat-dmg-taken">
             <span class="pc-stat-label">🛡 DMG IN</span>
             <span class="pc-stat-value" id="sv-${pc.id}-dmgTaken">${pc.dmgTaken || 0}</span>
+            ${renderRoundDetail(pc.dmgInLog, 'pc-round-detail--in')}
             <div class="pc-stat-input-row">
               <input type="number" min="0" class="pc-stat-input" placeholder="+" id="si-${pc.id}-dmgTaken" data-pc-id="${pc.id}" data-stat="dmgTaken">
               <button class="pc-stat-add-btn" data-action="stat-add" data-pc-id="${pc.id}" data-stat="dmgTaken">+</button>
@@ -972,6 +996,7 @@ const UI = (function() {
           <div class="pc-stat pc-stat-big stat-heal">
             <span class="pc-stat-label">💚 HEAL</span>
             <span class="pc-stat-value" id="sv-${pc.id}-healed">${pc.healed || 0}</span>
+            ${renderRoundDetail(pc.healLog, 'pc-round-detail--heal')}
             <div class="pc-stat-input-row">
               <input type="number" min="0" class="pc-stat-input" placeholder="+" id="si-${pc.id}-healed" data-pc-id="${pc.id}" data-stat="healed">
               <button class="pc-stat-add-btn" data-action="stat-add" data-pc-id="${pc.id}" data-stat="healed">+</button>
@@ -1008,7 +1033,18 @@ const UI = (function() {
       if (isNaN(val) || val <= 0) { if (input) input.focus(); return; }
       pc[statKey] = (pc[statKey] || 0) + val;
       if (input) input.value = '';
-      updateStatDisplay(pc, statKey);
+      const round = editingSession ? (editingSession.currentRound || 1) : 1;
+      if (statKey === 'dmgTaken') {
+        if (!pc.dmgInLog) pc.dmgInLog = [];
+        pc.dmgInLog.push({ round, value: val });
+        rerenderPcCard(pc);
+      } else if (statKey === 'healed') {
+        if (!pc.healLog) pc.healLog = [];
+        pc.healLog.push({ round, value: val });
+        rerenderPcCard(pc);
+      } else {
+        updateStatDisplay(pc, statKey);
+      }
       scheduleStatsAutosave();
     } else if (action === 'stat-inc') {
       pc[statKey] = (pc[statKey] || 0) + 1;
@@ -1031,14 +1067,9 @@ const UI = (function() {
       const val = input ? parseInt(input.value, 10) : 0;
       if (!val || val <= 0) return;
       if (!pc.dmgLog) pc.dmgLog = [];
-      if (!pc.currentTurn) pc.currentTurn = 1;
-      pc.dmgLog.push({ turn: pc.currentTurn, value: val });
+      const round = editingSession ? (editingSession.currentRound || 1) : 1;
+      pc.dmgLog.push({ round, value: val });
       pc.dmgDealt = (pc.dmgDealt || 0) + val;
-      rerenderPcCard(pc);
-      scheduleStatsAutosave();
-    } else if (action === 'turn-next') {
-      if (!pc.currentTurn) pc.currentTurn = 1;
-      pc.currentTurn++;
       rerenderPcCard(pc);
       scheduleStatsAutosave();
     } else if (action === 'atk-remove') {
@@ -1074,7 +1105,8 @@ const UI = (function() {
       showModal('Reset PC stats', `Reset all stats for "${targetPc.name}"?`, () => {
         STAT_DEFS.forEach(s => { targetPc[s.key] = 0; });
         targetPc.dmgLog = [];
-        targetPc.currentTurn = 1;
+        targetPc.dmgInLog = [];
+        targetPc.healLog = [];
         targetPc.killLog = [];
         renderPcGrid();
         scheduleStatsAutosave();

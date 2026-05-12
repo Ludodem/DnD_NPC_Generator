@@ -1555,7 +1555,51 @@ button {
 
 .pc-atk-derived strong { color: #9c2f2f; }
 
-/* Turn-by-turn detail: (15+7+12) · (13) · (25+28) */
+/* Global round bar */
+.stats-round-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  margin-top: var(--space-sm);
+}
+
+.stats-round-label {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-variant: small-caps;
+  letter-spacing: 0.04em;
+}
+
+.btn-next-round {
+  border: none;
+  background: var(--color-accent);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  letter-spacing: 0.03em;
+}
+.btn-next-round:hover { background: #5a2a00; }
+
+/* Per-round detail line */
+.pc-round-detail {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-align: center;
+  word-break: break-word;
+  line-height: 1.4;
+  width: 100%;
+}
+.pc-round-detail--in  { color: #b36200; }
+.pc-round-detail--heal { color: #2d7a3a; }
+
+/* DMG OUT round detail (shares structure, different colour via parent) */
 .pc-turn-detail {
   font-size: 0.72rem;
   color: #9c2f2f;

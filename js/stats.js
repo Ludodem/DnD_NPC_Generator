@@ -70,6 +70,7 @@ const SessionStats = (function() {
       date: today(),
       scenarioId: null,
       scenarioTitle: null,
+      currentRound: 1,
       pcs: []
     };
   }
@@ -84,7 +85,8 @@ const SessionStats = (function() {
       kills: 0,
       ko: 0,
       dmgLog: [],
-      currentTurn: 1,
+      dmgInLog: [],
+      healLog: [],
       killLog: []
     };
   }
