@@ -966,7 +966,7 @@ const UI = (function() {
         <div class="pc-atk-stepper">
           <button class="pc-atk-step pc-atk-step-dec" data-action="atk-dec" data-pc-id="${pc.id}" data-val="5">−5</button>
           <button class="pc-atk-step pc-atk-step-dec" data-action="atk-dec" data-pc-id="${pc.id}" data-val="1">−1</button>
-          <input type="number" min="0" class="pc-staging-input" id="si-${pc.id}-dmgDealt" data-pc-id="${pc.id}" placeholder="0">
+          <input type="text" inputmode="text" class="pc-staging-input" id="si-${pc.id}-dmgDealt" data-pc-id="${pc.id}" placeholder="12+3">
           <button class="pc-atk-step pc-atk-step-inc" data-action="atk-inc" data-pc-id="${pc.id}" data-val="1">+1</button>
           <button class="pc-atk-step pc-atk-step-inc" data-action="atk-inc" data-pc-id="${pc.id}" data-val="5">+5</button>
           <button class="pc-atk-step pc-atk-step-inc" data-action="atk-inc" data-pc-id="${pc.id}" data-val="10">+10</button>
@@ -1118,19 +1118,21 @@ const UI = (function() {
     } else if (action === 'atk-inc') {
       const delta = parseInt(btn.dataset.val, 10);
       const input = document.getElementById(`si-${pcId}-dmgDealt`);
-      if (input) { input.value = (parseInt(input.value, 10) || 0) + delta; updateStagingDisplay(pcId); }
+      if (input) { input.value = parseStagingValue(input.value) + delta; updateStagingDisplay(pcId); }
     } else if (action === 'atk-dec') {
       const delta = parseInt(btn.dataset.val, 10);
       const input = document.getElementById(`si-${pcId}-dmgDealt`);
-      if (input) { input.value = Math.max(0, (parseInt(input.value, 10) || 0) - delta); updateStagingDisplay(pcId); }
+      if (input) { input.value = Math.max(0, parseStagingValue(input.value) - delta); updateStagingDisplay(pcId); }
     } else if (action === 'atk-log') {
       const input = document.getElementById(`si-${pcId}-dmgDealt`);
-      const val = input ? parseInt(input.value, 10) : 0;
-      if (!val || val <= 0) return;
+      const raw = input ? input.value.trim() : '';
+      if (!raw) return;
+      const parts = raw.split('+').map(s => parseInt(s.trim(), 10)).filter(v => !isNaN(v) && v > 0);
+      if (parts.length === 0) return;
       if (!pc.dmgLog) pc.dmgLog = [];
       const round = editingSession ? (editingSession.currentRound || 1) : 1;
-      pc.dmgLog.push({ round, value: val });
-      pc.dmgDealt = (pc.dmgDealt || 0) + val;
+      parts.forEach(v => pc.dmgLog.push({ round, value: v }));
+      pc.dmgDealt = (pc.dmgDealt || 0) + parts.reduce((s, v) => s + v, 0);
       rerenderPcCard(pc);
       scheduleStatsAutosave();
     } else if (action === 'atk-remove') {
@@ -1202,9 +1204,15 @@ const UI = (function() {
     }
   }
 
+  function parseStagingValue(str) {
+    if (!str) return 0;
+    const parts = String(str).split('+').map(s => parseInt(s.trim(), 10)).filter(v => !isNaN(v) && v > 0);
+    return parts.reduce((s, v) => s + v, 0);
+  }
+
   function updateStagingDisplay(pcId) {
     const input = document.getElementById(`si-${pcId}-dmgDealt`);
-    const val = input ? parseInt(input.value, 10) : 0;
+    const val = parseStagingValue(input?.value || '');
     const logBtn = document.querySelector(`[data-action="atk-log"][data-pc-id="${pcId}"]`);
     if (logBtn) logBtn.disabled = !(val > 0);
   }
