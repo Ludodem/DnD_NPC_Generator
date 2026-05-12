@@ -1603,10 +1603,20 @@ const UI = (function() {
         const act = editingScenario.acts.find(a => a.id === refs.actId);
         const scene = act && act.scenes.find(s => s.id === refs.sceneId);
         if (!scene) break;
-        if (mode === 'create') scene.combats.push(draft);
-        else {
+        if (mode === 'create') {
+          scene.combats.push(draft);
+        } else {
           const idx = scene.combats.findIndex(c => c.id === refs.combatId);
-          if (idx !== -1) scene.combats[idx] = draft;
+          if (idx !== -1) {
+            const oldCombat = scene.combats[idx];
+            draft.enemies.forEach(enemy => {
+              const oldEnemy = oldCombat.enemies.find(e => e.id === enemy.id);
+              if (oldEnemy && oldEnemy.count !== enemy.count) {
+                enemy.currentHp = null;
+              }
+            });
+            scene.combats[idx] = draft;
+          }
         }
         break;
       }
@@ -2392,6 +2402,17 @@ const UI = (function() {
   function setupModal() {
     elements.modalCancel.addEventListener('click', hideModal);
     elements.modal.querySelector('.modal-backdrop').addEventListener('click', hideModal);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      if (elements.enemyPickerModal && !elements.enemyPickerModal.classList.contains('hidden')) {
+        hideEnemyPicker();
+      } else if (elements.itemEditorModal && !elements.itemEditorModal.classList.contains('hidden')) {
+        closeItemEditor();
+      } else if (elements.modal && !elements.modal.classList.contains('hidden')) {
+        hideModal();
+      }
+    });
 
     elements.modalConfirm.addEventListener('click', () => {
       if (modalConfirmCallback) {
