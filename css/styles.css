@@ -1206,6 +1206,266 @@ button {
 }
 
 /* ----------------------------------------
+   Session Stats
+   ---------------------------------------- */
+.stats-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--space-md);
+}
+
+.session-card-edit {
+  font-size: 14px;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.stats-session-meta-line {
+  font-family: var(--font-heading);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  text-align: center;
+  margin: 0 0 var(--space-md);
+}
+
+/* PC Setup rows in modal */
+.pc-setup-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-xs);
+}
+
+.pc-setup-row {
+  display: flex;
+  gap: var(--space-xs);
+  align-items: center;
+}
+
+.pc-name-input {
+  flex: 1;
+}
+
+/* PC grid */
+.pc-grid-empty {
+  text-align: center;
+  padding: var(--space-xl);
+  color: var(--color-text-muted);
+}
+
+#pc-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
+  padding-bottom: var(--space-xl);
+}
+
+/* PC card */
+.pc-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.pc-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.pc-card-name {
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-variant: small-caps;
+  letter-spacing: 0.04em;
+}
+
+.pc-reset-btn {
+  border: none;
+  background: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.85);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.pc-reset-btn:hover {
+  background: rgba(255,255,255,0.25);
+  color: #fff;
+}
+
+/* Big stats (DMG OUT / IN / HEAL) */
+.pc-big-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.pc-stat-big {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-sm) var(--space-xs);
+  border-right: 1px solid var(--color-border);
+  gap: 4px;
+}
+
+.pc-stat-big:last-child {
+  border-right: none;
+}
+
+.pc-stat-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pc-stat-value {
+  font-family: var(--font-heading);
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.pc-stat-input-row {
+  display: flex;
+  gap: 3px;
+  width: 100%;
+}
+
+.pc-stat-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  text-align: center;
+  padding: 3px 4px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.pc-stat-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.pc-stat-add-btn {
+  border: none;
+  font-size: 15px;
+  font-weight: 700;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Small stats (KILLS / KO) */
+.pc-small-stats {
+  display: flex;
+  gap: 0;
+}
+
+.pc-stat-small {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-right: 1px solid var(--color-border);
+}
+
+.pc-stat-small:last-child {
+  border-right: none;
+}
+
+.pc-stat-counter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.pc-stat-small .pc-stat-value {
+  font-size: 1.3rem;
+  min-width: 28px;
+  text-align: center;
+}
+
+.pc-counter-btn {
+  border: none;
+  width: 30px;
+  height: 30px;
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* Colour themes per stat */
+.stat-dmg-dealt .pc-stat-label { color: #9c2f2f; }
+.stat-dmg-dealt .pc-stat-value { color: #9c2f2f; }
+.stat-dmg-dealt .pc-stat-add-btn { background: #9c2f2f; color: #fff; }
+.stat-dmg-dealt .pc-stat-add-btn:hover { background: #7a2020; }
+
+.stat-dmg-taken .pc-stat-label { color: #b36200; }
+.stat-dmg-taken .pc-stat-value { color: #b36200; }
+.stat-dmg-taken .pc-stat-add-btn { background: #b36200; color: #fff; }
+.stat-dmg-taken .pc-stat-add-btn:hover { background: #8a4c00; }
+
+.stat-heal .pc-stat-label { color: #2d7a3a; }
+.stat-heal .pc-stat-value { color: #2d7a3a; }
+.stat-heal .pc-stat-add-btn { background: #2d7a3a; color: #fff; }
+.stat-heal .pc-stat-add-btn:hover { background: #1f5a29; }
+
+.stat-kills .pc-stat-label { color: #6b3030; }
+.stat-kills .pc-stat-value { color: #6b3030; }
+.stat-kills .pc-counter-btn { background: rgba(107,48,48,0.1); color: #6b3030; }
+.stat-kills .pc-counter-btn:hover { background: rgba(107,48,48,0.2); }
+
+.stat-ko .pc-stat-label { color: #5b3080; }
+.stat-ko .pc-stat-value { color: #5b3080; }
+.stat-ko .pc-counter-btn { background: rgba(91,48,128,0.1); color: #5b3080; }
+.stat-ko .pc-counter-btn:hover { background: rgba(91,48,128,0.2); }
+
+/* Session setup modal */
+.session-setup-content {
+  width: 92%;
+  max-width: 480px;
+}
+
+/* Desktop: 2-col PC grid */
+@media (min-width: 768px) {
+  #pc-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  #pc-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ----------------------------------------
    Scenarios — list + editor
    ---------------------------------------- */
 .scenarios-toolbar {

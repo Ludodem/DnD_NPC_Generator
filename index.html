@@ -37,6 +37,10 @@
         <span class="nav-icon">&#x1F4DC;</span>
         <span class="nav-label">Scenarios</span>
       </button>
+      <button class="nav-btn" data-screen="stats">
+        <span class="nav-icon">&#x1F4CA;</span>
+        <span class="nav-label">Stats</span>
+      </button>
       <button class="nav-btn" data-action="settings" aria-label="Settings">
         <span class="nav-icon">&#9881;</span>
         <span class="nav-label">Settings</span>
@@ -438,7 +442,56 @@
           <div id="scenario-view"></div>
         </div>
       </section>
+      <!-- Stats Screen -->
+      <section id="screen-stats" class="screen">
+        <header class="screen-header">
+          <h1>Session Stats</h1>
+        </header>
+        <div class="screen-content">
+          <div class="stats-toolbar">
+            <button id="btn-new-session" class="btn btn-primary">+ New Session</button>
+          </div>
+          <div id="session-list"></div>
+          <div id="session-empty" class="empty-state hidden">
+            <p>No sessions yet</p>
+            <button id="btn-new-session-empty" class="btn btn-primary">Start your first session</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Stats Session Detail Screen -->
+      <section id="screen-stats-session" class="screen">
+        <header class="screen-header with-back">
+          <button id="btn-back-stats" class="btn-icon">&larr;</button>
+          <div class="title-box">
+            <h1 id="stats-session-heading">Session</h1>
+          </div>
+          <button id="btn-add-pc" class="btn-icon" title="Add player character">&#xFF0B;</button>
+        </header>
+        <div class="screen-content">
+          <div id="stats-session-meta"></div>
+          <div id="pc-grid"></div>
+        </div>
+      </section>
     </main>
+
+    <!-- Session Setup Modal -->
+    <div id="session-setup-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content session-setup-content">
+        <div class="item-editor-header">
+          <h2 id="session-setup-title">New Session</h2>
+          <button id="session-setup-close" class="btn-icon" aria-label="Close">&times;</button>
+        </div>
+        <div id="session-setup-body" class="item-editor-body"></div>
+        <div class="item-editor-footer">
+          <button id="session-setup-delete" class="btn btn-danger" hidden>Delete</button>
+          <span class="item-editor-spacer"></span>
+          <button id="session-setup-cancel" class="btn btn-secondary">Cancel</button>
+          <button id="session-setup-save" class="btn btn-primary">Save</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Modal -->
     <div id="modal" class="modal hidden">
@@ -545,6 +598,7 @@
   <script src="js/data-loader.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/scenarios.js"></script>
+  <script src="js/stats.js"></script>
   <script src="js/generator.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/app.js"></script>

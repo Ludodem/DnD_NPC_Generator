@@ -41,6 +41,7 @@ const UI = (function() {
     setupResultScreen();
     setupLibraryScreen();
     setupScenariosScreen();
+    setupStatsScreen();
     setupModal();
     setupViewTabs();
 
@@ -63,7 +64,9 @@ const UI = (function() {
       library: document.getElementById('screen-library'),
       libraryDetail: document.getElementById('screen-library-detail'),
       scenarios: document.getElementById('screen-scenarios'),
-      scenarioDetail: document.getElementById('screen-scenario-detail')
+      scenarioDetail: document.getElementById('screen-scenario-detail'),
+      stats: document.getElementById('screen-stats'),
+      statsSession: document.getElementById('screen-stats-session')
     };
 
     // Generator
@@ -245,6 +248,9 @@ const UI = (function() {
         } else if (screen === 'scenarios') {
           showScreen('scenarios');
           renderScenarioList();
+        } else if (screen === 'stats') {
+          showScreen('stats');
+          renderSessionList();
         } else {
           showScreen(screen);
         }
@@ -264,7 +270,9 @@ const UI = (function() {
       'library': 'library',
       'libraryDetail': 'library',
       'scenarios': 'scenarios',
-      'scenarioDetail': 'scenarios'
+      'scenarioDetail': 'scenarios',
+      'stats': 'stats',
+      'statsSession': 'stats'
     };
 
     const navTarget = navMap[activeScreen] || activeScreen;
@@ -617,6 +625,362 @@ const UI = (function() {
     'secret':     { icon: '🔑', label: 'Secret' },
     'ambiance':   { icon: '🌫', label: 'Ambiance' },
   };
+
+  // ============================================================
+  //  SESSION STATS
+  // ============================================================
+
+  let editingSession = null;
+  let statsAutosaveTimer = null;
+
+  const STAT_DEFS = [
+    { key: 'dmgDealt', label: 'DMG OUT',  icon: '⚔',  color: 'stat-dmg-dealt', big: true },
+    { key: 'dmgTaken', label: 'DMG IN',   icon: '🛡',  color: 'stat-dmg-taken', big: true },
+    { key: 'healed',   label: 'HEAL',     icon: '💚',  color: 'stat-heal',      big: true },
+    { key: 'kills',    label: 'KILLS',    icon: '💀',  color: 'stat-kills',     big: false },
+    { key: 'ko',       label: 'KO',       icon: '😵',  color: 'stat-ko',        big: false },
+  ];
+
+  function setupStatsScreen() {
+    const elList = document.getElementById('session-list');
+    const elEmpty = document.getElementById('session-empty');
+    const btnNew = document.getElementById('btn-new-session');
+    const btnNewEmpty = document.getElementById('btn-new-session-empty');
+    const btnBack = document.getElementById('btn-back-stats');
+    const btnAddPc = document.getElementById('btn-add-pc');
+    const modal = document.getElementById('session-setup-modal');
+    if (!elList) return;
+
+    if (btnNew) btnNew.addEventListener('click', () => openSessionSetup(null));
+    if (btnNewEmpty) btnNewEmpty.addEventListener('click', () => openSessionSetup(null));
+    if (btnBack) btnBack.addEventListener('click', () => { showScreen('stats'); renderSessionList(); });
+    if (btnAddPc) btnAddPc.addEventListener('click', () => { if (editingSession) promptAddPc(); });
+
+    if (modal) {
+      document.getElementById('session-setup-close').addEventListener('click', closeSessionSetup);
+      document.getElementById('session-setup-cancel').addEventListener('click', closeSessionSetup);
+      modal.querySelector('.modal-backdrop').addEventListener('click', closeSessionSetup);
+      document.getElementById('session-setup-save').addEventListener('click', saveSessionSetup);
+      document.getElementById('session-setup-delete').addEventListener('click', () => {
+        if (!editingSession) return;
+        showModal('Delete session', `Delete "${editingSession.label || 'this session'}"? Cannot be undone.`, () => {
+          SessionStats.remove(editingSession.id);
+          closeSessionSetup();
+          showScreen('stats');
+          renderSessionList();
+        });
+      });
+      document.getElementById('session-setup-body').addEventListener('input', onSessionSetupInput);
+      document.getElementById('session-setup-body').addEventListener('click', onSessionSetupClick);
+    }
+
+    const pcGrid = document.getElementById('pc-grid');
+    if (pcGrid) {
+      pcGrid.addEventListener('click', handlePcGridClick);
+      pcGrid.addEventListener('keydown', handlePcGridInput);
+    }
+  }
+
+  function renderSessionList() {
+    const sessions = SessionStats.getAll();
+    const elList = document.getElementById('session-list');
+    const elEmpty = document.getElementById('session-empty');
+    if (!elList) return;
+
+    if (sessions.length === 0) {
+      elList.innerHTML = '';
+      if (elEmpty) elEmpty.classList.remove('hidden');
+      return;
+    }
+    if (elEmpty) elEmpty.classList.add('hidden');
+
+    elList.innerHTML = sessions.map(s => {
+      const pcNames = (s.pcs || []).map(p => escapeHtml(p.name)).join(', ');
+      const linked = s.scenarioTitle ? ` &middot; ${escapeHtml(s.scenarioTitle)}` : '';
+      return `
+        <div class="npc-card session-card" data-session-id="${s.id}">
+          <div class="npc-card-content">
+            <div class="npc-card-name">${s.label ? escapeHtml(s.label) : '<em>Unnamed session</em>'}</div>
+            <div class="npc-card-meta">${escapeHtml(s.date)}${linked}${pcNames ? ` &middot; ${pcNames}` : ''}</div>
+          </div>
+          <button class="session-card-edit btn-icon" data-session-id="${s.id}" title="Edit session info">&#9998;</button>
+          <button class="npc-card-delete" data-session-id="${s.id}" aria-label="Delete">Delete</button>
+          <span class="npc-card-arrow">&rsaquo;</span>
+        </div>
+      `;
+    }).join('');
+
+    elList.querySelectorAll('.session-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.session-card-edit') || e.target.closest('.npc-card-delete')) return;
+        openSessionDetail(card.dataset.sessionId);
+      });
+    });
+    elList.querySelectorAll('.session-card-edit').forEach(btn => {
+      btn.addEventListener('click', (e) => { e.stopPropagation(); openSessionSetup(btn.dataset.sessionId); });
+    });
+    elList.querySelectorAll('.npc-card-delete').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const sid = btn.dataset.sessionId;
+        const s = SessionStats.getById(sid);
+        showModal('Delete session', `Delete "${s ? s.label || 'this session' : 'this session'}"?`, () => {
+          SessionStats.remove(sid);
+          renderSessionList();
+        });
+      });
+    });
+  }
+
+  // ---- Session setup modal ----
+
+  let sessionSetupDraft = null;
+
+  function openSessionSetup(sessionId) {
+    sessionSetupDraft = sessionId ? JSON.parse(JSON.stringify(SessionStats.getById(sessionId))) : SessionStats.createSession();
+    const isEdit = !!sessionId;
+    document.getElementById('session-setup-title').textContent = isEdit ? 'Edit Session' : 'New Session';
+    document.getElementById('session-setup-delete').hidden = !isEdit;
+    renderSessionSetupBody();
+    document.getElementById('session-setup-modal').classList.remove('hidden');
+  }
+
+  function closeSessionSetup() {
+    document.getElementById('session-setup-modal').classList.add('hidden');
+    sessionSetupDraft = null;
+  }
+
+  function renderSessionSetupBody() {
+    const d = sessionSetupDraft;
+    const scenarios = typeof Scenarios !== 'undefined' ? Scenarios.getAll() : [];
+    const scenarioOpts = ['<option value="">— None —</option>']
+      .concat(scenarios.map(s => `<option value="${s.id}"${d.scenarioId === s.id ? ' selected' : ''}>${escapeHtml(s.title || 'Untitled')}</option>`))
+      .join('');
+
+    const pcsHtml = (d.pcs || []).map(pc => `
+      <div class="pc-setup-row" data-pc-id="${pc.id}">
+        <input type="text" class="field-input pc-name-input" data-field="pc-name" value="${escapeAttr(pc.name)}" placeholder="Player name">
+        <button type="button" class="btn-remove" data-action="remove-pc">&times;</button>
+      </div>
+    `).join('');
+
+    document.getElementById('session-setup-body').innerHTML = `
+      <label class="field-row"><span class="field-label">Session name</span>
+        <input type="text" data-field="label" value="${escapeAttr(d.label)}" placeholder="e.g. Session 12 — Dark Forest" class="field-input" autofocus></label>
+      <label class="field-row"><span class="field-label">Date</span>
+        <input type="date" data-field="date" value="${escapeAttr(d.date)}" class="field-input"></label>
+      <label class="field-row"><span class="field-label">Scenario (optional)</span>
+        <select data-field="scenarioId" class="field-input field-select">${scenarioOpts}</select></label>
+      <div class="field-row">
+        <span class="field-label">Player Characters</span>
+        <div class="pc-setup-list">${pcsHtml || '<p class="list-empty-hint">No PCs yet.</p>'}</div>
+        <button type="button" class="btn btn-tertiary btn-add" data-action="add-pc-setup">+ Add PC</button>
+      </div>
+    `;
+  }
+
+  function onSessionSetupInput(e) {
+    if (!sessionSetupDraft) return;
+    const field = e.target.dataset.field;
+    if (!field) return;
+    if (field === 'pc-name') {
+      const row = e.target.closest('[data-pc-id]');
+      if (row) {
+        const pc = sessionSetupDraft.pcs.find(p => p.id === row.dataset.pcId);
+        if (pc) pc.name = e.target.value;
+      }
+      return;
+    }
+    if (field === 'scenarioId') {
+      const sid = e.target.value;
+      sessionSetupDraft.scenarioId = sid || null;
+      if (sid) {
+        const sc = typeof Scenarios !== 'undefined' ? Scenarios.getById(sid) : null;
+        sessionSetupDraft.scenarioTitle = sc ? sc.title : null;
+      } else {
+        sessionSetupDraft.scenarioTitle = null;
+      }
+      return;
+    }
+    sessionSetupDraft[field] = e.target.value;
+  }
+
+  function onSessionSetupClick(e) {
+    if (!sessionSetupDraft) return;
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    if (btn.dataset.action === 'add-pc-setup') {
+      sessionSetupDraft.pcs.push(SessionStats.createPc(''));
+      renderSessionSetupBody();
+    } else if (btn.dataset.action === 'remove-pc') {
+      const row = btn.closest('[data-pc-id]');
+      if (row) sessionSetupDraft.pcs = sessionSetupDraft.pcs.filter(p => p.id !== row.dataset.pcId);
+      renderSessionSetupBody();
+    }
+  }
+
+  function saveSessionSetup() {
+    if (!sessionSetupDraft) return;
+    sessionSetupDraft.pcs = sessionSetupDraft.pcs.filter(p => p.name.trim());
+    const result = SessionStats.save(sessionSetupDraft);
+    if (!result.success) { showToast(result.error || 'Save failed'); return; }
+    closeSessionSetup();
+    if (editingSession && editingSession.id === sessionSetupDraft.id) {
+      editingSession = SessionStats.getById(sessionSetupDraft.id);
+      document.getElementById('stats-session-heading').textContent = editingSession.label || 'Session';
+      renderSessionMeta();
+      renderPcGrid();
+    } else {
+      openSessionDetail(sessionSetupDraft.id);
+    }
+    renderSessionList();
+  }
+
+  // ---- Live session detail ----
+
+  function openSessionDetail(sessionId) {
+    const s = SessionStats.getById(sessionId);
+    if (!s) { showToast('Session not found'); return; }
+    editingSession = s;
+    document.getElementById('stats-session-heading').textContent = s.label || 'Session';
+    showScreen('statsSession');
+    updateNavigation('statsSession');
+    renderSessionMeta();
+    renderPcGrid();
+  }
+
+  function renderSessionMeta() {
+    const s = editingSession;
+    const el = document.getElementById('stats-session-meta');
+    if (!el || !s) return;
+    const parts = [escapeHtml(s.date)];
+    if (s.scenarioTitle) parts.push(escapeHtml(s.scenarioTitle));
+    el.innerHTML = `<p class="stats-session-meta-line">${parts.join(' &middot; ')}</p>`;
+  }
+
+  function renderPcGrid() {
+    const el = document.getElementById('pc-grid');
+    if (!el || !editingSession) return;
+
+    if (!editingSession.pcs || editingSession.pcs.length === 0) {
+      el.innerHTML = `<div class="pc-grid-empty">
+        <p>No player characters.</p>
+        <button class="btn btn-primary" id="btn-add-pc-inline">+ Add PC</button>
+      </div>`;
+      document.getElementById('btn-add-pc-inline')?.addEventListener('click', promptAddPc);
+      return;
+    }
+
+    el.innerHTML = editingSession.pcs.map(pc => renderPcCard(pc)).join('');
+  }
+
+  function renderPcCard(pc) {
+    const bigStats = STAT_DEFS.filter(s => s.big);
+    const smallStats = STAT_DEFS.filter(s => !s.big);
+
+    const bigHtml = bigStats.map(s => `
+      <div class="pc-stat pc-stat-big ${s.color}" data-stat="${s.key}">
+        <span class="pc-stat-label">${s.icon} ${s.label}</span>
+        <span class="pc-stat-value" id="sv-${pc.id}-${s.key}">${pc[s.key] || 0}</span>
+        <div class="pc-stat-input-row">
+          <input type="number" min="0" class="pc-stat-input" placeholder="+" id="si-${pc.id}-${s.key}" data-pc-id="${pc.id}" data-stat="${s.key}">
+          <button class="pc-stat-add-btn" data-action="stat-add" data-pc-id="${pc.id}" data-stat="${s.key}">+</button>
+        </div>
+      </div>
+    `).join('');
+
+    const smallHtml = smallStats.map(s => `
+      <div class="pc-stat pc-stat-small ${s.color}" data-stat="${s.key}">
+        <span class="pc-stat-label">${s.icon} ${s.label}</span>
+        <div class="pc-stat-counter">
+          <button class="pc-counter-btn" data-action="stat-dec" data-pc-id="${pc.id}" data-stat="${s.key}">−</button>
+          <span class="pc-stat-value" id="sv-${pc.id}-${s.key}">${pc[s.key] || 0}</span>
+          <button class="pc-counter-btn" data-action="stat-inc" data-pc-id="${pc.id}" data-stat="${s.key}">+</button>
+        </div>
+      </div>
+    `).join('');
+
+    return `
+      <div class="pc-card" data-pc-id="${pc.id}">
+        <div class="pc-card-header">
+          <span class="pc-card-name">${escapeHtml(pc.name || 'Unnamed')}</span>
+          <button class="pc-reset-btn" data-action="pc-reset" data-pc-id="${pc.id}" title="Reset this PC's stats">↺ Reset</button>
+        </div>
+        <div class="pc-big-stats">${bigHtml}</div>
+        <div class="pc-small-stats">${smallHtml}</div>
+      </div>
+    `;
+  }
+
+  function handlePcGridClick(e) {
+    const btn = e.target.closest('[data-action]');
+    if (!btn || !editingSession) return;
+    const action = btn.dataset.action;
+    const pcId = btn.dataset.pcId;
+    const statKey = btn.dataset.stat;
+    const pc = editingSession.pcs.find(p => p.id === pcId);
+    if (!pc && action !== 'pc-reset') return;
+
+    if (action === 'stat-add') {
+      const input = document.getElementById(`si-${pcId}-${statKey}`);
+      const val = input ? parseInt(input.value, 10) : NaN;
+      if (isNaN(val) || val <= 0) { if (input) input.focus(); return; }
+      pc[statKey] = (pc[statKey] || 0) + val;
+      if (input) input.value = '';
+      updateStatDisplay(pc, statKey);
+      scheduleStatsAutosave();
+    } else if (action === 'stat-inc') {
+      pc[statKey] = (pc[statKey] || 0) + 1;
+      updateStatDisplay(pc, statKey);
+      scheduleStatsAutosave();
+    } else if (action === 'stat-dec') {
+      pc[statKey] = Math.max(0, (pc[statKey] || 0) - 1);
+      updateStatDisplay(pc, statKey);
+      scheduleStatsAutosave();
+    } else if (action === 'pc-reset') {
+      const targetPc = editingSession.pcs.find(p => p.id === pcId);
+      if (!targetPc) return;
+      showModal('Reset PC stats', `Reset all stats for "${targetPc.name}"?`, () => {
+        STAT_DEFS.forEach(s => { targetPc[s.key] = 0; });
+        renderPcGrid();
+        scheduleStatsAutosave();
+      });
+    }
+  }
+
+  function handlePcGridInput(e) {
+    // Allow Enter on the stat input to trigger the "+" button
+    if (e.type === 'keydown' && e.key === 'Enter') {
+      const input = e.target;
+      if (input.classList.contains('pc-stat-input')) {
+        const pcId = input.dataset.pcId;
+        const stat = input.dataset.stat;
+        const addBtn = document.querySelector(`[data-action="stat-add"][data-pc-id="${pcId}"][data-stat="${stat}"]`);
+        if (addBtn) addBtn.click();
+      }
+    }
+  }
+
+  function updateStatDisplay(pc, statKey) {
+    const el = document.getElementById(`sv-${pc.id}-${statKey}`);
+    if (el) el.textContent = pc[statKey] || 0;
+  }
+
+  function scheduleStatsAutosave() {
+    if (statsAutosaveTimer) clearTimeout(statsAutosaveTimer);
+    statsAutosaveTimer = setTimeout(() => {
+      if (editingSession) SessionStats.save(editingSession);
+    }, 400);
+  }
+
+  function promptAddPc() {
+    if (!editingSession) return;
+    const name = prompt('Player character name:');
+    if (!name || !name.trim()) return;
+    editingSession.pcs.push(SessionStats.createPc(name.trim()));
+    SessionStats.save(editingSession);
+    renderPcGrid();
+  }
 
   function setupScenariosScreen() {
     const openNew = () => openScenarioDetail(null);
@@ -2405,10 +2769,13 @@ const UI = (function() {
 
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
+      const sessionSetupModal = document.getElementById('session-setup-modal');
       if (elements.enemyPickerModal && !elements.enemyPickerModal.classList.contains('hidden')) {
         hideEnemyPicker();
       } else if (elements.itemEditorModal && !elements.itemEditorModal.classList.contains('hidden')) {
         closeItemEditor();
+      } else if (sessionSetupModal && !sessionSetupModal.classList.contains('hidden')) {
+        closeSessionSetup();
       } else if (elements.modal && !elements.modal.classList.contains('hidden')) {
         hideModal();
       }
