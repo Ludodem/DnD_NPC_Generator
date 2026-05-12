@@ -870,8 +870,28 @@ const UI = (function() {
         <div class="stats-round-sublabel">Round</div>
         <button class="btn-next-round" id="btn-next-round">Next Round →</button>
       </div>
+      <div class="stats-session-totals" id="stats-session-totals"></div>
+      <textarea class="session-note-input" id="session-note-input" placeholder="Notes de session — critiques, Smite, observations…" rows="2">${escapeHtml(s.notes || '')}</textarea>
     `;
     document.getElementById('btn-next-round')?.addEventListener('click', handleNextRound);
+    document.getElementById('session-note-input')?.addEventListener('input', (e) => {
+      if (editingSession) { editingSession.notes = e.target.value; scheduleStatsAutosave(); }
+    });
+    updateSessionSummary();
+  }
+
+  function updateSessionSummary() {
+    const el = document.getElementById('stats-session-totals');
+    if (!el || !editingSession) return;
+    const pcs = editingSession.pcs || [];
+    const d = pcs.reduce((acc, p) => ({
+      dmgDealt: acc.dmgDealt + (p.dmgDealt || 0),
+      dmgTaken: acc.dmgTaken + (p.dmgTaken || 0),
+      healed:   acc.healed   + (p.healed   || 0),
+      kills:    acc.kills    + (p.kills    || 0),
+      ko:       acc.ko       + (p.ko       || 0),
+    }), { dmgDealt: 0, dmgTaken: 0, healed: 0, kills: 0, ko: 0 });
+    el.innerHTML = `⚔ <strong>${d.dmgDealt}</strong> &nbsp; 🛡 <strong>${d.dmgTaken}</strong> &nbsp; 💚 <strong>${d.healed}</strong> &nbsp; 💀 <strong>${d.kills}</strong> &nbsp; 😵 <strong>${d.ko}</strong>`;
   }
 
   function handleNextRound() {
@@ -897,6 +917,7 @@ const UI = (function() {
     }
 
     el.innerHTML = editingSession.pcs.map((pc, idx) => renderPcCard(pc, idx)).join('');
+    updateSessionSummary();
   }
 
   function roundKey(e) { return e.round != null ? e.round : (e.turn != null ? e.turn : 1); }
@@ -1003,6 +1024,7 @@ const UI = (function() {
     const temp = document.createElement('div');
     temp.innerHTML = renderPcCard(pc, idx);
     card.replaceWith(temp.firstElementChild);
+    updateSessionSummary();
   }
 
   function renderPcCard(pc, idx = 0) {
@@ -1013,10 +1035,7 @@ const UI = (function() {
     return `
       <div class="pc-card" data-pc-id="${pc.id}">
         <div class="pc-card-header" style="background:${headerBg}">
-          <div class="pc-card-header-main">
-            <span class="pc-card-name">${escapeHtml(pc.name || 'Unnamed')}</span>
-            <span class="pc-card-summary">⚔ ${pc.dmgDealt || 0} &nbsp;🛡 ${pc.dmgTaken || 0} &nbsp;💚 ${pc.healed || 0} &nbsp;💀 ${pc.kills || 0} &nbsp;😵 ${pc.ko || 0}</span>
-          </div>
+          <span class="pc-card-name">${escapeHtml(pc.name || 'Unnamed')}</span>
           <button class="pc-reset-btn" data-action="pc-reset" data-pc-id="${pc.id}" title="Reset this PC's stats">↺ Reset</button>
         </div>
         ${renderDmgOutSection(pc)}
@@ -1052,9 +1071,6 @@ const UI = (function() {
               <button class="pc-counter-btn" data-action="stat-inc" data-pc-id="${pc.id}" data-stat="ko">+</button>
             </div>
           </div>
-        </div>
-        <div class="pc-notes-section">
-          <textarea class="pc-note-input" data-pc-id="${pc.id}" placeholder="Notes — critiques, Smite, observations…" rows="2">${escapeHtml(pc.notes || '')}</textarea>
         </div>
       </div>
     `;
@@ -1195,14 +1211,7 @@ const UI = (function() {
 
   function handlePcGridInputChange(e) {
     const input = e.target;
-    if (input.classList.contains('pc-staging-input')) {
-      updateStagingDisplay(input.dataset.pcId);
-      return;
-    }
-    if (input.classList.contains('pc-note-input')) {
-      const pc = editingSession?.pcs.find(p => p.id === input.dataset.pcId);
-      if (pc) { pc.notes = input.value; scheduleStatsAutosave(); }
-    }
+    if (input.classList.contains('pc-staging-input')) updateStagingDisplay(input.dataset.pcId);
   }
 
   function handlePcGridInput(e) {
