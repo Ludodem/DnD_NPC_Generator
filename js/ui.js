@@ -997,7 +997,7 @@ const UI = (function() {
         <div class="pc-atk-stepper">
           <button class="pc-atk-step pc-atk-step-dec" data-action="atk-dec" data-pc-id="${pc.id}" data-val="5">−5</button>
           <button class="pc-atk-step pc-atk-step-dec" data-action="atk-dec" data-pc-id="${pc.id}" data-val="1">−1</button>
-          <input type="text" inputmode="text" class="pc-staging-input" id="si-${pc.id}-dmgDealt" data-pc-id="${pc.id}" placeholder="12+3">
+          <input type="text" inputmode="decimal" class="pc-staging-input" id="si-${pc.id}-dmgDealt" data-pc-id="${pc.id}" placeholder="12+3">
           <button class="pc-atk-step pc-atk-step-inc" data-action="atk-inc" data-pc-id="${pc.id}" data-val="1">+1</button>
           <button class="pc-atk-step pc-atk-step-inc" data-action="atk-inc" data-pc-id="${pc.id}" data-val="5">+5</button>
           <button class="pc-atk-step pc-atk-step-inc" data-action="atk-inc" data-pc-id="${pc.id}" data-val="10">+10</button>
@@ -1077,7 +1077,7 @@ const UI = (function() {
             ${renderRoundDetail(pc.dmgInLog, 'pc-round-detail--in')}
             ${dmgInChips ? `<div class="pc-atk-chips">${dmgInChips}</div>` : ''}
             <div class="pc-stat-input-row">
-              <input type="text" inputmode="text" class="pc-stat-input" placeholder="12+3" id="si-${pc.id}-dmgTaken" data-pc-id="${pc.id}" data-stat="dmgTaken">
+              <input type="text" inputmode="decimal" class="pc-stat-input" placeholder="12+3" id="si-${pc.id}-dmgTaken" data-pc-id="${pc.id}" data-stat="dmgTaken">
               <button class="pc-stat-add-btn" data-action="stat-add" data-pc-id="${pc.id}" data-stat="dmgTaken">+</button>
             </div>
           </div>
@@ -1087,7 +1087,7 @@ const UI = (function() {
             ${renderRoundDetail(pc.healLog, 'pc-round-detail--heal')}
             ${healChips ? `<div class="pc-atk-chips">${healChips}</div>` : ''}
             <div class="pc-stat-input-row">
-              <input type="text" inputmode="text" class="pc-stat-input" placeholder="12+3" id="si-${pc.id}-healed" data-pc-id="${pc.id}" data-stat="healed">
+              <input type="text" inputmode="decimal" class="pc-stat-input" placeholder="12+3" id="si-${pc.id}-healed" data-pc-id="${pc.id}" data-stat="healed">
               <button class="pc-stat-add-btn" data-action="stat-add" data-pc-id="${pc.id}" data-stat="healed">+</button>
             </div>
           </div>
