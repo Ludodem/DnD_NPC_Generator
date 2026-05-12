@@ -1282,30 +1282,48 @@ const UI = (function() {
     }, 400);
   }
 
+  function formatLogByRound(log) {
+    if (!log || log.length === 0) return null;
+    const roundNums = [...new Set(log.map(roundKey))].sort((a, b) => a - b);
+    const parts = roundNums.map(r => {
+      const vals = log.filter(e => roundKey(e) === r).map(e => e.value);
+      return vals.length === 1 ? String(vals[0]) : `(${vals.join('+')})`;
+    });
+    const total = log.reduce((s, e) => s + e.value, 0);
+    return `${parts.join(' + ')} = ${total}`;
+  }
+
   function showSessionRecap() {
     const s = editingSession;
     if (!s) return;
     const pcs = s.pcs || [];
-    const rounds = s.currentRound || 1;
-    const pad = (str, len) => String(str).padEnd(len);
     const lines = [];
-    const header = `=== ${s.label || 'Session'} — ${s.date} ===`;
-    lines.push(header);
-    lines.push(`Rounds: ${rounds}`);
+    lines.push(`=== ${s.label || 'Session'} — ${s.date} ===`);
+    lines.push(`Rounds: ${s.currentRound || 1}`);
     lines.push('');
 
     const totals = { dmgDealt: 0, dmgTaken: 0, healed: 0, kills: 0, ko: 0 };
     for (const pc of pcs) {
       lines.push(`[ ${pc.name || 'Unnamed'} ]`);
-      const maxAtk = pc.dmgLog && pc.dmgLog.length > 0 ? Math.max(...pc.dmgLog.map(e => e.value)) : 0;
-      lines.push(`  ${pad('DMG OUT', 9)}: ${pc.dmgDealt || 0}${maxAtk > 0 ? `  (max: ${maxAtk})` : ''}`);
-      lines.push(`  ${pad('DMG IN', 9)}: ${pc.dmgTaken || 0}`);
-      lines.push(`  ${pad('HEAL', 9)}: ${pc.healed || 0}`);
-      const killNames = (pc.killLog || []).map(k => k.name).filter(Boolean);
-      const killSummary = killNames.length > 0 ? `  (${killNames.join(', ')})` : '';
-      lines.push(`  ${pad('Kills', 9)}: ${pc.kills || 0}${killSummary}`);
-      lines.push(`  ${pad('KO', 9)}: ${pc.ko || 0}`);
+
+      const dmgStr   = formatLogByRound(pc.dmgLog)   || (pc.dmgDealt ? String(pc.dmgDealt) : '—');
+      const dmgInStr = formatLogByRound(pc.dmgInLog)  || (pc.dmgTaken ? String(pc.dmgTaken) : '—');
+      const healStr  = formatLogByRound(pc.healLog)   || (pc.healed   ? String(pc.healed)   : '—');
+
+      lines.push(`  DMG OUT : ${dmgStr}`);
+      lines.push(`  DMG IN  : ${dmgInStr}`);
+      lines.push(`  HEAL    : ${healStr}`);
+
+      const killLog = pc.killLog || [];
+      if (killLog.length > 0) {
+        const killList = killLog.map(k => k.cr ? `${k.name} (CR ${k.cr})` : k.name).filter(Boolean).join(', ');
+        lines.push(`  Kills   : ${pc.kills || killLog.length} — ${killList}`);
+      } else {
+        lines.push(`  Kills   : ${pc.kills || 0}`);
+      }
+      lines.push(`  KO      : ${pc.ko || 0}`);
       lines.push('');
+
       totals.dmgDealt += pc.dmgDealt || 0;
       totals.dmgTaken += pc.dmgTaken || 0;
       totals.healed   += pc.healed   || 0;
@@ -1315,16 +1333,16 @@ const UI = (function() {
 
     if (pcs.length > 1) {
       lines.push('— Totaux —');
-      lines.push(`  ${pad('DMG OUT', 9)}: ${totals.dmgDealt}`);
-      lines.push(`  ${pad('DMG IN', 9)}: ${totals.dmgTaken}`);
-      lines.push(`  ${pad('HEAL', 9)}: ${totals.healed}`);
-      lines.push(`  ${pad('Kills', 9)}: ${totals.kills}`);
-      lines.push(`  ${pad('KO', 9)}: ${totals.ko}`);
+      lines.push(`  DMG OUT : ${totals.dmgDealt}`);
+      lines.push(`  DMG IN  : ${totals.dmgTaken}`);
+      lines.push(`  HEAL    : ${totals.healed}`);
+      lines.push(`  Kills   : ${totals.kills}`);
+      lines.push(`  KO      : ${totals.ko}`);
       lines.push('');
     }
 
     if (s.notes && s.notes.trim()) {
-      lines.push('Notes:');
+      lines.push('Notes :');
       lines.push(s.notes.trim());
     }
 
@@ -1340,10 +1358,7 @@ const UI = (function() {
       navigator.clipboard.writeText(text).then(() => {
         copyBtn.textContent = '✓ Copié !';
         setTimeout(() => { copyBtn.textContent = 'Copy to clipboard'; }, 2000);
-      }).catch(() => {
-        textarea.select();
-        document.execCommand('copy');
-      });
+      }).catch(() => { textarea.select(); document.execCommand('copy'); });
     }, { once: true });
     closeBtn?.addEventListener('click', () => modal.classList.add('hidden'), { once: true });
     modal.querySelector('.modal-backdrop')?.addEventListener('click', () => modal.classList.add('hidden'), { once: true });
