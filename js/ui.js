@@ -632,6 +632,12 @@ const UI = (function() {
 
   let editingSession = null;
   let statsAutosaveTimer = null;
+  const killDrafts = new Map();
+
+  const PC_HEADER_COLORS = [
+    '#6b2e2e', '#2d5a3e', '#2d4476', '#5a3570', '#7a5520', '#2e5a6b',
+    '#3d5a2d', '#6b3d20', '#2d3d6b', '#5a2d50'
+  ];
 
   const STAT_DEFS = [
     { key: 'dmgDealt', label: 'DMG OUT',  icon: '⚔',  color: 'stat-dmg-dealt', big: true },
@@ -860,7 +866,8 @@ const UI = (function() {
     el.innerHTML = `
       <p class="stats-session-meta-line">${parts.join(' &middot; ')}</p>
       <div class="stats-round-bar">
-        <span class="stats-round-label">Round <strong>${round}</strong></span>
+        <div class="stats-round-num">${round}</div>
+        <div class="stats-round-sublabel">Round</div>
         <button class="btn-next-round" id="btn-next-round">Next Round →</button>
       </div>
     `;
@@ -889,7 +896,7 @@ const UI = (function() {
       return;
     }
 
-    el.innerHTML = editingSession.pcs.map(pc => renderPcCard(pc)).join('');
+    el.innerHTML = editingSession.pcs.map((pc, idx) => renderPcCard(pc, idx)).join('');
   }
 
   function roundKey(e) { return e.round != null ? e.round : (e.turn != null ? e.turn : 1); }
@@ -933,7 +940,6 @@ const UI = (function() {
         </div>
         ${detailHtml}
         <div class="pc-atk-turn-bar">
-          <span class="pc-turn-badge">R${currentRound}</span>
           <div class="pc-atk-chips">${chipsHtml || '<span class="pc-atk-empty">—</span>'}</div>
         </div>
         <div class="pc-atk-stepper">
@@ -950,19 +956,42 @@ const UI = (function() {
     `;
   }
 
+  function renderLogChips(log, pcId, currentRound, removeAction, chipMod) {
+    if (!log || log.length === 0) return '';
+    const entries = log.filter(e => roundKey(e) === currentRound);
+    if (entries.length === 0) return '';
+    return entries.map(e => {
+      const idx = log.indexOf(e);
+      return `<span class="pc-atk-chip${chipMod ? ' ' + chipMod : ''}">${e.value}<button class="pc-atk-chip-remove" data-action="${removeAction}" data-pc-id="${pcId}" data-log-idx="${idx}" title="Remove">×</button></span>`;
+    }).join('');
+  }
+
   function renderKillsSection(pc) {
     const log = pc.killLog || [];
     const chipsHtml = log.map(k => `
       <span class="pc-kill-chip">${escapeHtml(k.name)}${k.cr ? ` <em class="pc-kill-cr">CR ${escapeHtml(String(k.cr))}</em>` : ''}<button class="pc-kill-chip-remove" data-action="kill-remove" data-pc-id="${pc.id}" data-kill-id="${k.id}" title="Remove">×</button></span>
     `).join('');
 
+    const formHtml = killDrafts.get(pc.id) ? `
+      <div class="pc-kill-form">
+        <input type="text" class="pc-kill-form-input pc-kill-form-name" data-pc-id="${pc.id}" placeholder="Enemy name" autocomplete="off">
+        <div class="pc-kill-form-row">
+          <input type="text" class="pc-kill-form-input pc-kill-form-cr" data-pc-id="${pc.id}" placeholder="CR (opt.)">
+          <input type="number" min="1" value="1" class="pc-kill-form-input pc-kill-form-count" data-pc-id="${pc.id}">
+          <button class="pc-kill-form-btn pc-kill-form-cancel" data-action="kill-form-cancel" data-pc-id="${pc.id}">✕</button>
+          <button class="pc-kill-form-btn pc-kill-form-submit" data-action="kill-form-submit" data-pc-id="${pc.id}">Add</button>
+        </div>
+      </div>
+    ` : '';
+
     return `
       <div class="pc-kills-section stat-kills">
         <div class="pc-kills-header">
           <span class="pc-stat-label">💀 KILLS${log.length > 0 ? ` (${log.length})` : ''}</span>
-          <button class="pc-kill-add-btn" data-action="kill-add" data-pc-id="${pc.id}">+ Log Kill</button>
+          ${!killDrafts.get(pc.id) ? `<button class="pc-kill-add-btn" data-action="kill-add" data-pc-id="${pc.id}">+ Log Kill</button>` : ''}
         </div>
         ${log.length > 0 ? `<div class="pc-kill-list">${chipsHtml}</div>` : ''}
+        ${formHtml}
       </div>
     `;
   }
@@ -970,15 +999,20 @@ const UI = (function() {
   function rerenderPcCard(pc) {
     const card = document.querySelector(`.pc-card[data-pc-id="${pc.id}"]`);
     if (!card) { renderPcGrid(); return; }
+    const idx = editingSession ? editingSession.pcs.findIndex(p => p.id === pc.id) : 0;
     const temp = document.createElement('div');
-    temp.innerHTML = renderPcCard(pc);
+    temp.innerHTML = renderPcCard(pc, idx);
     card.replaceWith(temp.firstElementChild);
   }
 
-  function renderPcCard(pc) {
+  function renderPcCard(pc, idx = 0) {
+    const headerBg = PC_HEADER_COLORS[idx % PC_HEADER_COLORS.length];
+    const currentRound = editingSession ? (editingSession.currentRound || 1) : 1;
+    const dmgInChips = renderLogChips(pc.dmgInLog, pc.id, currentRound, 'dmgin-remove', 'pc-atk-chip--in');
+    const healChips  = renderLogChips(pc.healLog,  pc.id, currentRound, 'heal-remove',  'pc-atk-chip--heal');
     return `
       <div class="pc-card" data-pc-id="${pc.id}">
-        <div class="pc-card-header">
+        <div class="pc-card-header" style="background:${headerBg}">
           <span class="pc-card-name">${escapeHtml(pc.name || 'Unnamed')}</span>
           <button class="pc-reset-btn" data-action="pc-reset" data-pc-id="${pc.id}" title="Reset this PC's stats">↺ Reset</button>
         </div>
@@ -988,6 +1022,7 @@ const UI = (function() {
             <span class="pc-stat-label">🛡 DMG IN</span>
             <span class="pc-stat-value" id="sv-${pc.id}-dmgTaken">${pc.dmgTaken || 0}</span>
             ${renderRoundDetail(pc.dmgInLog, 'pc-round-detail--in')}
+            ${dmgInChips ? `<div class="pc-atk-chips">${dmgInChips}</div>` : ''}
             <div class="pc-stat-input-row">
               <input type="number" min="0" class="pc-stat-input" placeholder="+" id="si-${pc.id}-dmgTaken" data-pc-id="${pc.id}" data-stat="dmgTaken">
               <button class="pc-stat-add-btn" data-action="stat-add" data-pc-id="${pc.id}" data-stat="dmgTaken">+</button>
@@ -997,6 +1032,7 @@ const UI = (function() {
             <span class="pc-stat-label">💚 HEAL</span>
             <span class="pc-stat-value" id="sv-${pc.id}-healed">${pc.healed || 0}</span>
             ${renderRoundDetail(pc.healLog, 'pc-round-detail--heal')}
+            ${healChips ? `<div class="pc-atk-chips">${healChips}</div>` : ''}
             <div class="pc-stat-input-row">
               <input type="number" min="0" class="pc-stat-input" placeholder="+" id="si-${pc.id}-healed" data-pc-id="${pc.id}" data-stat="healed">
               <button class="pc-stat-add-btn" data-action="stat-add" data-pc-id="${pc.id}" data-stat="healed">+</button>
@@ -1081,12 +1117,23 @@ const UI = (function() {
         scheduleStatsAutosave();
       }
     } else if (action === 'kill-add') {
-      const name = prompt('Enemy name:');
-      if (!name || !name.trim()) return;
-      const cr = prompt('CR (optional — press Cancel or leave blank to skip):');
+      killDrafts.set(pcId, true);
+      rerenderPcCard(pc);
+    } else if (action === 'kill-form-cancel') {
+      killDrafts.delete(pcId);
+      rerenderPcCard(pc);
+    } else if (action === 'kill-form-submit') {
+      const nameEl  = document.querySelector(`.pc-kill-form-name[data-pc-id="${pcId}"]`);
+      const crEl    = document.querySelector(`.pc-kill-form-cr[data-pc-id="${pcId}"]`);
+      const countEl = document.querySelector(`.pc-kill-form-count[data-pc-id="${pcId}"]`);
+      const name  = nameEl ? nameEl.value.trim() : '';
+      if (!name) { if (nameEl) nameEl.focus(); return; }
+      const cr    = crEl ? crEl.value.trim() : '';
+      const count = Math.max(1, parseInt(countEl?.value || '1', 10) || 1);
       if (!pc.killLog) pc.killLog = [];
-      pc.killLog.push(SessionStats.createKill(name.trim(), cr ? cr.trim() : ''));
-      pc.kills = (pc.kills || 0) + 1;
+      for (let i = 0; i < count; i++) pc.killLog.push(SessionStats.createKill(name, cr));
+      pc.kills = (pc.kills || 0) + count;
+      killDrafts.delete(pcId);
       rerenderPcCard(pc);
       scheduleStatsAutosave();
     } else if (action === 'kill-remove') {
@@ -1096,6 +1143,22 @@ const UI = (function() {
       if (idx !== -1) {
         pc.killLog.splice(idx, 1);
         pc.kills = Math.max(0, (pc.kills || 0) - 1);
+        rerenderPcCard(pc);
+        scheduleStatsAutosave();
+      }
+    } else if (action === 'dmgin-remove') {
+      const logIdx = parseInt(btn.dataset.logIdx, 10);
+      if (!isNaN(logIdx) && pc.dmgInLog && pc.dmgInLog[logIdx] !== undefined) {
+        const removed = pc.dmgInLog.splice(logIdx, 1)[0];
+        pc.dmgTaken = Math.max(0, (pc.dmgTaken || 0) - removed.value);
+        rerenderPcCard(pc);
+        scheduleStatsAutosave();
+      }
+    } else if (action === 'heal-remove') {
+      const logIdx = parseInt(btn.dataset.logIdx, 10);
+      if (!isNaN(logIdx) && pc.healLog && pc.healLog[logIdx] !== undefined) {
+        const removed = pc.healLog.splice(logIdx, 1)[0];
+        pc.healed = Math.max(0, (pc.healed || 0) - removed.value);
         rerenderPcCard(pc);
         scheduleStatsAutosave();
       }

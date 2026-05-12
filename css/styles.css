@@ -1555,37 +1555,47 @@ button {
 
 .pc-atk-derived strong { color: #9c2f2f; }
 
-/* Global round bar */
+/* Global round bar — centered, compact */
 .stats-round-bar {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-sm) var(--space-md);
-  margin-top: var(--space-sm);
+  gap: 4px;
+  margin: var(--space-md) auto var(--space-sm);
+  width: fit-content;
 }
 
-.stats-round-label {
+.stats-round-num {
   font-family: var(--font-heading);
-  font-size: 1rem;
-  font-variant: small-caps;
-  letter-spacing: 0.04em;
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--color-accent);
+  line-height: 1;
+}
+
+.stats-round-sublabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-top: -4px;
 }
 
 .btn-next-round {
-  border: none;
-  background: var(--color-accent);
-  color: #fff;
-  font-size: 0.82rem;
+  border: 2px solid var(--color-accent);
+  background: transparent;
+  color: var(--color-accent);
+  font-size: 0.75rem;
   font-weight: 700;
-  padding: 6px 14px;
-  border-radius: var(--radius-sm);
+  padding: 5px 18px;
+  border-radius: 20px;
   cursor: pointer;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.06em;
+  margin-top: 4px;
+  transition: background 0.15s, color 0.15s;
 }
-.btn-next-round:hover { background: #5a2a00; }
+.btn-next-round:hover { background: var(--color-accent); color: #fff; }
 
 /* Per-round detail line */
 .pc-round-detail {
@@ -1773,6 +1783,71 @@ button {
 }
 
 .pc-kill-chip-remove:hover { opacity: 1; }
+
+/* Chip colour variants for DMG IN and HEAL */
+.pc-atk-chip--in { background: rgba(179,98,0,0.1); color: #b36200; }
+.pc-atk-chip--in .pc-atk-chip-remove { color: #b36200; }
+.pc-atk-chip--heal { background: rgba(45,122,58,0.1); color: #2d7a3a; }
+.pc-atk-chip--heal .pc-atk-chip-remove { color: #2d7a3a; }
+
+/* Inline kill entry form */
+.pc-kill-form {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 4px;
+}
+
+.pc-kill-form-input {
+  font-size: 0.82rem;
+  padding: 5px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  width: 100%;
+}
+.pc-kill-form-input:focus { outline: none; border-color: #6b3030; }
+
+.pc-kill-form-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.pc-kill-form-row .pc-kill-form-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.pc-kill-form-row .pc-kill-form-count {
+  width: 52px;
+  flex: none;
+  text-align: center;
+}
+
+.pc-kill-form-btn {
+  border: none;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.pc-kill-form-cancel {
+  background: rgba(0,0,0,0.07);
+  color: var(--color-text-muted);
+}
+.pc-kill-form-cancel:hover { background: rgba(0,0,0,0.13); }
+
+.pc-kill-form-submit {
+  background: #6b3030;
+  color: #fff;
+}
+.pc-kill-form-submit:hover { background: #4e1f1f; }
 
 /* Session setup modal */
 .session-setup-content {
