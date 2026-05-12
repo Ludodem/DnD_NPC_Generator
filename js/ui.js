@@ -691,6 +691,7 @@ const UI = (function() {
     if (btnNewEmpty) btnNewEmpty.addEventListener('click', () => openSessionSetup(null));
     if (btnBack) btnBack.addEventListener('click', () => { showScreen('stats'); renderSessionList(); });
     if (btnAddPc) btnAddPc.addEventListener('click', () => { if (editingSession) promptAddPc(); });
+    document.getElementById('btn-session-recap')?.addEventListener('click', showSessionRecap);
 
     if (modal) {
       document.getElementById('session-setup-close').addEventListener('click', closeSessionSetup);
@@ -902,13 +903,11 @@ const UI = (function() {
       </div>
       <div class="stats-session-totals" id="stats-session-totals"></div>
       <textarea class="session-note-input" id="session-note-input" placeholder="Notes de session — critiques, Smite, observations…" rows="2">${escapeHtml(s.notes || '')}</textarea>
-      <button class="btn-recap" id="btn-session-recap">📋 Récap</button>
     `;
     document.getElementById('btn-next-round')?.addEventListener('click', handleNextRound);
     document.getElementById('session-note-input')?.addEventListener('input', (e) => {
       if (editingSession) { editingSession.notes = e.target.value; scheduleStatsAutosave(); }
     });
-    document.getElementById('btn-session-recap')?.addEventListener('click', showSessionRecap);
     updateSessionSummary();
   }
 
