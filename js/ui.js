@@ -626,6 +626,36 @@ const UI = (function() {
     'ambiance':   { icon: '🌫', label: 'Ambiance' },
   };
 
+  const XP_BY_CR = {
+    '0': 10, '1/8': 25, '1/4': 50, '1/2': 100,
+    '1': 200, '2': 450, '3': 700, '4': 1100, '5': 1800,
+    '6': 2300, '7': 2900, '8': 3900, '9': 5000, '10': 5900,
+    '11': 7200, '12': 8400, '13': 10000, '14': 11500, '15': 13000,
+    '16': 15000, '17': 18000, '18': 20000, '19': 22000, '20': 25000,
+    '21': 33000, '22': 41000, '23': 50000, '24': 62000, '25': 75000,
+    '26': 90000, '27': 105000, '28': 120000, '29': 135000, '30': 155000
+  };
+
+  function xpByCr(cr) {
+    return XP_BY_CR[String(cr || '').trim()] || 0;
+  }
+
+  function calcCombatXp(combat) {
+    return (combat.enemies || []).reduce((sum, e) => sum + xpByCr(e.cr) * (e.count || 1), 0);
+  }
+
+  function calcScenarioXp(scenario) {
+    let total = 0;
+    for (const act of (scenario.acts || [])) {
+      for (const scene of (act.scenes || [])) {
+        for (const combat of (scene.combats || [])) {
+          total += calcCombatXp(combat);
+        }
+      }
+    }
+    return total;
+  }
+
   // ============================================================
   //  SESSION STATS
   // ============================================================
@@ -872,11 +902,13 @@ const UI = (function() {
       </div>
       <div class="stats-session-totals" id="stats-session-totals"></div>
       <textarea class="session-note-input" id="session-note-input" placeholder="Notes de session — critiques, Smite, observations…" rows="2">${escapeHtml(s.notes || '')}</textarea>
+      <button class="btn-recap" id="btn-session-recap">📋 Récap</button>
     `;
     document.getElementById('btn-next-round')?.addEventListener('click', handleNextRound);
     document.getElementById('session-note-input')?.addEventListener('input', (e) => {
       if (editingSession) { editingSession.notes = e.target.value; scheduleStatsAutosave(); }
     });
+    document.getElementById('btn-session-recap')?.addEventListener('click', showSessionRecap);
     updateSessionSummary();
   }
 
@@ -1250,6 +1282,73 @@ const UI = (function() {
     }, 400);
   }
 
+  function showSessionRecap() {
+    const s = editingSession;
+    if (!s) return;
+    const pcs = s.pcs || [];
+    const rounds = s.currentRound || 1;
+    const pad = (str, len) => String(str).padEnd(len);
+    const lines = [];
+    const header = `=== ${s.label || 'Session'} — ${s.date} ===`;
+    lines.push(header);
+    lines.push(`Rounds: ${rounds}`);
+    lines.push('');
+
+    const totals = { dmgDealt: 0, dmgTaken: 0, healed: 0, kills: 0, ko: 0 };
+    for (const pc of pcs) {
+      lines.push(`[ ${pc.name || 'Unnamed'} ]`);
+      const maxAtk = pc.dmgLog && pc.dmgLog.length > 0 ? Math.max(...pc.dmgLog.map(e => e.value)) : 0;
+      lines.push(`  ${pad('DMG OUT', 9)}: ${pc.dmgDealt || 0}${maxAtk > 0 ? `  (max: ${maxAtk})` : ''}`);
+      lines.push(`  ${pad('DMG IN', 9)}: ${pc.dmgTaken || 0}`);
+      lines.push(`  ${pad('HEAL', 9)}: ${pc.healed || 0}`);
+      const killNames = (pc.killLog || []).map(k => k.name).filter(Boolean);
+      const killSummary = killNames.length > 0 ? `  (${killNames.join(', ')})` : '';
+      lines.push(`  ${pad('Kills', 9)}: ${pc.kills || 0}${killSummary}`);
+      lines.push(`  ${pad('KO', 9)}: ${pc.ko || 0}`);
+      lines.push('');
+      totals.dmgDealt += pc.dmgDealt || 0;
+      totals.dmgTaken += pc.dmgTaken || 0;
+      totals.healed   += pc.healed   || 0;
+      totals.kills    += pc.kills    || 0;
+      totals.ko       += pc.ko       || 0;
+    }
+
+    if (pcs.length > 1) {
+      lines.push('— Totaux —');
+      lines.push(`  ${pad('DMG OUT', 9)}: ${totals.dmgDealt}`);
+      lines.push(`  ${pad('DMG IN', 9)}: ${totals.dmgTaken}`);
+      lines.push(`  ${pad('HEAL', 9)}: ${totals.healed}`);
+      lines.push(`  ${pad('Kills', 9)}: ${totals.kills}`);
+      lines.push(`  ${pad('KO', 9)}: ${totals.ko}`);
+      lines.push('');
+    }
+
+    if (s.notes && s.notes.trim()) {
+      lines.push('Notes:');
+      lines.push(s.notes.trim());
+    }
+
+    const text = lines.join('\n');
+    const modal = document.getElementById('session-recap-modal');
+    const textarea = document.getElementById('session-recap-text');
+    const copyBtn = document.getElementById('session-recap-copy');
+    const closeBtn = document.getElementById('session-recap-close');
+    if (!modal || !textarea) return;
+    textarea.value = text;
+    modal.classList.remove('hidden');
+    copyBtn?.addEventListener('click', () => {
+      navigator.clipboard.writeText(text).then(() => {
+        copyBtn.textContent = '✓ Copié !';
+        setTimeout(() => { copyBtn.textContent = 'Copy to clipboard'; }, 2000);
+      }).catch(() => {
+        textarea.select();
+        document.execCommand('copy');
+      });
+    }, { once: true });
+    closeBtn?.addEventListener('click', () => modal.classList.add('hidden'), { once: true });
+    modal.querySelector('.modal-backdrop')?.addEventListener('click', () => modal.classList.add('hidden'), { once: true });
+  }
+
   function promptAddPc() {
     if (!editingSession) return;
     const name = prompt('Player character name:');
@@ -1579,6 +1678,7 @@ const UI = (function() {
       s.duration && escapeHtml(s.duration),
       s.campaign && escapeHtml(s.campaign)
     ].filter(Boolean);
+    const totalXp = calcScenarioXp(s);
 
     const tocItems = (s.acts || []).map((act, i) => ({
       id: act.id,
@@ -1594,6 +1694,7 @@ const UI = (function() {
           <h1 class="reader-title">${escapeHtml(s.title || 'Untitled scenario')}</h1>
           ${s.subtitle ? `<p class="reader-subtitle">${escapeHtml(s.subtitle)}</p>` : ''}
           ${metaItems.length ? `<div class="reader-meta">${metaItems.join(' &middot; ')}</div>` : ''}
+          ${totalXp > 0 ? `<div class="reader-xp-total">Total XP &mdash; <strong>${totalXp.toLocaleString('en-US')}</strong></div>` : ''}
           ${tocItems.length > 0 ? `
             <nav class="reader-toc" aria-label="Acts">
               ${tocItems.map(t => `
@@ -1771,11 +1872,14 @@ const UI = (function() {
     const enemiesHtml = combat.enemies.length === 0
       ? '<div class="reader-empty">No enemies defined.</div>'
       : combat.enemies.map(enemy => renderReaderEnemyBlock(enemy)).join('');
+    const combatXp = calcCombatXp(combat);
+    const xpBadge = combatXp > 0 ? `<span class="combat-xp-badge">${combatXp.toLocaleString('en-US')} XP</span>` : '';
     return `
       <section class="reader-combat" data-combat-id="${combat.id}">
         <header class="reader-combat-header">
           <h4 class="reader-combat-heading"><span class="reader-combat-marker">&#9876;</span> Combat${combat.name ? ` — ${escapeHtml(combat.name)}` : ''}</h4>
           <span class="affordance-inline">
+            ${xpBadge}
             <button class="affordance-edit" data-action="edit-combat" aria-label="Edit combat" title="Edit">&#9998;</button>
             <button class="affordance-delete" data-action="delete-combat" aria-label="Delete combat" title="Delete">&times;</button>
           </span>

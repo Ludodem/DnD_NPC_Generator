@@ -1322,6 +1322,48 @@ button {
 .session-note-input:focus { outline: none; border-color: var(--color-accent); }
 .session-note-input::placeholder { color: var(--color-text-muted); font-style: italic; }
 
+.btn-recap {
+  margin-top: var(--space-sm);
+  width: 100%;
+  padding: 8px;
+  font-size: 0.8rem;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.btn-recap:hover { border-color: var(--color-accent); color: var(--color-accent); }
+
+.session-recap-content {
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh;
+  width: min(500px, 94vw);
+}
+.session-recap-textarea {
+  flex: 1;
+  min-height: 260px;
+  font-family: monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm);
+  resize: vertical;
+  box-sizing: border-box;
+}
+.session-recap-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--space-sm);
+}
+
 .pc-reset-btn {
   border: none;
   background: rgba(255,255,255,0.15);
@@ -2885,6 +2927,27 @@ button {
 .reader-combat-description {
   color: var(--color-text-muted);
   font-style: italic;
+}
+
+.combat-xp-badge {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--color-scenario-accent);
+  background: rgba(156, 47, 47, 0.12);
+  border: 1px solid var(--color-scenario-accent);
+  border-radius: 10px;
+  padding: 1px 8px;
+  white-space: nowrap;
+}
+
+.reader-xp-total {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  color: var(--color-scenario-accent);
+  margin-top: var(--space-xs);
+  letter-spacing: 0.5px;
 }
 
 .reader-empty {
