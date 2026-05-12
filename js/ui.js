@@ -971,9 +971,16 @@ const UI = (function() {
         ${renderViewMagicItems(s.magicItems)}
         ${renderViewActs(s.acts)}
 
-        <div class="add-section-wrap">
-          <button class="affordance-add affordance-add-large" data-action="add-act">+ Add Act</button>
-        </div>
+        ${!s.acts || s.acts.length === 0
+          ? `<button class="reader-placeholder reader-placeholder--act" data-action="add-act">
+               <span class="placeholder-heading">Acts &amp; Scenes</span>
+               <span class="placeholder-hint">Divide your scenario into acts, then scenes and combats</span>
+               <span class="placeholder-cta">+ Add first act</span>
+             </button>`
+          : `<div class="add-section-wrap">
+               <button class="affordance-add affordance-add-large" data-action="add-act">+ Add Act</button>
+             </div>`
+        }
       </article>
     `;
 
@@ -998,44 +1005,58 @@ const UI = (function() {
 
   function renderViewTextSection(heading, type, text) {
     const hasText = text && text.trim();
+    if (!hasText) {
+      return `
+        <section class="reader-section reader-section--empty">
+          <button class="reader-placeholder" data-action="edit-${type}">
+            <span class="placeholder-heading">${heading}</span>
+            <span class="placeholder-hint">Click to add…</span>
+          </button>
+        </section>
+      `;
+    }
     return `
       <section class="reader-section">
         <header class="reader-section-header">
           <h2 class="reader-section-heading">${heading}</h2>
           <button class="affordance-edit" data-action="edit-${type}" aria-label="Edit ${heading.toLowerCase()}" title="Edit">&#9998;</button>
         </header>
-        ${hasText
-          ? `<div class="reader-prose">${formatMultilineText(text)}</div>`
-          : `<button class="affordance-add" data-action="edit-${type}">+ Add ${heading.toLowerCase()}</button>`
-        }
+        <div class="reader-prose">${formatMultilineText(text)}</div>
       </section>
     `;
   }
 
   function renderViewMagicItems(items) {
     const hasItems = items && items.length > 0;
+    if (!hasItems) {
+      return `
+        <section class="reader-section reader-section--empty">
+          <button class="reader-placeholder reader-placeholder--inline" data-action="add-magic-item">
+            <span class="placeholder-heading">Magic Items</span>
+            <span class="placeholder-hint">Click to add…</span>
+          </button>
+        </section>
+      `;
+    }
     return `
       <section class="reader-section">
         <header class="reader-section-header">
           <h2 class="reader-section-heading">Magic Items</h2>
           <button class="affordance-add" data-action="add-magic-item">+ Add</button>
         </header>
-        ${hasItems
-          ? `<ul class="reader-items">${items.map(item => `
-              <li class="reader-item" data-item-id="${item.id}">
-                <div class="reader-item-header">
-                  <span class="reader-item-name">${escapeHtml(item.name || 'Unnamed item')}</span>
-                  ${item.rarity ? `<span class="rarity-badge rarity-${item.rarity.toLowerCase().replace(/\s+/g, '-')}">${escapeHtml(item.rarity)}</span>` : ''}
-                  <span class="affordance-inline">
-                    <button class="affordance-edit" data-action="edit-magic-item" aria-label="Edit" title="Edit">&#9998;</button>
-                    <button class="affordance-delete" data-action="delete-magic-item" aria-label="Delete" title="Delete">&times;</button>
-                  </span>
-                </div>
-                ${item.description ? `<div class="reader-item-description">${formatMultilineText(item.description)}</div>` : ''}
-              </li>
-            `).join('')}</ul>`
-          : `<div class="reader-empty-hint">No magic items yet.</div>`
-        }
+        <ul class="reader-items">${items.map(item => `
+          <li class="reader-item" data-item-id="${item.id}">
+            <div class="reader-item-header">
+              <span class="reader-item-name">${escapeHtml(item.name || 'Unnamed item')}</span>
+              ${item.rarity ? `<span class="rarity-badge rarity-${item.rarity.toLowerCase().replace(/\s+/g, '-')}">${escapeHtml(item.rarity)}</span>` : ''}
+              <span class="affordance-inline">
+                <button class="affordance-edit" data-action="edit-magic-item" aria-label="Edit" title="Edit">&#9998;</button>
+                <button class="affordance-delete" data-action="delete-magic-item" aria-label="Delete" title="Delete">&times;</button>
+              </span>
+            </div>
+            ${item.description ? `<div class="reader-item-description">${formatMultilineText(item.description)}</div>` : ''}
+          </li>
+        `).join('')}</ul>
       </section>
     `;
   }

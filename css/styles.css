@@ -1876,8 +1876,12 @@ button {
 .scenario-reader {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xl);
+  gap: var(--space-lg);
   padding-bottom: var(--space-xl);
+}
+
+.reader-section--empty + .reader-section--empty {
+  margin-top: calc(-1 * var(--space-sm));
 }
 
 .reader-header {
@@ -2761,6 +2765,87 @@ button {
   font-size: 14px;
   padding: var(--space-sm) var(--space-md);
   margin-left: 0;
+}
+
+/* ----------------------------------------
+   Empty section placeholders
+   ---------------------------------------- */
+
+/* Empty section: no red line, reduced gap */
+.reader-section--empty {
+  gap: 0;
+}
+
+/* Placeholder block: wide dashed invite */
+.reader-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: var(--space-md) var(--space-lg);
+  gap: 4px;
+  background: transparent;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  text-align: center;
+}
+
+.reader-placeholder:hover {
+  border-color: var(--color-scenario-accent);
+  background: rgba(156, 47, 47, 0.03);
+}
+
+.placeholder-heading {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.placeholder-hint {
+  font-size: 12px;
+  color: var(--color-border);
+}
+
+.placeholder-cta {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-scenario-accent);
+  margin-top: 4px;
+}
+
+/* Inline variant: horizontal for narrow content (narrative/structure) */
+.reader-placeholder--inline {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+}
+
+.reader-placeholder--inline .placeholder-hint {
+  margin-left: auto;
+  font-style: italic;
+}
+
+/* Acts placeholder: more prominent, centered, more padding */
+.reader-placeholder--act {
+  padding: var(--space-xl) var(--space-lg);
+  gap: var(--space-xs);
+}
+
+.reader-placeholder--act .placeholder-heading {
+  font-size: 15px;
+}
+
+.reader-placeholder--act .placeholder-hint {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  max-width: 340px;
 }
 
 .add-section-wrap {
