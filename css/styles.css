@@ -1565,33 +1565,70 @@ button {
   line-height: 1.4;
 }
 
-/* Quick-tap damage buttons */
-.pc-atk-quick {
+/* Stepper: −5 −1 [value] +1 +5 +10 */
+.pc-atk-stepper {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 }
 
-.pc-atk-quick-btn {
+.pc-atk-step {
   border: none;
-  background: rgba(156,47,47,0.12);
-  color: #9c2f2f;
-  font-size: 0.85rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  width: 38px;
-  height: 38px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0 6px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   flex-shrink: 0;
-  transition: background 0.1s;
 }
 
-.pc-atk-quick-btn:hover { background: rgba(156,47,47,0.22); }
-.pc-atk-quick-btn:active { background: rgba(156,47,47,0.35); transform: scale(0.95); }
+.pc-atk-step-dec {
+  background: rgba(156,47,47,0.07);
+  color: #9c2f2f;
+}
+.pc-atk-step-dec:hover { background: rgba(156,47,47,0.15); }
+.pc-atk-step-dec:active { background: rgba(156,47,47,0.25); }
 
-.pc-atk-custom-input {
+.pc-atk-step-inc {
+  background: rgba(156,47,47,0.13);
+  color: #9c2f2f;
+}
+.pc-atk-step-inc:hover { background: rgba(156,47,47,0.22); }
+.pc-atk-step-inc:active { background: rgba(156,47,47,0.32); }
+
+.pc-staging-input {
   flex: 1;
   min-width: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-align: center;
+  padding: 4px 2px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: #9c2f2f;
+}
+.pc-staging-input:focus { outline: none; border-color: #9c2f2f; }
+
+.pc-atk-log-btn {
+  width: 100%;
+  border: none;
+  background: #9c2f2f;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  letter-spacing: 0.05em;
+}
+.pc-atk-log-btn:hover { background: #7a2020; }
+.pc-atk-log-btn:disabled {
+  background: var(--color-border);
+  color: var(--color-text-muted);
+  cursor: default;
 }
 
 /* Row stats: DMG IN | HEAL (2 cols) */

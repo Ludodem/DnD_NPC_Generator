@@ -678,6 +678,7 @@ const UI = (function() {
     if (pcGrid) {
       pcGrid.addEventListener('click', handlePcGridClick);
       pcGrid.addEventListener('keydown', handlePcGridInput);
+      pcGrid.addEventListener('input', handlePcGridInputChange);
     }
   }
 
@@ -900,8 +901,6 @@ const UI = (function() {
       derivedHtml = `<div class="pc-atk-derived">Max/atk: <strong>${maxAtk}</strong> &middot; Max/turn: <strong>${maxTurn}</strong></div>`;
     }
 
-    const quickVals = [5, 10, 15, 20];
-
     return `
       <div class="pc-dmg-out stat-dmg-dealt">
         <div class="pc-dmg-out-top">
@@ -914,11 +913,15 @@ const UI = (function() {
           <div class="pc-atk-chips">${chipsHtml || '<span class="pc-atk-empty">—</span>'}</div>
           <button class="pc-turn-btn" data-action="turn-next" data-pc-id="${pc.id}">New Turn</button>
         </div>
-        <div class="pc-atk-quick">
-          ${quickVals.map(v => `<button class="pc-atk-quick-btn" data-action="atk-quick" data-pc-id="${pc.id}" data-val="${v}">${v}</button>`).join('')}
-          <input type="number" min="0" class="pc-stat-input pc-atk-custom-input" placeholder="…" id="si-${pc.id}-dmgDealt" data-pc-id="${pc.id}" data-stat="dmgDealt">
-          <button class="pc-stat-add-btn" data-action="atk-add" data-pc-id="${pc.id}">+</button>
+        <div class="pc-atk-stepper">
+          <button class="pc-atk-step pc-atk-step-dec" data-action="atk-dec" data-pc-id="${pc.id}" data-val="5">−5</button>
+          <button class="pc-atk-step pc-atk-step-dec" data-action="atk-dec" data-pc-id="${pc.id}" data-val="1">−1</button>
+          <input type="number" min="0" class="pc-staging-input" id="si-${pc.id}-dmgDealt" data-pc-id="${pc.id}" placeholder="0">
+          <button class="pc-atk-step pc-atk-step-inc" data-action="atk-inc" data-pc-id="${pc.id}" data-val="1">+1</button>
+          <button class="pc-atk-step pc-atk-step-inc" data-action="atk-inc" data-pc-id="${pc.id}" data-val="5">+5</button>
+          <button class="pc-atk-step pc-atk-step-inc" data-action="atk-inc" data-pc-id="${pc.id}" data-val="10">+10</button>
         </div>
+        <button class="pc-atk-log-btn" data-action="atk-log" data-pc-id="${pc.id}" disabled>Log Attack</button>
         ${derivedHtml}
       </div>
     `;
@@ -1015,24 +1018,22 @@ const UI = (function() {
       pc[statKey] = Math.max(0, (pc[statKey] || 0) - 1);
       updateStatDisplay(pc, statKey);
       scheduleStatsAutosave();
-    } else if (action === 'atk-quick') {
-      const val = parseInt(btn.dataset.val, 10);
-      if (isNaN(val) || val <= 0) return;
-      if (!pc.dmgLog) pc.dmgLog = [];
-      if (!pc.currentTurn) pc.currentTurn = 1;
-      pc.dmgLog.push({ turn: pc.currentTurn, value: val });
-      pc.dmgDealt = (pc.dmgDealt || 0) + val;
-      rerenderPcCard(pc);
-      scheduleStatsAutosave();
-    } else if (action === 'atk-add') {
+    } else if (action === 'atk-inc') {
+      const delta = parseInt(btn.dataset.val, 10);
       const input = document.getElementById(`si-${pcId}-dmgDealt`);
-      const val = input ? parseInt(input.value, 10) : NaN;
-      if (isNaN(val) || val <= 0) { if (input) input.focus(); return; }
+      if (input) { input.value = (parseInt(input.value, 10) || 0) + delta; updateStagingDisplay(pcId); }
+    } else if (action === 'atk-dec') {
+      const delta = parseInt(btn.dataset.val, 10);
+      const input = document.getElementById(`si-${pcId}-dmgDealt`);
+      if (input) { input.value = Math.max(0, (parseInt(input.value, 10) || 0) - delta); updateStagingDisplay(pcId); }
+    } else if (action === 'atk-log') {
+      const input = document.getElementById(`si-${pcId}-dmgDealt`);
+      const val = input ? parseInt(input.value, 10) : 0;
+      if (!val || val <= 0) return;
       if (!pc.dmgLog) pc.dmgLog = [];
       if (!pc.currentTurn) pc.currentTurn = 1;
       pc.dmgLog.push({ turn: pc.currentTurn, value: val });
       pc.dmgDealt = (pc.dmgDealt || 0) + val;
-      if (input) input.value = '';
       rerenderPcCard(pc);
       scheduleStatsAutosave();
     } else if (action === 'turn-next') {
@@ -1081,20 +1082,31 @@ const UI = (function() {
     }
   }
 
+  function updateStagingDisplay(pcId) {
+    const input = document.getElementById(`si-${pcId}-dmgDealt`);
+    const val = input ? parseInt(input.value, 10) : 0;
+    const logBtn = document.querySelector(`[data-action="atk-log"][data-pc-id="${pcId}"]`);
+    if (logBtn) logBtn.disabled = !(val > 0);
+  }
+
+  function handlePcGridInputChange(e) {
+    const input = e.target;
+    if (input.classList.contains('pc-staging-input')) updateStagingDisplay(input.dataset.pcId);
+  }
+
   function handlePcGridInput(e) {
-    if (e.type === 'keydown' && e.key === 'Enter') {
-      const input = e.target;
-      if (input.classList.contains('pc-stat-input')) {
-        const pcId = input.dataset.pcId;
-        const stat = input.dataset.stat;
-        if (stat === 'dmgDealt') {
-          const addBtn = document.querySelector(`[data-action="atk-add"][data-pc-id="${pcId}"]`);
-          if (addBtn) addBtn.click();
-        } else {
-          const addBtn = document.querySelector(`[data-action="stat-add"][data-pc-id="${pcId}"][data-stat="${stat}"]`);
-          if (addBtn) addBtn.click();
-        }
-      }
+    if (e.key !== 'Enter') return;
+    const input = e.target;
+    if (input.classList.contains('pc-staging-input')) {
+      const pcId = input.dataset.pcId;
+      updateStagingDisplay(pcId);
+      const logBtn = document.querySelector(`[data-action="atk-log"][data-pc-id="${pcId}"]`);
+      if (logBtn && !logBtn.disabled) logBtn.click();
+      return;
+    }
+    if (input.classList.contains('pc-stat-input')) {
+      const addBtn = document.querySelector(`[data-action="stat-add"][data-pc-id="${input.dataset.pcId}"][data-stat="${input.dataset.stat}"]`);
+      if (addBtn) addBtn.click();
     }
   }
 
