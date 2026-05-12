@@ -87,7 +87,8 @@ const SessionStats = (function() {
       dmgLog: [],
       dmgInLog: [],
       healLog: [],
-      killLog: []
+      killLog: [],
+      notes: ''
     };
   }
 

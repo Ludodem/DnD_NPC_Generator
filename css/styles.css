@@ -1280,12 +1280,30 @@ button {
   color: #fff;
 }
 
+.pc-card-header-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .pc-card-name {
   font-family: var(--font-heading);
   font-size: 1.05rem;
   font-weight: 700;
   font-variant: small-caps;
   letter-spacing: 0.04em;
+}
+
+.pc-card-summary {
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  opacity: 0.82;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .pc-reset-btn {
@@ -1848,6 +1866,29 @@ button {
   color: #fff;
 }
 .pc-kill-form-submit:hover { background: #4e1f1f; }
+
+/* Notes textarea */
+.pc-notes-section {
+  padding: var(--space-xs) var(--space-md) var(--space-sm);
+  border-top: 1px solid var(--color-border);
+}
+
+.pc-note-input {
+  width: 100%;
+  font-size: 0.78rem;
+  font-family: inherit;
+  line-height: 1.45;
+  padding: 6px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  resize: vertical;
+  min-height: 40px;
+  box-sizing: border-box;
+}
+.pc-note-input:focus { outline: none; border-color: var(--color-accent); }
+.pc-note-input::placeholder { color: var(--color-text-muted); font-style: italic; }
 
 /* Session setup modal */
 .session-setup-content {

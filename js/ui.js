@@ -1013,7 +1013,10 @@ const UI = (function() {
     return `
       <div class="pc-card" data-pc-id="${pc.id}">
         <div class="pc-card-header" style="background:${headerBg}">
-          <span class="pc-card-name">${escapeHtml(pc.name || 'Unnamed')}</span>
+          <div class="pc-card-header-main">
+            <span class="pc-card-name">${escapeHtml(pc.name || 'Unnamed')}</span>
+            <span class="pc-card-summary">⚔ ${pc.dmgDealt || 0} &nbsp;🛡 ${pc.dmgTaken || 0} &nbsp;💚 ${pc.healed || 0} &nbsp;💀 ${pc.kills || 0} &nbsp;😵 ${pc.ko || 0}</span>
+          </div>
           <button class="pc-reset-btn" data-action="pc-reset" data-pc-id="${pc.id}" title="Reset this PC's stats">↺ Reset</button>
         </div>
         ${renderDmgOutSection(pc)}
@@ -1024,7 +1027,7 @@ const UI = (function() {
             ${renderRoundDetail(pc.dmgInLog, 'pc-round-detail--in')}
             ${dmgInChips ? `<div class="pc-atk-chips">${dmgInChips}</div>` : ''}
             <div class="pc-stat-input-row">
-              <input type="number" min="0" class="pc-stat-input" placeholder="+" id="si-${pc.id}-dmgTaken" data-pc-id="${pc.id}" data-stat="dmgTaken">
+              <input type="text" inputmode="text" class="pc-stat-input" placeholder="12+3" id="si-${pc.id}-dmgTaken" data-pc-id="${pc.id}" data-stat="dmgTaken">
               <button class="pc-stat-add-btn" data-action="stat-add" data-pc-id="${pc.id}" data-stat="dmgTaken">+</button>
             </div>
           </div>
@@ -1034,7 +1037,7 @@ const UI = (function() {
             ${renderRoundDetail(pc.healLog, 'pc-round-detail--heal')}
             ${healChips ? `<div class="pc-atk-chips">${healChips}</div>` : ''}
             <div class="pc-stat-input-row">
-              <input type="number" min="0" class="pc-stat-input" placeholder="+" id="si-${pc.id}-healed" data-pc-id="${pc.id}" data-stat="healed">
+              <input type="text" inputmode="text" class="pc-stat-input" placeholder="12+3" id="si-${pc.id}-healed" data-pc-id="${pc.id}" data-stat="healed">
               <button class="pc-stat-add-btn" data-action="stat-add" data-pc-id="${pc.id}" data-stat="healed">+</button>
             </div>
           </div>
@@ -1049,6 +1052,9 @@ const UI = (function() {
               <button class="pc-counter-btn" data-action="stat-inc" data-pc-id="${pc.id}" data-stat="ko">+</button>
             </div>
           </div>
+        </div>
+        <div class="pc-notes-section">
+          <textarea class="pc-note-input" data-pc-id="${pc.id}" placeholder="Notes — critiques, Smite, observations…" rows="2">${escapeHtml(pc.notes || '')}</textarea>
         </div>
       </div>
     `;
@@ -1065,30 +1071,33 @@ const UI = (function() {
 
     if (action === 'stat-add') {
       const input = document.getElementById(`si-${pcId}-${statKey}`);
-      const val = input ? parseInt(input.value, 10) : NaN;
-      if (isNaN(val) || val <= 0) { if (input) input.focus(); return; }
-      pc[statKey] = (pc[statKey] || 0) + val;
+      const raw = input ? input.value.trim() : '';
+      if (!raw) { if (input) input.focus(); return; }
+      const parts = raw.split('+').map(s => parseInt(s.trim(), 10)).filter(v => !isNaN(v) && v > 0);
+      if (parts.length === 0) { if (input) input.focus(); return; }
+      const total = parts.reduce((s, v) => s + v, 0);
+      pc[statKey] = (pc[statKey] || 0) + total;
       if (input) input.value = '';
       const round = editingSession ? (editingSession.currentRound || 1) : 1;
       if (statKey === 'dmgTaken') {
         if (!pc.dmgInLog) pc.dmgInLog = [];
-        pc.dmgInLog.push({ round, value: val });
+        parts.forEach(v => pc.dmgInLog.push({ round, value: v }));
         rerenderPcCard(pc);
       } else if (statKey === 'healed') {
         if (!pc.healLog) pc.healLog = [];
-        pc.healLog.push({ round, value: val });
+        parts.forEach(v => pc.healLog.push({ round, value: v }));
         rerenderPcCard(pc);
       } else {
-        updateStatDisplay(pc, statKey);
+        rerenderPcCard(pc);
       }
       scheduleStatsAutosave();
     } else if (action === 'stat-inc') {
       pc[statKey] = (pc[statKey] || 0) + 1;
-      updateStatDisplay(pc, statKey);
+      rerenderPcCard(pc);
       scheduleStatsAutosave();
     } else if (action === 'stat-dec') {
       pc[statKey] = Math.max(0, (pc[statKey] || 0) - 1);
-      updateStatDisplay(pc, statKey);
+      rerenderPcCard(pc);
       scheduleStatsAutosave();
     } else if (action === 'atk-inc') {
       const delta = parseInt(btn.dataset.val, 10);
@@ -1186,7 +1195,14 @@ const UI = (function() {
 
   function handlePcGridInputChange(e) {
     const input = e.target;
-    if (input.classList.contains('pc-staging-input')) updateStagingDisplay(input.dataset.pcId);
+    if (input.classList.contains('pc-staging-input')) {
+      updateStagingDisplay(input.dataset.pcId);
+      return;
+    }
+    if (input.classList.contains('pc-note-input')) {
+      const pc = editingSession?.pcs.find(p => p.id === input.dataset.pcId);
+      if (pc) { pc.notes = input.value; scheduleStatsAutosave(); }
+    }
   }
 
   function handlePcGridInput(e) {
