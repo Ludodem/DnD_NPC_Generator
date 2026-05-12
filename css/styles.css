@@ -2989,3 +2989,30 @@ button {
   }
 }
 
+/* ----------------------------------------
+   Large desktop layout (>= 1280px)
+   ---------------------------------------- */
+@media (min-width: 1280px) {
+  #app {
+    max-width: 1440px;
+  }
+
+  .scenario-editor,
+  .scenario-reader {
+    max-width: 1280px;
+  }
+
+  .reader-title {
+    font-size: 42px;
+  }
+
+  .reader-act-heading {
+    font-size: 32px;
+  }
+
+  /* 3-col scenes on wide screens */
+  .reader-scenes-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
