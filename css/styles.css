@@ -3130,7 +3130,7 @@ button {
     display: block;
   }
 
-  /* Hide everything except the active scenario */
+  /* Hide chrome, controls, and all empty/placeholder content */
   .bottom-nav,
   .screen-header,
   #item-editor-modal,
@@ -3145,6 +3145,9 @@ button {
   .scenarios-toolbar,
   .header-actions,
   .reader-placeholder,
+  .reader-section--empty,
+  .reader-empty,
+  .reader-empty-hint,
   .hp-btn,
   .hp-reset-btn,
   .hp-revive-btn,
@@ -3200,13 +3203,14 @@ button {
     font-size: 26pt;
   }
 
-  /* Page break before each act */
+  /* Acts: generous top margin, visual separator — no forced page break */
   .reader-act {
-    page-break-before: always;
-    break-before: page;
+    margin-top: 20pt;
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 
-  /* Avoid breaking scenes, combats and stat blocks mid-page */
+  /* But do avoid splitting a scene or combat across pages */
   .reader-scene,
   .reader-combat,
   .reader-enemy,
@@ -3216,6 +3220,12 @@ button {
   .dc-row {
     page-break-inside: avoid;
     break-inside: avoid;
+  }
+
+  /* A scene with a combat can be large — allow it to break, just not mid-statblock */
+  .reader-scene {
+    page-break-inside: auto;
+    break-inside: auto;
   }
 
   /* Single column for print */
