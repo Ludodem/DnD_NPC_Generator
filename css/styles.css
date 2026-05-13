@@ -319,6 +319,12 @@ button {
   background-color: var(--color-danger-hover);
 }
 
+.btn-sm {
+  font-size: 0.75rem;
+  padding: 5px 10px;
+  border-width: 1px;
+}
+
 .btn-icon {
   display: flex;
   align-items: center;
@@ -4052,3 +4058,112 @@ button {
   }
 }
 
+
+/* ----------------------------------------
+   Settings modal
+   ---------------------------------------- */
+.settings-content {
+  width: min(460px, 94vw);
+  max-height: 85vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.settings-section {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-md);
+}
+
+.settings-section:first-of-type { border-top: none; padding-top: 0; }
+
+.settings-section-title {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-sm);
+}
+
+.settings-desc {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-sm);
+}
+
+/* Sync token row */
+.sync-token-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xs);
+}
+
+.sync-token-input {
+  flex: 1;
+  font-size: 0.8rem;
+  padding: 6px 10px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+.sync-token-input:focus { outline: none; border-color: var(--color-accent); }
+
+.sync-token-masked {
+  flex: 1;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  font-family: monospace;
+}
+
+/* Status */
+.sync-status {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-sm);
+  line-height: 1.5;
+}
+.sync-status--ok  { color: #4caf50; }
+.sync-status--err { color: var(--color-danger); }
+
+/* Push/Pull buttons */
+.sync-btn-row {
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xs);
+}
+.sync-btn-row .btn { flex: 1; }
+
+/* Hint */
+.sync-hint {
+  font-size: 0.73rem;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+.sync-hint a { color: var(--color-accent); }
+.sync-hint code {
+  font-family: monospace;
+  background: rgba(255,255,255,0.07);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+/* Backups list */
+.sync-backup-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: 5px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.sync-backup-row:last-child { border-bottom: none; }
+
+.sync-backup-meta {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}

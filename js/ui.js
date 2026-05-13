@@ -3193,6 +3193,148 @@ const UI = (function() {
         clearAppDataAndReload();
       });
     }
+    setupSyncUI();
+  }
+
+  // ---- Cloud Sync UI ----
+
+  function setupSyncUI() {
+    document.getElementById('btn-sync-push')?.addEventListener('click', async () => {
+      const btn = document.getElementById('btn-sync-push');
+      btn.disabled = true; btn.textContent = '…';
+      try {
+        await GistSync.push();
+        showToast('Sauvegardé dans le cloud ✓');
+      } catch (err) {
+        showToast('Erreur : ' + err.message);
+      } finally {
+        btn.textContent = '↑ Sauvegarder';
+        renderSyncUI();
+      }
+    });
+
+    document.getElementById('btn-sync-pull')?.addEventListener('click', () => {
+      showModal(
+        'Synchroniser depuis le cloud',
+        'Les données locales seront remplacées. Un backup sera créé automatiquement avant. Continuer ?',
+        async () => {
+          const btn = document.getElementById('btn-sync-pull');
+          if (btn) { btn.disabled = true; btn.textContent = '…'; }
+          try {
+            await GistSync.pull();
+            showToast('Synchronisé ✓ — rechargement…');
+            setTimeout(() => location.reload(), 1200);
+          } catch (err) {
+            showToast('Erreur : ' + err.message);
+            renderSyncUI();
+          }
+        }
+      );
+    });
+
+    document.getElementById('sync-backups-list')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-action="restore-backup"]');
+      if (!btn) return;
+      const key = btn.dataset.key;
+      showModal(
+        'Restaurer ce backup ?',
+        "L'état actuel sera sauvegardé en backup avant la restauration. Continuer ?",
+        () => {
+          try {
+            GistSync.restoreBackup(key);
+            showToast('Backup restauré — rechargement…');
+            setTimeout(() => location.reload(), 1200);
+          } catch (err) {
+            showToast('Erreur : ' + err.message);
+          }
+        }
+      );
+    });
+  }
+
+  function renderSyncUI() {
+    const tokenArea      = document.getElementById('sync-token-area');
+    const statusRow      = document.getElementById('sync-status-row');
+    const pushBtn        = document.getElementById('btn-sync-push');
+    const pullBtn        = document.getElementById('btn-sync-pull');
+    const backupsList    = document.getElementById('sync-backups-list');
+    const backupsSection = document.getElementById('sync-backups-section');
+    if (!tokenArea) return;
+
+    if (GistSync.isTokenSet()) {
+      tokenArea.innerHTML = `
+        <div class="sync-token-row">
+          <span class="sync-token-masked">Token configuré ••••••••••••</span>
+          <button id="btn-sync-disconnect" class="btn btn-secondary btn-sm">Modifier</button>
+        </div>`;
+      document.getElementById('btn-sync-disconnect')?.addEventListener('click', () => {
+        GistSync.disconnect();
+        renderSyncUI();
+      });
+    } else {
+      tokenArea.innerHTML = `
+        <div class="sync-token-row">
+          <input type="password" id="sync-token-input" class="sync-token-input" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off">
+          <button id="btn-sync-connect" class="btn btn-primary btn-sm">Connecter</button>
+        </div>`;
+      document.getElementById('btn-sync-connect')?.addEventListener('click', handleSyncConnect);
+      document.getElementById('sync-token-input')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') handleSyncConnect();
+      });
+    }
+
+    const parts = [];
+    if (GistSync.isTokenSet() && GistSync.isGistSet())  parts.push('✓ Gist lié');
+    else if (GistSync.isTokenSet())                      parts.push('✓ Token valide — push pour créer le Gist');
+    const lastPush = GistSync.getLastPush();
+    const lastPull = GistSync.getLastPull();
+    if (lastPush) parts.push(`Push : ${formatSyncDate(lastPush)}`);
+    if (lastPull) parts.push(`Pull : ${formatSyncDate(lastPull)}`);
+    statusRow.innerHTML = parts.length
+      ? `<p class="sync-status">${parts.join(' &nbsp;·&nbsp; ')}</p>` : '';
+
+    if (pushBtn) pushBtn.disabled = !GistSync.isTokenSet();
+    if (pullBtn) pullBtn.disabled = !GistSync.isTokenSet() || !GistSync.isGistSet();
+
+    const backups = GistSync.listBackups();
+    if (backupsSection) backupsSection.hidden = backups.length === 0;
+    if (backupsList) {
+      backupsList.innerHTML = backups.map(b => `
+        <div class="sync-backup-row">
+          <span class="sync-backup-meta">${formatSyncDate(b.savedAt)} &mdash; ${b.scenarios} scén. &middot; ${b.sessions} sessions</span>
+          <button class="btn btn-secondary btn-sm" data-action="restore-backup" data-key="${escapeAttr(b.key)}">Restore</button>
+        </div>`).join('');
+    }
+  }
+
+  async function handleSyncConnect() {
+    const input = document.getElementById('sync-token-input');
+    const token = input?.value?.trim();
+    if (!token) { input?.focus(); return; }
+    const connectBtn = document.getElementById('btn-sync-connect');
+    const statusRow  = document.getElementById('sync-status-row');
+    if (connectBtn) { connectBtn.disabled = true; connectBtn.textContent = '…'; }
+    if (statusRow)  statusRow.innerHTML = '<p class="sync-status">⏳ Connexion…</p>';
+    try {
+      const { username, gistId } = await GistSync.connect(token);
+      const msg = gistId
+        ? `✓ ${escapeHtml(username)} — Gist existant trouvé`
+        : `✓ ${escapeHtml(username)} — Aucun Gist existant, push pour créer`;
+      if (statusRow) statusRow.innerHTML = `<p class="sync-status sync-status--ok">${msg}</p>`;
+      renderSyncUI();
+    } catch (err) {
+      if (statusRow) statusRow.innerHTML = `<p class="sync-status sync-status--err">✗ ${escapeHtml(err.message)}</p>`;
+      if (connectBtn) { connectBtn.disabled = false; connectBtn.textContent = 'Connecter'; }
+    }
+  }
+
+  function formatSyncDate(iso) {
+    if (!iso) return '—';
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
+           + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    } catch { return iso.slice(0, 16); }
   }
 
   function setupViewTabs() {
@@ -3289,6 +3431,7 @@ const UI = (function() {
     if (!elements.settingsModal) return;
     elements.settingsModal.classList.remove('hidden');
     settingsModalOpen = true;
+    renderSyncUI();
     setTimeout(() => {
       document.addEventListener('click', handleSettingsOutsideClick, { once: true });
     }, 0);
