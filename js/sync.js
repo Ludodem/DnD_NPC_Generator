@@ -147,6 +147,6 @@ const GistSync = (function() {
   return {
     connect, push, pull, disconnect,
     saveBackup, listBackups, restoreBackup,
-    getLastPush, getLastPull, isTokenSet, isGistSet
+    getToken, getLastPush, getLastPull, isTokenSet, isGistSet
   };
 })();

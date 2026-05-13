@@ -3264,9 +3264,13 @@ const UI = (function() {
     if (GistSync.isTokenSet()) {
       tokenArea.innerHTML = `
         <div class="sync-token-row">
-          <span class="sync-token-masked">Token configuré ••••••••••••</span>
+          <code class="sync-token-value">${escapeHtml(GistSync.getToken())}</code>
+          <button id="btn-sync-copy-token" class="btn btn-secondary btn-sm" title="Copier">⎘</button>
           <button id="btn-sync-disconnect" class="btn btn-secondary btn-sm">Modifier</button>
         </div>`;
+      document.getElementById('btn-sync-copy-token')?.addEventListener('click', () => {
+        navigator.clipboard.writeText(GistSync.getToken()).then(() => showToast('Token copié ✓'));
+      });
       document.getElementById('btn-sync-disconnect')?.addEventListener('click', () => {
         GistSync.disconnect();
         renderSyncUI();
@@ -3274,7 +3278,7 @@ const UI = (function() {
     } else {
       tokenArea.innerHTML = `
         <div class="sync-token-row">
-          <input type="password" id="sync-token-input" class="sync-token-input" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off">
+          <input type="text" id="sync-token-input" class="sync-token-input" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off" spellcheck="false">
           <button id="btn-sync-connect" class="btn btn-primary btn-sm">Connecter</button>
         </div>`;
       document.getElementById('btn-sync-connect')?.addEventListener('click', handleSyncConnect);

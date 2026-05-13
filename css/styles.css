@@ -4113,11 +4113,13 @@ button {
 }
 .sync-token-input:focus { outline: none; border-color: var(--color-accent); }
 
-.sync-token-masked {
+.sync-token-value {
   flex: 1;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   color: var(--color-text-muted);
   font-family: monospace;
+  word-break: break-all;
+  user-select: all;
 }
 
 /* Status */
