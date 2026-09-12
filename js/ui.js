@@ -3463,7 +3463,7 @@ const UI = (function() {
     if (backupsList) {
       backupsList.innerHTML = backups.map(b => `
         <div class="sync-backup-row">
-          <span class="sync-backup-meta">${formatSyncDate(b.savedAt)} &mdash; ${b.scenarios} scén. &middot; ${b.sessions} sessions</span>
+          <span class="sync-backup-meta">${formatSyncDate(b.savedAt)} &mdash; ${b.scenarios} scén. &middot; ${b.sessions} sessions &middot; ${b.npcs} NPCs</span>
           <button class="btn btn-secondary btn-sm" data-action="restore-backup" data-key="${escapeAttr(b.key)}">Restore</button>
         </div>`).join('');
     }

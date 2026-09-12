@@ -10,7 +10,7 @@ const GistSync = (function() {
   const MAX_BACKUPS   = 5;
   const FILENAME      = 'dnd-npc-generator.json';
   const API           = 'https://api.github.com';
-  const DATA_KEYS     = ['dnd_scenario_library', 'dnd_session_stats'];
+  const DATA_KEYS     = ['dnd_scenario_library', 'dnd_session_stats', 'dnd_npc_library'];
 
   function getToken()    { return localStorage.getItem(TOKEN_KEY) || ''; }
   function getGistId()   { return localStorage.getItem(GIST_ID_KEY) || ''; }
@@ -128,7 +128,8 @@ const GistSync = (function() {
           key: k,
           savedAt: data.savedAt || '',
           scenarios: (data['dnd_scenario_library'] || []).length,
-          sessions:  (data['dnd_session_stats']    || []).length
+          sessions:  (data['dnd_session_stats']    || []).length,
+          npcs:      (data['dnd_npc_library']      || []).length
         };
       });
   }
