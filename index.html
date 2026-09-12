@@ -68,7 +68,7 @@
         <header class="screen-header with-back">
           <button id="btn-back" class="btn-icon">&larr;</button>
           <div class="title-box">
-            <h1 id="result-name">NPC Name</h1>
+            <h1 id="result-name" contenteditable="true" spellcheck="false" role="textbox" aria-label="NPC name">NPC Name</h1>
           </div>
         </header>
         <div class="screen-content">
@@ -155,54 +155,60 @@
               <h2>Notes</h2>
               <textarea id="notes-input" class="notes-textarea" rows="4" placeholder="Add notes for this NPC..."></textarea>
             </div>
-            <div class="action-buttons">
-              <button id="btn-regenerate" class="btn btn-secondary">Regenerate</button>
-              <button id="btn-copy" class="btn btn-secondary">Copy</button>
-              <button id="btn-save" class="btn btn-primary">Save</button>
-            </div>
           </div>
           <div class="view-tab-content" data-tab="statblock">
             <div class="statblock">
-              <div class="statblock-top">
-                <div class="statblock-item">
-                  <span class="statblock-label">AC</span>
-                  <span id="result-statblock-ac" class="statblock-value">12</span>
+              <div class="statblock-mode-row">
+                <button id="result-statblock-edit-toggle" class="statblock-mode-btn" type="button">&#9998; Edit</button>
+              </div>
+              <div id="result-statblock-view">
+                <div class="statblock-top">
+                  <div class="statblock-item">
+                    <span class="statblock-label">AC</span>
+                    <span id="result-statblock-ac" class="statblock-value">12</span>
+                  </div>
+                  <div class="statblock-item">
+                    <span class="statblock-label">HP</span>
+                    <span id="result-statblock-hp" class="statblock-value">10</span>
+                  </div>
+                  <div class="statblock-item">
+                    <span class="statblock-label">Speed</span>
+                    <span id="result-statblock-speed" class="statblock-value">30 ft.</span>
+                  </div>
+                  <div class="statblock-item">
+                    <span class="statblock-label">Init</span>
+                    <span id="result-statblock-init" class="statblock-value">+0</span>
+                  </div>
                 </div>
-                <div class="statblock-item">
-                  <span class="statblock-label">HP</span>
-                  <span id="result-statblock-hp" class="statblock-value">10</span>
+                <div id="result-statblock-meta" class="statblock-meta"></div>
+                <div id="result-statblock-abilities" class="statblock-abilities"></div>
+                <div class="statblock-section">
+                  <h2>Traits</h2>
+                  <div id="result-statblock-traits" class="statblock-list"></div>
                 </div>
-                <div class="statblock-item">
-                  <span class="statblock-label">Speed</span>
-                  <span id="result-statblock-speed" class="statblock-value">30 ft.</span>
+                <div class="statblock-section">
+                  <h2>Actions</h2>
+                  <div id="result-statblock-actions" class="statblock-list"></div>
                 </div>
-                <div class="statblock-item">
-                  <span class="statblock-label">Init</span>
-                  <span id="result-statblock-init" class="statblock-value">+0</span>
+                <div class="statblock-section hidden" id="result-statblock-spells-section">
+                  <div class="statblock-section-header">
+                    <h2>Spells</h2>
+                    <button id="result-statblock-spells-toggle" class="statblock-toggle" type="button"></button>
+                  </div>
+                  <div id="result-statblock-spells" class="statblock-list"></div>
+                </div>
+                <div class="statblock-section">
+                  <h2>Reactions</h2>
+                  <div id="result-statblock-reactions" class="statblock-list"></div>
                 </div>
               </div>
-              <div id="result-statblock-meta" class="statblock-meta"></div>
-              <div id="result-statblock-abilities" class="statblock-abilities"></div>
-              <div class="statblock-section">
-                <h2>Traits</h2>
-                <div id="result-statblock-traits" class="statblock-list"></div>
-              </div>
-              <div class="statblock-section">
-                <h2>Actions</h2>
-                <div id="result-statblock-actions" class="statblock-list"></div>
-              </div>
-              <div class="statblock-section hidden" id="result-statblock-spells-section">
-                <div class="statblock-section-header">
-                  <h2>Spells</h2>
-                  <button id="result-statblock-spells-toggle" class="statblock-toggle" type="button"></button>
-                </div>
-                <div id="result-statblock-spells" class="statblock-list"></div>
-              </div>
-              <div class="statblock-section">
-                <h2>Reactions</h2>
-                <div id="result-statblock-reactions" class="statblock-list"></div>
-              </div>
+              <div id="result-statblock-edit" class="statblock-edit hidden"></div>
             </div>
+          </div>
+          <div class="action-buttons">
+            <button id="btn-regenerate" class="btn btn-secondary">Regenerate</button>
+            <button id="btn-copy" class="btn btn-secondary">Copy</button>
+            <button id="btn-save" class="btn btn-primary">Save</button>
           </div>
         </div>
       </section>
@@ -220,10 +226,16 @@
           </div>
 
           <div id="library-section-npcs" class="library-section active">
+            <div class="scenarios-toolbar">
+              <button id="btn-create-npc" class="btn btn-secondary">+ Create NPC</button>
+            </div>
             <div id="library-list"></div>
             <div id="library-empty" class="empty-state">
               <p>No saved NPCs yet</p>
-              <button id="btn-generate-first" class="btn btn-primary">Generate one</button>
+              <div class="empty-state-actions">
+                <button id="btn-generate-first" class="btn btn-primary">Generate one</button>
+                <button id="btn-create-npc-empty" class="btn btn-secondary">Create manually</button>
+              </div>
             </div>
           </div>
 
@@ -269,7 +281,7 @@
         <header class="screen-header with-back">
           <button id="btn-back-library" class="btn-icon">&larr;</button>
           <div class="title-box">
-            <h1 id="detail-name">NPC Name</h1>
+            <h1 id="detail-name" contenteditable="true" spellcheck="false" role="textbox" aria-label="NPC name">NPC Name</h1>
           </div>
         </header>
         <div class="screen-content">
@@ -356,53 +368,59 @@
               <h2>Notes</h2>
               <textarea id="detail-notes-input" class="notes-textarea" rows="4" placeholder="Add notes for this NPC..."></textarea>
             </div>
-            <div class="action-buttons">
-              <button id="btn-copy-detail" class="btn btn-secondary">Copy</button>
-              <button id="btn-delete" class="btn btn-danger">Delete</button>
-            </div>
           </div>
           <div class="view-tab-content" data-tab="statblock">
             <div class="statblock">
-              <div class="statblock-top">
-                <div class="statblock-item">
-                  <span class="statblock-label">AC</span>
-                  <span id="detail-statblock-ac" class="statblock-value">12</span>
+              <div class="statblock-mode-row">
+                <button id="detail-statblock-edit-toggle" class="statblock-mode-btn" type="button">&#9998; Edit</button>
+              </div>
+              <div id="detail-statblock-view">
+                <div class="statblock-top">
+                  <div class="statblock-item">
+                    <span class="statblock-label">AC</span>
+                    <span id="detail-statblock-ac" class="statblock-value">12</span>
+                  </div>
+                  <div class="statblock-item">
+                    <span class="statblock-label">HP</span>
+                    <span id="detail-statblock-hp" class="statblock-value">10</span>
+                  </div>
+                  <div class="statblock-item">
+                    <span class="statblock-label">Speed</span>
+                    <span id="detail-statblock-speed" class="statblock-value">30 ft.</span>
+                  </div>
+                  <div class="statblock-item">
+                    <span class="statblock-label">Init</span>
+                    <span id="detail-statblock-init" class="statblock-value">+0</span>
+                  </div>
                 </div>
-                <div class="statblock-item">
-                  <span class="statblock-label">HP</span>
-                  <span id="detail-statblock-hp" class="statblock-value">10</span>
+                <div id="detail-statblock-meta" class="statblock-meta"></div>
+                <div id="detail-statblock-abilities" class="statblock-abilities"></div>
+                <div class="statblock-section">
+                  <h2>Traits</h2>
+                  <div id="detail-statblock-traits" class="statblock-list"></div>
                 </div>
-                <div class="statblock-item">
-                  <span class="statblock-label">Speed</span>
-                  <span id="detail-statblock-speed" class="statblock-value">30 ft.</span>
+                <div class="statblock-section">
+                  <h2>Actions</h2>
+                  <div id="detail-statblock-actions" class="statblock-list"></div>
                 </div>
-                <div class="statblock-item">
-                  <span class="statblock-label">Init</span>
-                  <span id="detail-statblock-init" class="statblock-value">+0</span>
+                <div class="statblock-section hidden" id="detail-statblock-spells-section">
+                  <div class="statblock-section-header">
+                    <h2>Spells</h2>
+                    <button id="detail-statblock-spells-toggle" class="statblock-toggle" type="button"></button>
+                  </div>
+                  <div id="detail-statblock-spells" class="statblock-list"></div>
+                </div>
+                <div class="statblock-section">
+                  <h2>Reactions</h2>
+                  <div id="detail-statblock-reactions" class="statblock-list"></div>
                 </div>
               </div>
-              <div id="detail-statblock-meta" class="statblock-meta"></div>
-              <div id="detail-statblock-abilities" class="statblock-abilities"></div>
-              <div class="statblock-section">
-                <h2>Traits</h2>
-                <div id="detail-statblock-traits" class="statblock-list"></div>
-              </div>
-              <div class="statblock-section">
-                <h2>Actions</h2>
-                <div id="detail-statblock-actions" class="statblock-list"></div>
-              </div>
-              <div class="statblock-section hidden" id="detail-statblock-spells-section">
-                <div class="statblock-section-header">
-                  <h2>Spells</h2>
-                  <button id="detail-statblock-spells-toggle" class="statblock-toggle" type="button"></button>
-                </div>
-                <div id="detail-statblock-spells" class="statblock-list"></div>
-              </div>
-              <div class="statblock-section">
-                <h2>Reactions</h2>
-                <div id="detail-statblock-reactions" class="statblock-list"></div>
-              </div>
+              <div id="detail-statblock-edit" class="statblock-edit hidden"></div>
             </div>
+          </div>
+          <div class="action-buttons">
+            <button id="btn-copy-detail" class="btn btn-secondary">Copy</button>
+            <button id="btn-delete" class="btn btn-danger">Delete</button>
           </div>
         </div>
       </section>

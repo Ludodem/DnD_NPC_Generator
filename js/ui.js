@@ -27,6 +27,7 @@ const UI = (function() {
   let spellNames = [];
   let conditionNames = [];
   let libraryTab = 'npcs';
+  const statblockEditMode = { result: false, detail: false };
 
   // DOM element cache
   const elements = {};
@@ -44,6 +45,7 @@ const UI = (function() {
     setupStatsScreen();
     setupModal();
     setupViewTabs();
+    setupEditableNames();
 
     // Show generator screen by default
     showScreen('generator');
@@ -103,7 +105,10 @@ const UI = (function() {
       spellsSection: document.getElementById('result-statblock-spells-section'),
       spellsToggle: document.getElementById('result-statblock-spells-toggle'),
       spells: document.getElementById('result-statblock-spells'),
-      reactions: document.getElementById('result-statblock-reactions')
+      reactions: document.getElementById('result-statblock-reactions'),
+      editToggle: document.getElementById('result-statblock-edit-toggle'),
+      viewContainer: document.getElementById('result-statblock-view'),
+      editContainer: document.getElementById('result-statblock-edit')
     };
     elements.btnBack = document.getElementById('btn-back');
     elements.btnRegenerate = document.getElementById('btn-regenerate');
@@ -164,11 +169,16 @@ const UI = (function() {
       spellsSection: document.getElementById('detail-statblock-spells-section'),
       spellsToggle: document.getElementById('detail-statblock-spells-toggle'),
       spells: document.getElementById('detail-statblock-spells'),
-      reactions: document.getElementById('detail-statblock-reactions')
+      reactions: document.getElementById('detail-statblock-reactions'),
+      editToggle: document.getElementById('detail-statblock-edit-toggle'),
+      viewContainer: document.getElementById('detail-statblock-view'),
+      editContainer: document.getElementById('detail-statblock-edit')
     };
     elements.btnBackLibrary = document.getElementById('btn-back-library');
     elements.btnCopyDetail = document.getElementById('btn-copy-detail');
     elements.btnDelete = document.getElementById('btn-delete');
+    elements.btnCreateNpc = document.getElementById('btn-create-npc');
+    elements.btnCreateNpcEmpty = document.getElementById('btn-create-npc-empty');
 
     // Modal
     elements.modal = document.getElementById('modal');
@@ -456,6 +466,70 @@ const UI = (function() {
   }
 
   /**
+   * Create a blank NPC for manual creation
+   */
+  function generateLocalId() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+
+  function createBlankNpc() {
+    const zeroMods = { STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0 };
+    const baseScores = { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 };
+    return {
+      id: generateLocalId(),
+      createdAt: new Date().toISOString(),
+      sex: '',
+      race: 'Custom',
+      raceId: null,
+      alignment: 'Neutral',
+      class: null,
+      level: null,
+      archetype: 'martial',
+      archetypeLabel: 'Custom',
+      tier: 'Novice',
+      cr: 1,
+      proficiencyBonus: 2,
+      armorClass: 12,
+      hitPoints: 10,
+      speed: '30 ft.',
+      initiative: 0,
+      abilityScores: { ...baseScores },
+      abilityMods: { ...zeroMods },
+      savingThrowProficiencies: [],
+      savingThrows: { ...zeroMods },
+      traits: [],
+      actions: [],
+      reactions: [],
+      name: 'New NPC',
+      physicalDescription: '',
+      psychDescription: '',
+      notes: '',
+      version: 1,
+      custom: true
+    };
+  }
+
+  async function handleCreateManualNpc() {
+    currentNpc = createBlankNpc();
+    statblockEditMode.result = true;
+    await renderResult(currentNpc);
+    setActiveTab(elements.resultTabs, elements.resultTabContents, 'statblock');
+    showScreen('result');
+
+    if (elements.resultName) {
+      elements.resultName.focus();
+      selectElementText(elements.resultName);
+    }
+  }
+
+  /**
    * Set up result screen
    */
   function setupResultScreen() {
@@ -472,6 +546,8 @@ const UI = (function() {
     elements.btnSave.addEventListener('click', () => {
       saveCurrentNpc();
     });
+
+    setupStatblockEditToggle(elements.resultStatblock, () => currentNpc);
 
     elements.resultAbilityRolls.forEach(button => {
       button.addEventListener('click', (event) => {
@@ -526,6 +602,10 @@ const UI = (function() {
     elements.resultPsych.textContent = npc.psychDescription;
     elements.resultNotes.value = npc.notes || '';
 
+    if (elements.btnRegenerate) {
+      elements.btnRegenerate.classList.toggle('hidden', !!npc.custom);
+    }
+
     // Update save button state
     updateSaveButton(npc.id);
   }
@@ -534,11 +614,10 @@ const UI = (function() {
    * Render summary chips
    */
   function renderChips(npc) {
-    return `
-      <span class="chip">${npc.sex}</span>
-      <span class="chip">${npc.race}</span>
-      <span class="chip">${npc.alignment}</span>
-    `;
+    return [npc.sex, npc.race, npc.alignment]
+      .filter(Boolean)
+      .map(value => `<span class="chip">${value}</span>`)
+      .join('');
   }
 
   /**
@@ -590,6 +669,56 @@ const UI = (function() {
     } else {
       showToast(result.error || 'Failed to save NPC');
     }
+  }
+
+  /**
+   * Wire up inline-editable NPC name fields
+   */
+  function setupEditableNames() {
+    setupEditableName(elements.resultName, () => currentNpc, (npc) => {
+      if (Storage.exists(npc.id)) {
+        Storage.save(npc);
+      }
+    });
+    setupEditableName(elements.detailName, () => (viewingNpcId ? Storage.getById(viewingNpcId) : null), (npc) => {
+      Storage.save(npc);
+      renderLibrary();
+    });
+  }
+
+  function setupEditableName(el, getNpc, onCommit) {
+    if (!el) return;
+
+    el.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        el.blur();
+      }
+    });
+
+    el.addEventListener('blur', () => {
+      const npc = getNpc();
+      if (!npc) return;
+
+      const newName = el.textContent.replace(/\s+/g, ' ').trim();
+      if (!newName || newName === npc.name) {
+        el.textContent = npc.name;
+        return;
+      }
+
+      npc.name = newName;
+      el.textContent = newName;
+      onCommit(npc);
+    });
+  }
+
+  function selectElementText(el) {
+    if (!el || typeof window.getSelection === 'undefined') return;
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
   }
 
   // Scenario state
@@ -2771,6 +2900,19 @@ const UI = (function() {
     void prepareSpellIndex();
     void prepareConditionIndex();
 
+    setupStatblockEditToggle(elements.detailStatblock, () => (viewingNpcId ? Storage.getById(viewingNpcId) : null));
+
+    if (elements.btnCreateNpc) {
+      elements.btnCreateNpc.addEventListener('click', () => {
+        void handleCreateManualNpc();
+      });
+    }
+    if (elements.btnCreateNpcEmpty) {
+      elements.btnCreateNpcEmpty.addEventListener('click', () => {
+        void handleCreateManualNpc();
+      });
+    }
+
     const saveDetailNotes = debounce(() => {
       if (!viewingNpcId) return;
       const npc = Storage.getById(viewingNpcId);
@@ -3145,6 +3287,15 @@ const UI = (function() {
     }
     if (elements.btnCopyDetail) {
       elements.btnCopyDetail.classList.toggle('hidden', !isNpc);
+    }
+    if (elements.detailName) {
+      elements.detailName.contentEditable = isNpc ? 'true' : 'false';
+    }
+    if (elements.detailStatblock && elements.detailStatblock.editToggle) {
+      elements.detailStatblock.editToggle.classList.toggle('hidden', !isNpc);
+      if (!isNpc) {
+        statblockEditMode.detail = false;
+      }
     }
     if (isNpc) {
       setActiveTab(elements.detailTabs, elements.detailTabContents, 'overview');
@@ -4064,8 +4215,36 @@ const UI = (function() {
       .replace(/"/g, '&quot;');
   }
 
+  function setupStatblockEditToggle(target, getNpc) {
+    if (!target || !target.editToggle) return;
+    target.editToggle.addEventListener('click', () => {
+      const key = target.key || 'result';
+      statblockEditMode[key] = !statblockEditMode[key];
+      const npc = getNpc();
+      if (npc) {
+        renderStatBlock(target, npc);
+      }
+    });
+  }
+
   function renderStatBlock(target, npc) {
     if (!target) return;
+
+    target.currentNpcRef = npc;
+    const editKey = target.key || 'result';
+    const editing = statblockEditMode[editKey] === true;
+
+    if (target.editToggle) {
+      target.editToggle.textContent = editing ? '\u{1F441} View' : '✎ Edit';
+      target.editToggle.classList.toggle('active', editing);
+    }
+    if (target.viewContainer) target.viewContainer.classList.toggle('hidden', editing);
+    if (target.editContainer) target.editContainer.classList.toggle('hidden', !editing);
+
+    if (editing) {
+      renderStatBlockEditor(target, npc);
+      return;
+    }
 
     const tier = npc.tier || 'Novice';
     const tierInfo = Generator.getTierInfo(tier);
@@ -4122,6 +4301,275 @@ const UI = (function() {
       const spellMeta = spellActions.length > 0 ? getSpellcastingMeta(npc) : null;
       target.meta.innerHTML = buildMetaLines([metaLine, xpLine, spellMeta]);
     }
+  }
+
+  const ABILITY_KEYS_UI = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
+
+  /**
+   * Render the editable form for a stat block (traits/actions/reactions,
+   * top stats, and ability scores) used by the manual edit mode.
+   */
+  function renderStatBlockEditor(target, npc) {
+    if (!target.editContainer) return;
+
+    const tier = npc.tier || 'Novice';
+    const tierInfo = Generator.getTierInfo(tier);
+    const pb = (npc.proficiencyBonus !== undefined && npc.proficiencyBonus !== null) ? npc.proficiencyBonus : tierInfo.pb;
+    const cr = (npc.cr !== undefined && npc.cr !== null) ? npc.cr : tierInfo.cr;
+    const scores = npc.abilityScores || {};
+    const saveProfs = new Set(npc.savingThrowProficiencies || []);
+
+    const abilityRows = ABILITY_KEYS_UI.map(key => {
+      const score = scores[key] !== undefined ? scores[key] : 10;
+      const mod = Math.floor((score - 10) / 2);
+      const checked = saveProfs.has(key) ? ' checked' : '';
+      return `
+        <div class="edit-ability-row" data-ability="${key}">
+          <span class="ability-name">${key}</span>
+          <input type="number" class="field-input edit-score-input" data-field="score" value="${score}">
+          <span class="edit-ability-mod">${formatSigned(mod)}</span>
+          <label class="edit-prof-label"><input type="checkbox" class="edit-save-prof"${checked}>&nbsp;Save</label>
+        </div>
+      `;
+    }).join('');
+
+    target.editContainer.innerHTML = `
+      <div class="statblock-edit-top">
+        <label class="field-row"><span class="field-label">Armor Class</span>
+          <input type="number" class="field-input" data-field="armorClass" value="${npc.armorClass !== undefined ? npc.armorClass : 12}"></label>
+        <label class="field-row"><span class="field-label">Hit Points</span>
+          <input type="number" class="field-input" data-field="hitPoints" value="${npc.hitPoints !== undefined ? npc.hitPoints : 10}"></label>
+        <label class="field-row"><span class="field-label">Speed</span>
+          <input type="text" class="field-input" data-field="speed" value="${escapeAttr(npc.speed || '30 ft.')}"></label>
+        <label class="field-row"><span class="field-label">Initiative</span>
+          <input type="number" class="field-input" data-field="initiative" value="${npc.initiative !== undefined ? npc.initiative : 0}"></label>
+        <label class="field-row"><span class="field-label">Proficiency Bonus</span>
+          <input type="number" class="field-input" data-field="proficiencyBonus" value="${pb}"></label>
+        <label class="field-row"><span class="field-label">Challenge Rating</span>
+          <input type="text" class="field-input" data-field="cr" value="${escapeAttr(String(cr))}"></label>
+      </div>
+      <div class="statblock-edit-section">
+        <h2>Ability Scores</h2>
+        <div class="statblock-edit-abilities">${abilityRows}</div>
+      </div>
+      <div class="statblock-edit-section">
+        <h2>Traits</h2>
+        <div class="statblock-edit-list" data-list="traits">${renderEditEntryList(npc.traits, false)}</div>
+        <button type="button" class="btn-tertiary btn-add" data-action="add-entry" data-list="traits">+ Add trait</button>
+      </div>
+      <div class="statblock-edit-section">
+        <h2>Actions</h2>
+        <div class="statblock-edit-list" data-list="actions">${renderEditEntryList(npc.actions, true)}</div>
+        <button type="button" class="btn-tertiary btn-add" data-action="add-entry" data-list="actions">+ Add action</button>
+      </div>
+      <div class="statblock-edit-section">
+        <h2>Reactions</h2>
+        <div class="statblock-edit-list" data-list="reactions">${renderEditEntryList(npc.reactions, false)}</div>
+        <button type="button" class="btn-tertiary btn-add" data-action="add-entry" data-list="reactions">+ Add reaction</button>
+      </div>
+    `;
+
+    bindStatBlockEditorEvents(target, npc);
+  }
+
+  function renderEditEntryList(items, allowRoll) {
+    if (!items || items.length === 0) {
+      return '<p class="list-empty-hint">None yet.</p>';
+    }
+    return items.map((item, index) => {
+      const roll = item.roll || null;
+      const rollSection = allowRoll ? `
+        <label class="edit-checkbox-row">
+          <input type="checkbox" class="edit-has-roll"${roll ? ' checked' : ''}> Has attack/damage roll
+        </label>
+        <div class="edit-roll-fields${roll ? '' : ' hidden'}">
+          <label class="field-row"><span class="field-label">Attack Bonus</span>
+            <input type="number" class="field-input" data-roll-field="attackBonus" value="${roll ? roll.attackBonus : 0}"></label>
+          <label class="field-row"><span class="field-label">Damage Dice</span>
+            <input type="text" class="field-input" data-roll-field="damageDice" placeholder="e.g. 2d6" value="${escapeAttr(roll && roll.damageDice ? roll.damageDice : '')}"></label>
+          <label class="field-row"><span class="field-label">Bonus Dice</span>
+            <input type="text" class="field-input" data-roll-field="bonusDice" placeholder="optional" value="${escapeAttr(roll && roll.bonusDice ? roll.bonusDice : '')}"></label>
+          <label class="field-row"><span class="field-label">Damage Modifier</span>
+            <input type="number" class="field-input" data-roll-field="damageMod" value="${roll ? roll.damageMod : 0}"></label>
+        </div>
+      ` : '';
+
+      return `
+        <div class="edit-entry" data-index="${index}">
+          <div class="edit-entry-header">
+            <input type="text" class="field-input" data-field="name" placeholder="Name" value="${escapeAttr(item.name || '')}">
+            <button type="button" class="btn-remove" data-action="remove-entry" aria-label="Remove">&times;</button>
+          </div>
+          <textarea class="field-textarea" data-field="text" rows="2" placeholder="Description text">${escapeHtml(item.text || '')}</textarea>
+          ${rollSection}
+        </div>
+      `;
+    }).join('');
+  }
+
+  const persistNpcIfSaved = debounce((npc) => {
+    if (npc && Storage.exists(npc.id)) {
+      Storage.save(npc);
+    }
+  }, 300);
+
+  function recomputeSavingThrows(npc) {
+    const pb = (npc.proficiencyBonus !== undefined && npc.proficiencyBonus !== null) ? npc.proficiencyBonus : 2;
+    npc.savingThrows = computeSavingThrows(npc.abilityMods || {}, npc.savingThrowProficiencies || [], pb);
+  }
+
+  function refreshOverviewStats(key, npc) {
+    if (key === 'result') {
+      renderStats(elements.resultAbilityMods, elements.resultStatline, elements.resultSaves, npc, elements.resultAc);
+    } else if (key === 'detail') {
+      renderStats(elements.detailAbilityMods, elements.detailStatline, elements.detailSaves, npc, elements.detailAc);
+    }
+  }
+
+  function bindStatBlockEditorEvents(target, npc) {
+    const container = target.editContainer;
+    if (!container) return;
+    const targetKey = target.key || 'result';
+
+    container.querySelectorAll('.statblock-edit-top [data-field]').forEach(input => {
+      input.addEventListener('input', () => {
+        const field = input.dataset.field;
+        if (field === 'speed' || field === 'cr') {
+          if (field === 'cr') {
+            const parsed = parseFloat(input.value);
+            npc.cr = Number.isNaN(parsed) ? input.value : parsed;
+          } else {
+            npc.speed = input.value;
+          }
+        } else {
+          const parsed = parseInt(input.value, 10);
+          npc[field] = Number.isNaN(parsed) ? 0 : parsed;
+          if (field === 'proficiencyBonus') {
+            recomputeSavingThrows(npc);
+          }
+        }
+        refreshOverviewStats(targetKey, npc);
+        persistNpcIfSaved(npc);
+      });
+    });
+
+    container.querySelectorAll('.edit-ability-row').forEach(row => {
+      const key = row.dataset.ability;
+      const scoreInput = row.querySelector('.edit-score-input');
+      const modLabel = row.querySelector('.edit-ability-mod');
+      const profCheckbox = row.querySelector('.edit-save-prof');
+
+      if (scoreInput) {
+        scoreInput.addEventListener('input', () => {
+          const score = parseInt(scoreInput.value, 10);
+          const safeScore = Number.isNaN(score) ? 10 : score;
+          npc.abilityScores = npc.abilityScores || {};
+          npc.abilityScores[key] = safeScore;
+          const mod = Math.floor((safeScore - 10) / 2);
+          npc.abilityMods = npc.abilityMods || {};
+          npc.abilityMods[key] = mod;
+          if (modLabel) modLabel.textContent = formatSigned(mod);
+          recomputeSavingThrows(npc);
+          refreshOverviewStats(targetKey, npc);
+          persistNpcIfSaved(npc);
+        });
+      }
+
+      if (profCheckbox) {
+        profCheckbox.addEventListener('change', () => {
+          const profs = new Set(npc.savingThrowProficiencies || []);
+          if (profCheckbox.checked) {
+            profs.add(key);
+          } else {
+            profs.delete(key);
+          }
+          npc.savingThrowProficiencies = Array.from(profs);
+          recomputeSavingThrows(npc);
+          refreshOverviewStats(targetKey, npc);
+          persistNpcIfSaved(npc);
+        });
+      }
+    });
+
+    container.querySelectorAll('.statblock-edit-list').forEach(listEl => {
+      const listKey = listEl.dataset.list;
+
+      listEl.querySelectorAll('.edit-entry').forEach(entryEl => {
+        const index = parseInt(entryEl.dataset.index, 10);
+        const entry = (npc[listKey] || [])[index];
+        if (!entry) return;
+
+        const nameInput = entryEl.querySelector('[data-field="name"]');
+        if (nameInput) {
+          nameInput.addEventListener('input', () => {
+            entry.name = nameInput.value;
+            persistNpcIfSaved(npc);
+          });
+        }
+
+        const textInput = entryEl.querySelector('[data-field="text"]');
+        if (textInput) {
+          textInput.addEventListener('input', () => {
+            entry.text = textInput.value;
+            persistNpcIfSaved(npc);
+          });
+        }
+
+        const removeBtn = entryEl.querySelector('[data-action="remove-entry"]');
+        if (removeBtn) {
+          removeBtn.addEventListener('click', () => {
+            npc[listKey].splice(index, 1);
+            persistNpcIfSaved(npc);
+            renderStatBlockEditor(target, npc);
+          });
+        }
+
+        const hasRollCheckbox = entryEl.querySelector('.edit-has-roll');
+        const rollFields = entryEl.querySelector('.edit-roll-fields');
+        if (hasRollCheckbox) {
+          hasRollCheckbox.addEventListener('change', () => {
+            if (hasRollCheckbox.checked) {
+              entry.roll = entry.roll || { attackBonus: 0, damageDice: '', bonusDice: null, damageMod: 0 };
+              if (rollFields) rollFields.classList.remove('hidden');
+            } else {
+              entry.roll = null;
+              if (rollFields) rollFields.classList.add('hidden');
+            }
+            persistNpcIfSaved(npc);
+          });
+        }
+
+        if (rollFields) {
+          rollFields.querySelectorAll('[data-roll-field]').forEach(rollInput => {
+            rollInput.addEventListener('input', () => {
+              if (!entry.roll) return;
+              const field = rollInput.dataset.rollField;
+              if (field === 'damageDice' || field === 'bonusDice') {
+                entry.roll[field] = rollInput.value.trim() || null;
+              } else {
+                const parsed = parseInt(rollInput.value, 10);
+                entry.roll[field] = Number.isNaN(parsed) ? 0 : parsed;
+              }
+              persistNpcIfSaved(npc);
+            });
+          });
+        }
+      });
+    });
+
+    container.querySelectorAll('[data-action="add-entry"]').forEach(button => {
+      button.addEventListener('click', () => {
+        const listKey = button.dataset.list;
+        npc[listKey] = npc[listKey] || [];
+        if (listKey === 'actions') {
+          npc[listKey].push({ name: 'New Action', text: '', roll: null });
+        } else {
+          npc[listKey].push({ name: listKey === 'reactions' ? 'New Reaction' : 'New Trait', text: '' });
+        }
+        persistNpcIfSaved(npc);
+        renderStatBlockEditor(target, npc);
+      });
+    });
   }
 
   function renderEntryList(container, items) {

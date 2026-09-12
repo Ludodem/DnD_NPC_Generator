@@ -208,6 +208,20 @@ button {
   line-height: 1.1;
   text-align: center;
   margin: 0 auto;
+  border-radius: var(--radius-sm);
+  padding: 2px 6px;
+  outline: none;
+}
+
+#result-name[contenteditable="true"]:hover,
+#detail-name[contenteditable="true"]:hover {
+  background-color: rgba(139, 69, 19, 0.08);
+}
+
+#result-name[contenteditable="true"]:focus,
+#detail-name[contenteditable="true"]:focus {
+  background-color: rgba(139, 69, 19, 0.12);
+  box-shadow: 0 0 0 2px var(--color-accent-light);
 }
 
 .screen-header.with-back {
@@ -774,6 +788,145 @@ button {
   margin: var(--space-sm) 0 var(--space-sm);
 }
 
+.statblock-mode-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--space-sm);
+}
+
+.statblock-mode-btn {
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg-card);
+  color: var(--color-accent);
+  border-radius: var(--radius-md);
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.statblock-mode-btn.active {
+  background-color: var(--color-accent);
+  color: #fff;
+  border-color: var(--color-accent);
+}
+
+.statblock-edit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.statblock-edit-top {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+
+@media (max-width: 360px) {
+  .statblock-edit-top {
+    grid-template-columns: 1fr;
+  }
+}
+
+.statblock-edit-abilities {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+
+@media (max-width: 480px) {
+  .statblock-edit-abilities {
+    grid-template-columns: 1fr;
+  }
+}
+
+.edit-ability-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 6px 8px;
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.edit-ability-row .ability-name {
+  font-weight: 700;
+  font-size: 0.85rem;
+  width: 36px;
+  flex-shrink: 0;
+}
+
+.edit-ability-row .field-input {
+  width: 64px;
+  flex-shrink: 0;
+}
+
+.edit-ability-row .edit-ability-mod {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  width: 34px;
+  flex-shrink: 0;
+}
+
+.edit-ability-row .edit-prof-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.statblock-edit-section h2 {
+  font-size: 1rem;
+  color: var(--color-accent);
+  margin-bottom: var(--space-sm);
+}
+
+.statblock-edit-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.edit-entry {
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.edit-entry-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.edit-entry-header .field-input {
+  flex: 1;
+}
+
+.edit-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: 0.85rem;
+  color: var(--color-text);
+}
+
+.edit-roll-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+
 .stat-controls {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1034,6 +1187,13 @@ button {
 .empty-state p {
   font-size: 1.1rem;
   margin-bottom: var(--space-lg);
+}
+
+.empty-state-actions {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 /* ----------------------------------------
