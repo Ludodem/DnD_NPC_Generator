@@ -791,7 +791,12 @@ button {
 .statblock-mode-row {
   display: flex;
   justify-content: flex-end;
+  gap: var(--space-sm);
   margin-bottom: var(--space-sm);
+}
+
+.print-npc-sheet {
+  display: none;
 }
 
 .statblock-mode-btn {
@@ -4221,6 +4226,67 @@ button {
 
   .reader-item {
     border: 0.5pt solid #ccc;
+  }
+
+  /* ----------------------------------------
+     Printable NPC stat block
+     ---------------------------------------- */
+  body.printing-npc .screens,
+  body.printing-npc .bottom-nav,
+  body.printing-npc #screen-scenario-detail {
+    display: none !important;
+  }
+
+  body.printing-npc .print-npc-sheet {
+    display: block !important;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  .print-sheet-header {
+    text-align: center;
+    border-bottom: 1.5pt solid #8b4513;
+    padding-bottom: 8pt;
+    margin-bottom: 12pt;
+  }
+
+  .print-sheet-header h1 {
+    margin: 0 0 4pt;
+    font-size: 22pt;
+  }
+
+  .print-sheet-subtitle {
+    margin: 0;
+    color: #555;
+    font-size: 11pt;
+  }
+
+  .print-npc-sheet .statblock-section {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Keep save/DC values as plain text, drop button chrome */
+  .print-npc-sheet .statblock-save {
+    background: none !important;
+    color: #000 !important;
+    padding: 0 !important;
+  }
+
+  /* Roll buttons and the spell "show more" toggle are screen-only affordances */
+  .print-npc-sheet .action-roll,
+  .print-npc-sheet .statblock-toggle {
+    display: none !important;
+  }
+
+  .print-npc-sheet .spell-link,
+  .print-npc-sheet .condition-link {
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    font: inherit !important;
+    color: inherit !important;
+    font-weight: 700;
   }
 }
 

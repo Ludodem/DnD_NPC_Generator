@@ -159,6 +159,7 @@
           <div class="view-tab-content" data-tab="statblock">
             <div class="statblock">
               <div class="statblock-mode-row">
+                <button id="result-statblock-print" class="statblock-mode-btn" type="button">&#128424; Print</button>
                 <button id="result-statblock-edit-toggle" class="statblock-mode-btn" type="button">&#9998; Edit</button>
               </div>
               <div id="result-statblock-view">
@@ -372,6 +373,7 @@
           <div class="view-tab-content" data-tab="statblock">
             <div class="statblock">
               <div class="statblock-mode-row">
+                <button id="detail-statblock-print" class="statblock-mode-btn" type="button">&#128424; Print</button>
                 <button id="detail-statblock-edit-toggle" class="statblock-mode-btn" type="button">&#9998; Edit</button>
               </div>
               <div id="detail-statblock-view">
@@ -493,6 +495,9 @@
         </div>
       </section>
     </main>
+
+    <!-- Printable NPC stat block (populated by JS, only shown when printing) -->
+    <div id="print-npc-sheet" class="print-npc-sheet"></div>
 
     <!-- Session Setup Modal -->
     <div id="session-setup-modal" class="modal hidden">

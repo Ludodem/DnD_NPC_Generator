@@ -108,7 +108,8 @@ const UI = (function() {
       reactions: document.getElementById('result-statblock-reactions'),
       editToggle: document.getElementById('result-statblock-edit-toggle'),
       viewContainer: document.getElementById('result-statblock-view'),
-      editContainer: document.getElementById('result-statblock-edit')
+      editContainer: document.getElementById('result-statblock-edit'),
+      printBtn: document.getElementById('result-statblock-print')
     };
     elements.btnBack = document.getElementById('btn-back');
     elements.btnRegenerate = document.getElementById('btn-regenerate');
@@ -172,7 +173,8 @@ const UI = (function() {
       reactions: document.getElementById('detail-statblock-reactions'),
       editToggle: document.getElementById('detail-statblock-edit-toggle'),
       viewContainer: document.getElementById('detail-statblock-view'),
-      editContainer: document.getElementById('detail-statblock-edit')
+      editContainer: document.getElementById('detail-statblock-edit'),
+      printBtn: document.getElementById('detail-statblock-print')
     };
     elements.btnBackLibrary = document.getElementById('btn-back-library');
     elements.btnCopyDetail = document.getElementById('btn-copy-detail');
@@ -548,6 +550,7 @@ const UI = (function() {
     });
 
     setupStatblockEditToggle(elements.resultStatblock, () => currentNpc);
+    setupStatblockPrintButton(elements.resultStatblock, () => currentNpc);
 
     elements.resultAbilityRolls.forEach(button => {
       button.addEventListener('click', (event) => {
@@ -2901,6 +2904,7 @@ const UI = (function() {
     void prepareConditionIndex();
 
     setupStatblockEditToggle(elements.detailStatblock, () => (viewingNpcId ? Storage.getById(viewingNpcId) : null));
+    setupStatblockPrintButton(elements.detailStatblock, () => (viewingNpcId ? Storage.getById(viewingNpcId) : null));
 
     if (elements.btnCreateNpc) {
       elements.btnCreateNpc.addEventListener('click', () => {
@@ -3296,6 +3300,9 @@ const UI = (function() {
       if (!isNpc) {
         statblockEditMode.detail = false;
       }
+    }
+    if (elements.detailStatblock && elements.detailStatblock.printBtn) {
+      elements.detailStatblock.printBtn.classList.toggle('hidden', !isNpc);
     }
     if (isNpc) {
       setActiveTab(elements.detailTabs, elements.detailTabContents, 'overview');
@@ -4227,6 +4234,58 @@ const UI = (function() {
     });
   }
 
+  function setupStatblockPrintButton(target, getNpc) {
+    if (!target || !target.printBtn) return;
+    target.printBtn.addEventListener('click', () => {
+      const npc = getNpc();
+      if (npc) {
+        printNpcStatBlock(target, npc);
+      }
+    });
+  }
+
+  /**
+   * Build a clean printable sheet from the current (read-only) stat block
+   * rendering and trigger the browser print dialog.
+   */
+  function printNpcStatBlock(target, npc) {
+    if (!target || !target.viewContainer) return;
+    const sheet = document.getElementById('print-npc-sheet');
+    if (!sheet) return;
+
+    const key = target.key || 'result';
+    const wasEditing = statblockEditMode[key] === true;
+    const wasExpanded = spellSectionExpanded[key] === true;
+
+    // Force a clean, fully-expanded read-only render so the print copy
+    // never captures the edit form or a collapsed spell list.
+    statblockEditMode[key] = false;
+    spellSectionExpanded[key] = true;
+    renderStatBlock(target, npc);
+
+    const subtitle = [npc.race, npc.sex, npc.alignment].filter(Boolean).join(' · ');
+    sheet.innerHTML = `
+      <div class="print-sheet-header">
+        <h1>${escapeHtml(npc.name || 'NPC')}</h1>
+        ${subtitle ? `<p class="print-sheet-subtitle">${escapeHtml(subtitle)}</p>` : ''}
+      </div>
+      <div class="statblock">${target.viewContainer.innerHTML}</div>
+    `;
+
+    document.body.classList.add('printing-npc');
+
+    const restore = () => {
+      document.body.classList.remove('printing-npc');
+      statblockEditMode[key] = wasEditing;
+      spellSectionExpanded[key] = wasExpanded;
+      renderStatBlock(target, npc);
+      window.removeEventListener('afterprint', restore);
+    };
+    window.addEventListener('afterprint', restore);
+
+    window.print();
+  }
+
   function renderStatBlock(target, npc) {
     if (!target) return;
 
@@ -4580,7 +4639,7 @@ const UI = (function() {
     }
     container.innerHTML = items.map(item => `
       <div class="statblock-entry">
-        <span class="entry-name">${item.name}.</span> ${linkifyText(item.text)}
+        <span class="entry-name">${escapeHtml(item.name)}.</span> ${linkifyText(escapeHtml(item.text))}
       </div>
     `).join('');
   }
@@ -4594,10 +4653,11 @@ const UI = (function() {
 
     container.innerHTML = items.map(item => {
       const rollButton = item.roll ? `<button class="action-roll" type="button">Roll</button>` : '';
+      const rollAttr = item.roll ? JSON.stringify(item.roll).replace(/'/g, '&#39;') : '';
       return `
-        <div class="statblock-entry statblock-action" data-roll='${item.roll ? JSON.stringify(item.roll) : ''}'>
+        <div class="statblock-entry statblock-action" data-roll='${rollAttr}'>
           <div class="statblock-action-text">
-            <span class="entry-name">${item.name}.</span> ${linkifyText(item.text)}
+            <span class="entry-name">${escapeHtml(item.name)}.</span> ${linkifyText(escapeHtml(item.text))}
           </div>
           ${rollButton}
         </div>
