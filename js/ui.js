@@ -102,6 +102,7 @@ const UI = (function() {
       abilities: document.getElementById('result-statblock-abilities'),
       traits: document.getElementById('result-statblock-traits'),
       actions: document.getElementById('result-statblock-actions'),
+      bonusActions: document.getElementById('result-statblock-bonusactions'),
       spellsSection: document.getElementById('result-statblock-spells-section'),
       spellsToggle: document.getElementById('result-statblock-spells-toggle'),
       spells: document.getElementById('result-statblock-spells'),
@@ -170,6 +171,7 @@ const UI = (function() {
       abilities: document.getElementById('detail-statblock-abilities'),
       traits: document.getElementById('detail-statblock-traits'),
       actions: document.getElementById('detail-statblock-actions'),
+      bonusActions: document.getElementById('detail-statblock-bonusactions'),
       spellsSection: document.getElementById('detail-statblock-spells-section'),
       spellsToggle: document.getElementById('detail-statblock-spells-toggle'),
       spells: document.getElementById('detail-statblock-spells'),
@@ -519,6 +521,7 @@ const UI = (function() {
       savingThrows: { ...zeroMods },
       traits: [],
       actions: [],
+      bonusActions: [],
       reactions: [],
       items: [],
       name: 'New NPC',
@@ -4698,6 +4701,7 @@ const UI = (function() {
         <div class="ncx-abilities">${abilitiesHtml}</div>
         ${section('Traits', npc.traits)}
         ${section('Actions', npc.actions)}
+        ${section('Bonus Actions', npc.bonusActions)}
         ${section('Reactions', npc.reactions)}
         ${spellsSection}
         ${section('Items', npc.items)}
@@ -4876,6 +4880,7 @@ const UI = (function() {
 
     renderEntryList(target.traits, npc.traits);
     renderActionList(target.actions, npc.actions);
+    renderActionList(target.bonusActions, npc.bonusActions);
     const spellActions = deriveSpellActions(npc);
     renderSpellActions(target, npc, spellActions);
     renderEntryList(target.reactions, npc.reactions);
@@ -4947,6 +4952,11 @@ const UI = (function() {
         <h2>Actions</h2>
         <div class="statblock-edit-list" data-list="actions">${renderEditEntryList(npc.actions, true)}</div>
         <button type="button" class="btn-tertiary btn-add" data-action="add-entry" data-list="actions">+ Add action</button>
+      </div>
+      <div class="statblock-edit-section">
+        <h2>Bonus Actions</h2>
+        <div class="statblock-edit-list" data-list="bonusActions">${renderEditEntryList(npc.bonusActions, true)}</div>
+        <button type="button" class="btn-tertiary btn-add" data-action="add-entry" data-list="bonusActions">+ Add bonus action</button>
       </div>
       <div class="statblock-edit-section">
         <h2>Reactions</h2>
@@ -5152,8 +5162,9 @@ const UI = (function() {
       button.addEventListener('click', () => {
         const listKey = button.dataset.list;
         npc[listKey] = npc[listKey] || [];
-        if (listKey === 'actions') {
-          npc[listKey].push({ name: 'New Action', text: '', roll: null });
+        if (listKey === 'actions' || listKey === 'bonusActions') {
+          const name = listKey === 'bonusActions' ? 'New Bonus Action' : 'New Action';
+          npc[listKey].push({ name, text: '', roll: null });
         } else {
           const defaultNames = { reactions: 'New Reaction', items: 'New Item', traits: 'New Trait' };
           npc[listKey].push({ name: defaultNames[listKey] || 'New Trait', text: '' });

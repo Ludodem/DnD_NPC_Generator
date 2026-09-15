@@ -449,6 +449,7 @@ const Generator = (function() {
       savingThrows: savingThrows,
       traits: actionData.traits,
       actions: actionData.actions,
+      bonusActions: [],
       reactions: actionData.reactions,
       items: [],
       name: name,
