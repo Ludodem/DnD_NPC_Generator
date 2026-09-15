@@ -106,6 +106,7 @@ const UI = (function() {
       spellsToggle: document.getElementById('result-statblock-spells-toggle'),
       spells: document.getElementById('result-statblock-spells'),
       reactions: document.getElementById('result-statblock-reactions'),
+      items: document.getElementById('result-statblock-items'),
       editToggle: document.getElementById('result-statblock-edit-toggle'),
       viewContainer: document.getElementById('result-statblock-view'),
       editContainer: document.getElementById('result-statblock-edit'),
@@ -172,6 +173,7 @@ const UI = (function() {
       spellsToggle: document.getElementById('detail-statblock-spells-toggle'),
       spells: document.getElementById('detail-statblock-spells'),
       reactions: document.getElementById('detail-statblock-reactions'),
+      items: document.getElementById('detail-statblock-items'),
       editToggle: document.getElementById('detail-statblock-edit-toggle'),
       viewContainer: document.getElementById('detail-statblock-view'),
       editContainer: document.getElementById('detail-statblock-edit'),
@@ -511,6 +513,7 @@ const UI = (function() {
       traits: [],
       actions: [],
       reactions: [],
+      items: [],
       name: 'New NPC',
       physicalDescription: '',
       psychDescription: '',
@@ -4480,6 +4483,7 @@ const UI = (function() {
         ${section('Actions', npc.actions)}
         ${section('Reactions', npc.reactions)}
         ${spellsSection}
+        ${section('Items', npc.items)}
         <p class="ncx-footer">Généré avec D&amp;D NPC Generator</p>
       </div>
     `;
@@ -4658,6 +4662,7 @@ const UI = (function() {
     const spellActions = deriveSpellActions(npc);
     renderSpellActions(target, npc, spellActions);
     renderEntryList(target.reactions, npc.reactions);
+    renderEntryList(target.items, npc.items);
 
     if (target.meta) {
       const metaLine = npc.metaLine || `PB ${formatSigned(pb)} \u00b7 CR ${cr}`;
@@ -4730,6 +4735,11 @@ const UI = (function() {
         <h2>Reactions</h2>
         <div class="statblock-edit-list" data-list="reactions">${renderEditEntryList(npc.reactions, false)}</div>
         <button type="button" class="btn-tertiary btn-add" data-action="add-entry" data-list="reactions">+ Add reaction</button>
+      </div>
+      <div class="statblock-edit-section">
+        <h2>Items</h2>
+        <div class="statblock-edit-list" data-list="items">${renderEditEntryList(npc.items, false)}</div>
+        <button type="button" class="btn-tertiary btn-add" data-action="add-entry" data-list="items">+ Add item</button>
       </div>
     `;
 
@@ -4928,7 +4938,8 @@ const UI = (function() {
         if (listKey === 'actions') {
           npc[listKey].push({ name: 'New Action', text: '', roll: null });
         } else {
-          npc[listKey].push({ name: listKey === 'reactions' ? 'New Reaction' : 'New Trait', text: '' });
+          const defaultNames = { reactions: 'New Reaction', items: 'New Item', traits: 'New Trait' };
+          npc[listKey].push({ name: defaultNames[listKey] || 'New Trait', text: '' });
         }
         persistNpcIfSaved(npc);
         renderStatBlockEditor(target, npc);

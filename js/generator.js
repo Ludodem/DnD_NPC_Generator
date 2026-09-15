@@ -450,6 +450,7 @@ const Generator = (function() {
       traits: actionData.traits,
       actions: actionData.actions,
       reactions: actionData.reactions,
+      items: [],
       name: name,
       physicalDescription: physicalDescription,
       psychDescription: psychDescription,
