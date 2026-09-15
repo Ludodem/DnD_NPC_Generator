@@ -10,7 +10,7 @@ const GistSync = (function() {
   const MAX_BACKUPS   = 5;
   const FILENAME      = 'dnd-npc-generator.json';
   const API           = 'https://api.github.com';
-  const DATA_KEYS     = ['dnd_scenario_library', 'dnd_session_stats', 'dnd_npc_library'];
+  const DATA_KEYS     = ['dnd_scenario_library', 'dnd_session_stats', 'dnd_npc_library', 'dnd_npc_folders'];
 
   function getToken()    { return localStorage.getItem(TOKEN_KEY) || ''; }
   function getGistId()   { return localStorage.getItem(GIST_ID_KEY) || ''; }

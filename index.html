@@ -233,6 +233,7 @@
 
           <div id="library-section-npcs" class="library-section active">
             <div class="scenarios-toolbar">
+              <button id="btn-new-npc-folder" class="btn btn-secondary">+ Folder</button>
               <button id="btn-create-npc" class="btn btn-secondary">+ Create NPC</button>
             </div>
             <div id="library-list"></div>
@@ -619,6 +620,16 @@
       <div class="modal-content condition-modal-content">
         <h2 id="condition-title"></h2>
         <div id="condition-description" class="condition-description"></div>
+      </div>
+    </div>
+
+    <!-- Action Sheet Modal (generic list of choices: move to folder, folder menu, ...) -->
+    <div id="action-sheet-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content action-sheet-content">
+        <h2 id="action-sheet-title"></h2>
+        <div id="action-sheet-list" class="action-sheet-list"></div>
+        <button id="action-sheet-cancel" class="btn btn-secondary action-sheet-cancel">Cancel</button>
       </div>
     </div>
 

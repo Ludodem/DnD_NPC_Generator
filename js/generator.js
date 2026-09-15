@@ -455,7 +455,8 @@ const Generator = (function() {
       physicalDescription: physicalDescription,
       psychDescription: psychDescription,
       notes: '',
-      version: 1
+      version: 1,
+      folderId: null
     };
 
     return npc;

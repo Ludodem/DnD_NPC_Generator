@@ -122,6 +122,7 @@ const UI = (function() {
     elements.libraryList = document.getElementById('library-list');
     elements.libraryEmpty = document.getElementById('library-empty');
     elements.btnGenerateFirst = document.getElementById('btn-generate-first');
+    elements.btnNewNpcFolder = document.getElementById('btn-new-npc-folder');
     elements.libraryTabs = document.querySelectorAll('.library-tab');
     elements.librarySections = {
       npcs: document.getElementById('library-section-npcs'),
@@ -221,6 +222,12 @@ const UI = (function() {
     elements.conditionModal = document.getElementById('condition-modal');
     elements.conditionTitle = document.getElementById('condition-title');
     elements.conditionDescription = document.getElementById('condition-description');
+
+    // Action sheet modal
+    elements.actionSheetModal = document.getElementById('action-sheet-modal');
+    elements.actionSheetTitle = document.getElementById('action-sheet-title');
+    elements.actionSheetList = document.getElementById('action-sheet-list');
+    elements.actionSheetCancel = document.getElementById('action-sheet-cancel');
 
     // Scenarios
     elements.scenarioList = document.getElementById('scenario-list');
@@ -519,7 +526,8 @@ const UI = (function() {
       psychDescription: '',
       notes: '',
       version: 1,
-      custom: true
+      custom: true,
+      folderId: null
     };
   }
 
@@ -2976,6 +2984,14 @@ const UI = (function() {
         void handleCreateManualNpc();
       });
     }
+    if (elements.btnNewNpcFolder) {
+      elements.btnNewNpcFolder.addEventListener('click', () => {
+        const name = prompt('Folder name:');
+        if (!name || !name.trim()) return;
+        Storage.createFolder(name);
+        renderLibrary();
+      });
+    }
 
     const saveDetailNotes = debounce(() => {
       if (!viewingNpcId) return;
@@ -3017,8 +3033,9 @@ const UI = (function() {
    */
   function renderLibrary() {
     const npcs = Storage.getAll();
+    const folders = Storage.getFolders();
 
-    if (npcs.length === 0) {
+    if (npcs.length === 0 && folders.length === 0) {
       elements.libraryList.classList.add('hidden');
       elements.libraryEmpty.classList.remove('hidden');
       return;
@@ -3027,26 +3044,79 @@ const UI = (function() {
     elements.libraryList.classList.remove('hidden');
     elements.libraryEmpty.classList.add('hidden');
 
-    elements.libraryList.innerHTML = npcs.map(npc => {
-      const tierLabel = npc.tier || 'Novice';
-      const archetypeLabel = npc.archetypeLabel || formatLabel(npc.archetype) || 'Generalist';
-      return `
-      <div class="npc-card" data-npc-id="${npc.id}">
+    const byFolder = new Map();
+    folders.forEach(folder => byFolder.set(folder.id, []));
+    const unfiled = [];
+    npcs.forEach(npc => {
+      if (npc.folderId && byFolder.has(npc.folderId)) {
+        byFolder.get(npc.folderId).push(npc);
+      } else {
+        unfiled.push(npc);
+      }
+    });
+
+    const folderSectionsHtml = folders.map(folder => renderNpcFolderSection(folder, byFolder.get(folder.id) || [])).join('');
+    const unfiledLabel = folders.length > 0 ? '<p class="npc-unfiled-label">Unfiled</p>' : '';
+    const unfiledHtml = unfiled.map(npc => renderNpcCardHtml(npc)).join('');
+
+    elements.libraryList.innerHTML = `
+      ${folderSectionsHtml}
+      ${unfiledLabel}
+      <div class="npc-unfiled-zone" data-folder-drop="unfiled">${unfiledHtml}</div>
+    `;
+
+    bindLibraryListEvents();
+  }
+
+  function renderNpcCardHtml(npc) {
+    const tierLabel = npc.tier || 'Novice';
+    const archetypeLabel = npc.archetypeLabel || formatLabel(npc.archetype) || 'Generalist';
+    return `
+      <div class="npc-card" data-npc-id="${npc.id}" draggable="true">
         <div class="npc-card-content">
-          <div class="npc-card-name">${npc.name}</div>
-          <div class="npc-card-meta">${npc.race} &middot; ${npc.alignment} &middot; ${tierLabel} ${archetypeLabel}</div>
+          <div class="npc-card-name">${escapeHtml(npc.name)}</div>
+          <div class="npc-card-meta">${escapeHtml(npc.race)} &middot; ${escapeHtml(npc.alignment)} &middot; ${escapeHtml(tierLabel)} ${escapeHtml(archetypeLabel)}</div>
         </div>
+        <button class="npc-card-move" data-npc-id="${npc.id}" aria-label="Move to folder" type="button">&#128193;</button>
         <button class="npc-card-delete" data-npc-id="${npc.id}" aria-label="Delete NPC">Delete</button>
         <span class="npc-card-arrow">&rsaquo;</span>
       </div>
     `;
-    }).join('');
+  }
 
-    // Add click handlers
+  function renderNpcFolderSection(folder, npcsInFolder) {
+    const collapsed = !!folder.collapsed;
+    const body = npcsInFolder.length > 0
+      ? npcsInFolder.map(npc => renderNpcCardHtml(npc)).join('')
+      : '<p class="npc-folder-empty">No NPCs here yet. Drop one in, or use \u{1F4C1} on a card.</p>';
+
+    return `
+      <div class="npc-folder" data-folder-id="${escapeAttr(folder.id)}" data-folder-drop="${escapeAttr(folder.id)}">
+        <div class="npc-folder-header" data-action="toggle-folder" data-folder-id="${escapeAttr(folder.id)}">
+          <button class="npc-folder-toggle" type="button" tabindex="-1" aria-label="${collapsed ? 'Expand' : 'Collapse'}">${collapsed ? '▸' : '▾'}</button>
+          <span class="npc-folder-name">${escapeHtml(folder.name)}</span>
+          <span class="npc-folder-count">${npcsInFolder.length}</span>
+          <button class="npc-folder-menu" type="button" data-action="folder-menu" data-folder-id="${escapeAttr(folder.id)}" aria-label="Folder options">&#8942;</button>
+        </div>
+        <div class="npc-folder-body${collapsed ? ' hidden' : ''}">${body}</div>
+      </div>
+    `;
+  }
+
+  function bindLibraryListEvents() {
     elements.libraryList.querySelectorAll('.npc-card').forEach(card => {
-      card.addEventListener('click', () => {
+      card.addEventListener('click', (event) => {
+        if (event.target.closest('.npc-card-delete') || event.target.closest('.npc-card-move')) return;
         const npcId = card.dataset.npcId;
         void viewNpcDetail(npcId);
+      });
+      card.addEventListener('dragstart', (event) => {
+        event.dataTransfer.setData('text/plain', card.dataset.npcId);
+        event.dataTransfer.effectAllowed = 'move';
+        card.classList.add('dragging');
+      });
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
       });
     });
 
@@ -3068,6 +3138,120 @@ const UI = (function() {
         );
       });
     });
+
+    elements.libraryList.querySelectorAll('.npc-card-move').forEach(button => {
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        showMoveToFolderSheet(button.dataset.npcId);
+      });
+    });
+
+    elements.libraryList.querySelectorAll('[data-action="toggle-folder"]').forEach(header => {
+      header.addEventListener('click', (event) => {
+        if (event.target.closest('.npc-folder-menu')) return;
+        const folderId = header.dataset.folderId;
+        const folder = Storage.getFolders().find(f => f.id === folderId);
+        if (!folder) return;
+        Storage.setFolderCollapsed(folderId, !folder.collapsed);
+        renderLibrary();
+      });
+    });
+
+    elements.libraryList.querySelectorAll('[data-action="folder-menu"]').forEach(button => {
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        showFolderMenu(button.dataset.folderId);
+      });
+    });
+
+    elements.libraryList.querySelectorAll('[data-folder-drop]').forEach(zone => {
+      zone.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+        zone.classList.add('drop-target');
+      });
+      zone.addEventListener('dragleave', () => {
+        zone.classList.remove('drop-target');
+      });
+      zone.addEventListener('drop', (event) => {
+        event.preventDefault();
+        zone.classList.remove('drop-target');
+        const npcId = event.dataTransfer.getData('text/plain');
+        if (!npcId) return;
+        const folderId = zone.dataset.folderDrop === 'unfiled' ? null : zone.dataset.folderDrop;
+        Storage.setNpcFolder(npcId, folderId);
+        renderLibrary();
+      });
+    });
+  }
+
+  function showMoveToFolderSheet(npcId) {
+    const npc = Storage.getById(npcId);
+    if (!npc) return;
+    const folders = Storage.getFolders();
+
+    const actions = folders.map(folder => ({
+      label: folder.id === npc.folderId ? `✓ ${folder.name}` : folder.name,
+      onClick: () => {
+        Storage.setNpcFolder(npcId, folder.id);
+        renderLibrary();
+      }
+    }));
+
+    actions.push({
+      label: !npc.folderId ? '✓ Unfiled' : 'Unfiled',
+      onClick: () => {
+        Storage.setNpcFolder(npcId, null);
+        renderLibrary();
+      }
+    });
+
+    actions.push({
+      label: '+ New folder…',
+      onClick: () => {
+        const name = prompt('Folder name:');
+        if (!name || !name.trim()) return;
+        const folder = Storage.createFolder(name);
+        Storage.setNpcFolder(npcId, folder.id);
+        renderLibrary();
+      }
+    });
+
+    showActionSheet(`Move "${npc.name}" to…`, actions);
+  }
+
+  function showFolderMenu(folderId) {
+    const folder = Storage.getFolders().find(f => f.id === folderId);
+    if (!folder) return;
+
+    showActionSheet(folder.name, [
+      {
+        label: 'Rename',
+        onClick: () => {
+          const name = prompt('Folder name:', folder.name);
+          if (!name || !name.trim()) return;
+          Storage.renameFolder(folderId, name);
+          renderLibrary();
+        }
+      },
+      {
+        label: 'Delete folder',
+        danger: true,
+        onClick: () => {
+          showModal(
+            'Delete Folder',
+            `"${folder.name}" will be deleted. NPCs inside it will not be deleted, just unfiled. Continue?`,
+            () => {
+              Storage.deleteFolder(folderId);
+              showToast('Folder deleted');
+              renderLibrary();
+            }
+          );
+        }
+      }
+    ]);
   }
 
   function renderActiveLibrarySection() {
@@ -3384,10 +3568,17 @@ const UI = (function() {
     elements.modalCancel.addEventListener('click', hideModal);
     elements.modal.querySelector('.modal-backdrop').addEventListener('click', hideModal);
 
+    if (elements.actionSheetModal) {
+      elements.actionSheetCancel?.addEventListener('click', hideActionSheet);
+      elements.actionSheetModal.querySelector('.modal-backdrop')?.addEventListener('click', hideActionSheet);
+    }
+
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
       const sessionSetupModal = document.getElementById('session-setup-modal');
-      if (elements.enemyPickerModal && !elements.enemyPickerModal.classList.contains('hidden')) {
+      if (elements.actionSheetModal && !elements.actionSheetModal.classList.contains('hidden')) {
+        hideActionSheet();
+      } else if (elements.enemyPickerModal && !elements.enemyPickerModal.classList.contains('hidden')) {
         hideEnemyPicker();
       } else if (elements.itemEditorModal && !elements.itemEditorModal.classList.contains('hidden')) {
         closeItemEditor();
@@ -3594,6 +3785,32 @@ const UI = (function() {
   function hideModal() {
     elements.modal.classList.add('hidden');
     modalConfirmCallback = null;
+  }
+
+  /**
+   * Show a generic action sheet: a list of clickable choices plus Cancel.
+   * `actions` is an array of { label, onClick, danger }.
+   */
+  function showActionSheet(title, actions) {
+    if (!elements.actionSheetModal) return;
+    elements.actionSheetTitle.textContent = title;
+    elements.actionSheetList.innerHTML = actions.map((action, index) => `
+      <button type="button" class="action-sheet-item${action.danger ? ' action-sheet-item--danger' : ''}" data-index="${index}">${escapeHtml(action.label)}</button>
+    `).join('');
+
+    elements.actionSheetList.querySelectorAll('.action-sheet-item').forEach((btn, index) => {
+      btn.addEventListener('click', () => {
+        hideActionSheet();
+        actions[index].onClick();
+      });
+    });
+
+    elements.actionSheetModal.classList.remove('hidden');
+  }
+
+  function hideActionSheet() {
+    if (!elements.actionSheetModal) return;
+    elements.actionSheetModal.classList.add('hidden');
   }
 
   /**

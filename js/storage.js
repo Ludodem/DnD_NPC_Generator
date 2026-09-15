@@ -5,6 +5,7 @@
 
 const Storage = (function() {
   const STORAGE_KEY = 'dnd_npc_library';
+  const FOLDERS_KEY = 'dnd_npc_folders';
   const MAX_NPCS = 100;
 
   /**
@@ -133,6 +134,110 @@ const Storage = (function() {
     }
   }
 
+  // ---- Folders ----
+
+  function generateFolderId() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    return 'folder-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+  }
+
+  /**
+   * Get all NPC folders
+   */
+  function getFolders() {
+    try {
+      const data = localStorage.getItem(FOLDERS_KEY);
+      return data ? JSON.parse(data) : [];
+    } catch (error) {
+      console.error('Error reading folders from storage:', error);
+      return [];
+    }
+  }
+
+  function saveFolders(folders) {
+    try {
+      localStorage.setItem(FOLDERS_KEY, JSON.stringify(folders));
+      return true;
+    } catch (error) {
+      console.error('Error writing folders to storage:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Create a new folder
+   * Returns the created folder object
+   */
+  function createFolder(name) {
+    const folders = getFolders();
+    const folder = {
+      id: generateFolderId(),
+      name: (name || 'New Folder').trim() || 'New Folder',
+      createdAt: new Date().toISOString(),
+      collapsed: false
+    };
+    folders.push(folder);
+    saveFolders(folders);
+    return folder;
+  }
+
+  /**
+   * Rename a folder
+   */
+  function renameFolder(id, name) {
+    const folders = getFolders();
+    const folder = folders.find(f => f.id === id);
+    if (!folder) return false;
+    const trimmed = (name || '').trim();
+    if (!trimmed) return false;
+    folder.name = trimmed;
+    return saveFolders(folders);
+  }
+
+  /**
+   * Delete a folder. NPCs inside it are moved back to "unfiled" (folderId = null),
+   * never deleted.
+   */
+  function deleteFolder(id) {
+    const folders = getFolders().filter(f => f.id !== id);
+    saveFolders(folders);
+
+    const npcs = getAll();
+    let changed = false;
+    npcs.forEach(npc => {
+      if (npc.folderId === id) {
+        npc.folderId = null;
+        changed = true;
+      }
+    });
+    if (changed) saveAll(npcs);
+    return true;
+  }
+
+  /**
+   * Toggle/set a folder's collapsed (folded) state
+   */
+  function setFolderCollapsed(id, collapsed) {
+    const folders = getFolders();
+    const folder = folders.find(f => f.id === id);
+    if (!folder) return false;
+    folder.collapsed = !!collapsed;
+    return saveFolders(folders);
+  }
+
+  /**
+   * Move an NPC into a folder (or back to unfiled with folderId = null)
+   */
+  function setNpcFolder(npcId, folderId) {
+    const npcs = getAll();
+    const npc = npcs.find(n => n.id === npcId);
+    if (!npc) return false;
+    npc.folderId = folderId || null;
+    return saveAll(npcs);
+  }
+
   // Public API
   return {
     getAll,
@@ -143,6 +248,12 @@ const Storage = (function() {
     count,
     isFull,
     getMaxCapacity,
-    clearAll
+    clearAll,
+    getFolders,
+    createFolder,
+    renameFolder,
+    deleteFolder,
+    setFolderCollapsed,
+    setNpcFolder
   };
 })();

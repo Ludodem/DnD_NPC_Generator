@@ -1202,6 +1202,122 @@ button {
   transform: scale(0.98);
 }
 
+.npc-card-move {
+  border: 1px solid var(--color-border);
+  background-color: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  margin-right: var(--space-xs);
+}
+
+.npc-card-move:active {
+  transform: scale(0.98);
+}
+
+.npc-card.dragging {
+  opacity: 0.5;
+}
+
+.npc-card[draggable="true"] {
+  cursor: grab;
+}
+
+/* ----------------------------------------
+   NPC Folders
+   ---------------------------------------- */
+.npc-folder {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-bg);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.npc-folder.drop-target {
+  border-color: var(--color-accent);
+  background-color: rgba(139, 69, 19, 0.08);
+}
+
+.npc-folder-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  cursor: pointer;
+}
+
+.npc-folder-toggle {
+  border: none;
+  background: none;
+  color: var(--color-accent);
+  font-size: 0.8rem;
+  width: 20px;
+  flex-shrink: 0;
+}
+
+.npc-folder-name {
+  flex: 1;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.npc-folder-count {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  background-color: var(--color-bg-card);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+.npc-folder-menu {
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 1.1rem;
+  width: 28px;
+  flex-shrink: 0;
+}
+
+.npc-folder-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: 0 var(--space-sm) var(--space-sm);
+}
+
+.npc-folder-empty {
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--color-text-muted);
+  padding: var(--space-sm);
+  margin: 0;
+}
+
+.npc-unfiled-zone {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  border-radius: var(--radius-lg);
+  transition: background-color 0.15s ease;
+}
+
+.npc-unfiled-zone.drop-target {
+  background-color: rgba(139, 69, 19, 0.08);
+}
+
+.npc-unfiled-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin: var(--space-sm) 0 0;
+}
+
 /* ----------------------------------------
    Empty State
    ---------------------------------------- */
@@ -1278,6 +1394,40 @@ button {
 
 .modal-actions .btn {
   flex: 1;
+}
+
+.action-sheet-content {
+  max-width: 360px;
+}
+
+.action-sheet-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-md);
+}
+
+.action-sheet-item {
+  text-align: left;
+  border: none;
+  background-color: transparent;
+  color: var(--color-text);
+  font-size: 1rem;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+}
+
+.action-sheet-item:hover,
+.action-sheet-item:active {
+  background-color: rgba(139, 69, 19, 0.1);
+}
+
+.action-sheet-item--danger {
+  color: var(--color-danger);
+}
+
+.action-sheet-cancel {
+  width: 100%;
 }
 
 /* ----------------------------------------
