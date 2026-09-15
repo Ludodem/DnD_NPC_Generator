@@ -601,7 +601,8 @@ const UI = (function() {
     );
     setActiveTab(elements.resultTabs, elements.resultTabContents, 'overview');
     elements.resultName.textContent = npc.name;
-    elements.resultSummary.innerHTML = renderChips(npc);
+    elements.resultSummary.innerHTML = await renderChips(npc);
+    bindChipSelectors(elements.resultSummary, npc);
     renderStats(elements.resultAbilityMods, elements.resultStatline, elements.resultSaves, npc, elements.resultAc);
     renderStatBlock(elements.resultStatblock, npc);
     elements.resultPhysical.textContent = npc.physicalDescription;
@@ -619,11 +620,63 @@ const UI = (function() {
   /**
    * Render summary chips
    */
-  function renderChips(npc) {
-    return [npc.sex, npc.race, npc.alignment]
-      .filter(Boolean)
-      .map(value => `<span class="chip">${value}</span>`)
-      .join('');
+  async function renderChips(npc) {
+    const races = await DataLoader.getAllRaces();
+    const sexOptions = Generator.getSexOptions();
+    const alignmentOptions = Generator.getAlignmentOptions();
+
+    const sexSelect = buildChipSelect(
+      'sex',
+      sexOptions.map(value => ({ value, label: value })),
+      npc.sex,
+      npc.sex
+    );
+    const raceSelect = buildChipSelect(
+      'race',
+      races.map(r => ({ value: r.id, label: r.label })),
+      npc.raceId,
+      npc.race
+    );
+    const alignmentSelect = buildChipSelect(
+      'alignment',
+      alignmentOptions.map(value => ({ value, label: value })),
+      npc.alignment,
+      npc.alignment
+    );
+
+    const sep = '<span class="chip-sep">·</span>';
+    return `${sexSelect}${sep}${raceSelect}${sep}${alignmentSelect}`;
+  }
+
+  function buildChipSelect(field, options, currentValue, currentLabel) {
+    const matches = options.some(opt => opt.value === currentValue);
+    const placeholder = !matches
+      ? `<option value="${escapeAttr(currentValue || '')}" selected>${escapeHtml(currentLabel || currentValue || '—')}</option>`
+      : '';
+    const optionsHtml = options.map(opt => `
+      <option value="${escapeAttr(opt.value)}"${opt.value === currentValue ? ' selected' : ''}>${escapeHtml(opt.label)}</option>
+    `).join('');
+    return `<select class="chip chip-select" data-chip-field="${field}">${placeholder}${optionsHtml}</select>`;
+  }
+
+  function bindChipSelectors(container, npc) {
+    if (!container) return;
+    container.querySelectorAll('[data-chip-field]').forEach(select => {
+      select.addEventListener('change', async () => {
+        const field = select.dataset.chipField;
+        if (field === 'sex') {
+          npc.sex = select.value;
+        } else if (field === 'alignment') {
+          npc.alignment = select.value;
+        } else if (field === 'race') {
+          npc.raceId = select.value;
+          const races = await DataLoader.getAllRaces();
+          const race = races.find(r => r.id === select.value);
+          npc.race = race ? race.label : select.value;
+        }
+        persistNpcIfSaved(npc);
+      });
+    });
   }
 
   /**
@@ -3246,7 +3299,8 @@ const UI = (function() {
     );
     setActiveTab(elements.detailTabs, elements.detailTabContents, 'overview');
     elements.detailName.textContent = npc.name;
-    elements.detailSummary.innerHTML = renderChips(npc);
+    elements.detailSummary.innerHTML = await renderChips(npc);
+    bindChipSelectors(elements.detailSummary, npc);
     renderStats(elements.detailAbilityMods, elements.detailStatline, elements.detailSaves, npc, elements.detailAc);
     renderStatBlock(elements.detailStatblock, npc);
     elements.detailPhysical.textContent = npc.physicalDescription;

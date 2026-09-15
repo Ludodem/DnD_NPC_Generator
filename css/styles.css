@@ -975,9 +975,34 @@ button {
   font-weight: 600;
 }
 
-.chip:not(:last-child)::after {
-  content: " \00B7 ";
+.chip-sep {
+  display: inline;
+  margin: 0 4px;
   color: var(--color-text-muted);
+}
+
+.chip-select {
+  display: inline-block;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  border: none;
+  background-color: transparent;
+  font-family: inherit;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+  text-align: center;
+  text-align-last: center;
+}
+
+.chip-select:hover,
+.chip-select:focus {
+  background-color: rgba(139, 69, 19, 0.1);
+  outline: none;
 }
 
 /* ----------------------------------------
