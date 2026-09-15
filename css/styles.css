@@ -790,6 +790,7 @@ button {
 
 .statblock-mode-row {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--space-sm);
   margin-bottom: var(--space-sm);

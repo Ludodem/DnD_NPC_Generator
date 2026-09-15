@@ -109,7 +109,8 @@ const UI = (function() {
       editToggle: document.getElementById('result-statblock-edit-toggle'),
       viewContainer: document.getElementById('result-statblock-view'),
       editContainer: document.getElementById('result-statblock-edit'),
-      printBtn: document.getElementById('result-statblock-print')
+      printBtn: document.getElementById('result-statblock-print'),
+      cardBtn: document.getElementById('result-statblock-card')
     };
     elements.btnBack = document.getElementById('btn-back');
     elements.btnRegenerate = document.getElementById('btn-regenerate');
@@ -174,7 +175,8 @@ const UI = (function() {
       editToggle: document.getElementById('detail-statblock-edit-toggle'),
       viewContainer: document.getElementById('detail-statblock-view'),
       editContainer: document.getElementById('detail-statblock-edit'),
-      printBtn: document.getElementById('detail-statblock-print')
+      printBtn: document.getElementById('detail-statblock-print'),
+      cardBtn: document.getElementById('detail-statblock-card')
     };
     elements.btnBackLibrary = document.getElementById('btn-back-library');
     elements.btnCopyDetail = document.getElementById('btn-copy-detail');
@@ -551,6 +553,7 @@ const UI = (function() {
 
     setupStatblockEditToggle(elements.resultStatblock, () => currentNpc);
     setupStatblockPrintButton(elements.resultStatblock, () => currentNpc);
+    setupStatblockCardButton(elements.resultStatblock, () => currentNpc);
 
     elements.resultAbilityRolls.forEach(button => {
       button.addEventListener('click', (event) => {
@@ -2905,6 +2908,7 @@ const UI = (function() {
 
     setupStatblockEditToggle(elements.detailStatblock, () => (viewingNpcId ? Storage.getById(viewingNpcId) : null));
     setupStatblockPrintButton(elements.detailStatblock, () => (viewingNpcId ? Storage.getById(viewingNpcId) : null));
+    setupStatblockCardButton(elements.detailStatblock, () => (viewingNpcId ? Storage.getById(viewingNpcId) : null));
 
     if (elements.btnCreateNpc) {
       elements.btnCreateNpc.addEventListener('click', () => {
@@ -3303,6 +3307,9 @@ const UI = (function() {
     }
     if (elements.detailStatblock && elements.detailStatblock.printBtn) {
       elements.detailStatblock.printBtn.classList.toggle('hidden', !isNpc);
+    }
+    if (elements.detailStatblock && elements.detailStatblock.cardBtn) {
+      elements.detailStatblock.cardBtn.classList.toggle('hidden', !isNpc);
     }
     if (isNpc) {
       setActiveTab(elements.detailTabs, elements.detailTabContents, 'overview');
@@ -4284,6 +4291,250 @@ const UI = (function() {
     window.addEventListener('afterprint', restore);
 
     window.print();
+  }
+
+  function setupStatblockCardButton(target, getNpc) {
+    if (!target || !target.cardBtn) return;
+    target.cardBtn.addEventListener('click', () => {
+      const npc = getNpc();
+      if (npc) {
+        copyNpcCardImage(npc);
+      }
+    });
+  }
+
+  const NPC_CARD_CSS = `
+    .ncx-card {
+      font-family: Georgia, 'Times New Roman', serif;
+      background: #fffdf7;
+      color: #2c2416;
+      border: 3px solid #8b4513;
+      border-radius: 12px;
+      padding: 20px 24px;
+      box-sizing: border-box;
+    }
+    .ncx-card * { box-sizing: border-box; }
+    .ncx-header {
+      text-align: center;
+      border-bottom: 2px solid #8b4513;
+      padding-bottom: 10px;
+      margin-bottom: 14px;
+    }
+    .ncx-name { font-size: 26px; font-weight: 700; color: #8b4513; margin: 0 0 4px; }
+    .ncx-subtitle { font-size: 13px; font-style: italic; color: #6b5d4d; margin: 0 0 2px; }
+    .ncx-meta-row { font-size: 12px; color: #6b5d4d; margin: 0; font-family: system-ui, sans-serif; }
+    .ncx-top-stats { display: flex; justify-content: space-around; gap: 8px; margin-bottom: 14px; }
+    .ncx-stat {
+      flex: 1; text-align: center; background: #f5f0e6;
+      border: 1px solid #d4c4a8; border-radius: 8px; padding: 6px 4px;
+      font-family: system-ui, sans-serif;
+    }
+    .ncx-stat-label { display: block; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: #6b5d4d; }
+    .ncx-stat-value { display: block; font-size: 18px; font-weight: 700; color: #2c2416; }
+    .ncx-abilities { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 14px; }
+    .ncx-ability {
+      text-align: center; background: #f5f0e6; border: 1px solid #d4c4a8;
+      border-radius: 6px; padding: 4px 2px; font-family: system-ui, sans-serif;
+    }
+    .ncx-ab-name { display: block; font-size: 11px; font-weight: 700; }
+    .ncx-ab-score { display: block; font-size: 11px; }
+    .ncx-ab-save { display: block; font-size: 10px; color: #6b5d4d; }
+    .ncx-ab-save.ncx-prof { color: #8b4513; font-weight: 700; }
+    .ncx-section { margin-bottom: 12px; }
+    .ncx-section h3 {
+      font-size: 14px; color: #8b4513; border-bottom: 1px solid #d4a574;
+      margin: 0 0 6px; padding-bottom: 2px; font-family: Georgia, serif;
+    }
+    .ncx-entry { font-size: 12.5px; line-height: 1.45; margin: 0 0 5px; font-family: system-ui, sans-serif; }
+    .ncx-entry-name { font-weight: 700; font-style: italic; }
+    .ncx-entry .spell-link, .ncx-entry .condition-link {
+      background: none; border: none; padding: 0; font: inherit; font-weight: 700; color: inherit;
+    }
+    .ncx-footer { text-align: center; font-size: 10px; color: #a08d73; margin-top: 8px; font-family: system-ui, sans-serif; }
+  `;
+
+  /**
+   * Build the self-contained (inline-styled) HTML for a compact NPC card,
+   * suitable for rasterizing outside the live document (see buildNpcCardBlob).
+   */
+  function buildNpcCardHtml(npc) {
+    const tier = npc.tier || 'Novice';
+    const tierInfo = Generator.getTierInfo(tier);
+    const pb = npc.proficiencyBonus || tierInfo.pb;
+    const cr = npc.cr || tierInfo.cr;
+    const mods = getAbilityMods(npc);
+    const scores = npc.abilityScores || {};
+    const saves = npc.savingThrows || computeSavingThrows(mods, npc.savingThrowProficiencies || [], pb);
+    const saveProfs = new Set(npc.savingThrowProficiencies || []);
+    const ac = npc.armorClass || computeArmorClassFallback(npc, tier);
+    const hp = npc.hitPoints || 0;
+    const speed = npc.speed || '30 ft.';
+    const init = formatSigned(npc.initiative || 0);
+    const archetypeLabel = npc.archetypeLabel || formatLabel(npc.archetype) || 'Generalist';
+    const subtitle = [npc.race, npc.sex, npc.alignment].filter(Boolean).join(' · ');
+
+    const abilitiesHtml = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'].map(key => {
+      const score = scores[key] !== undefined ? scores[key] : 10;
+      const mod = mods[key] !== undefined ? mods[key] : 0;
+      const save = saves[key] !== undefined ? saves[key] : mod;
+      const profClass = saveProfs.has(key) ? ' ncx-prof' : '';
+      return `
+        <div class="ncx-ability">
+          <span class="ncx-ab-name">${key}</span>
+          <span class="ncx-ab-score">${score} (${formatSigned(mod)})</span>
+          <span class="ncx-ab-save${profClass}">Save ${formatSigned(save)}</span>
+        </div>
+      `;
+    }).join('');
+
+    const section = (title, items) => {
+      if (!items || items.length === 0) return '';
+      const entries = items.map(item => `
+        <div class="ncx-entry"><span class="ncx-entry-name">${escapeHtml(item.name)}.</span> ${linkifyText(escapeHtml(item.text))}</div>
+      `).join('');
+      return `<div class="ncx-section"><h3>${title}</h3>${entries}</div>`;
+    };
+
+    const spellActions = deriveSpellActions(npc);
+    const spellsSection = spellActions.length > 0
+      ? `<div class="ncx-section"><h3>Spells</h3>${spellActions.map(spell => `
+          <div class="ncx-entry"><span class="ncx-entry-name">${escapeHtml(spell.name)}.</span>${spell.meta ? ` <em>${escapeHtml(spell.meta)}</em>` : ''} ${linkifyText(escapeHtml(spell.text))}</div>
+        `).join('')}</div>`
+      : '';
+
+    const metaBits = [`${archetypeLabel} · Tier ${tier} · CR ${cr} · PB ${formatSigned(pb)}`];
+    const xpLine = getXpLine(cr);
+    if (xpLine) metaBits.push(xpLine);
+    if (spellActions.length > 0) metaBits.push(getSpellcastingMeta(npc));
+
+    return `
+      <div class="ncx-card">
+        <style>${NPC_CARD_CSS}</style>
+        <div class="ncx-header">
+          <p class="ncx-name">${escapeHtml(npc.name || 'NPC')}</p>
+          ${subtitle ? `<p class="ncx-subtitle">${escapeHtml(subtitle)}</p>` : ''}
+          ${metaBits.map(line => `<p class="ncx-meta-row">${escapeHtml(line)}</p>`).join('')}
+        </div>
+        <div class="ncx-top-stats">
+          <div class="ncx-stat"><span class="ncx-stat-label">AC</span><span class="ncx-stat-value">${ac}</span></div>
+          <div class="ncx-stat"><span class="ncx-stat-label">HP</span><span class="ncx-stat-value">${hp}</span></div>
+          <div class="ncx-stat"><span class="ncx-stat-label">Speed</span><span class="ncx-stat-value">${escapeHtml(speed)}</span></div>
+          <div class="ncx-stat"><span class="ncx-stat-label">Init</span><span class="ncx-stat-value">${init}</span></div>
+        </div>
+        <div class="ncx-abilities">${abilitiesHtml}</div>
+        ${section('Traits', npc.traits)}
+        ${section('Actions', npc.actions)}
+        ${section('Reactions', npc.reactions)}
+        ${spellsSection}
+        <p class="ncx-footer">Généré avec D&amp;D NPC Generator</p>
+      </div>
+    `;
+  }
+
+  function loadImageElement(src) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('Image load failed'));
+      img.src = src;
+    });
+  }
+
+  /**
+   * Rasterize the compact NPC card to a PNG blob, without any external
+   * library: the card HTML/CSS is embedded in an SVG <foreignObject>,
+   * loaded as an <img>, then drawn to a canvas at 2x for crisp paste-in.
+   */
+  async function buildNpcCardBlob(npc) {
+    const CARD_WIDTH = 640;
+    const cardHtml = buildNpcCardHtml(npc);
+
+    // Measure the real rendered height via a hidden, attached DOM node
+    // (lets the browser do text wrapping/layout instead of guessing).
+    const measurer = document.createElement('div');
+    measurer.style.cssText = `position:fixed; left:-99999px; top:0; width:${CARD_WIDTH}px; visibility:hidden;`;
+    measurer.innerHTML = cardHtml;
+    document.body.appendChild(measurer);
+    const height = Math.max(1, Math.ceil(measurer.getBoundingClientRect().height));
+    document.body.removeChild(measurer);
+
+    const svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg" width="${CARD_WIDTH}" height="${height}">` +
+      `<foreignObject width="100%" height="100%">` +
+      `<div xmlns="http://www.w3.org/1999/xhtml">${cardHtml}</div>` +
+      `</foreignObject></svg>`;
+    const svgDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgMarkup);
+
+    const img = await loadImageElement(svgDataUrl);
+
+    const scale = 2;
+    const canvas = document.createElement('canvas');
+    canvas.width = CARD_WIDTH * scale;
+    canvas.height = height * scale;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
+    ctx.fillStyle = '#fffdf7';
+    ctx.fillRect(0, 0, CARD_WIDTH, height);
+    ctx.drawImage(img, 0, 0, CARD_WIDTH, height);
+
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) throw new Error('PNG generation failed');
+    return blob;
+  }
+
+  function sanitizeFilename(name) {
+    const slug = String(name || 'npc').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-+|-+$)/g, '');
+    return slug || 'npc';
+  }
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  /**
+   * Copy a compact NPC card image to the clipboard so it can be pasted
+   * straight into an external document. The blob promise is handed to
+   * ClipboardItem immediately (rather than awaited first) so the write
+   * still counts as happening within the click's user-activation window.
+   */
+  function copyNpcCardImage(npc) {
+    const filename = `${sanitizeFilename(npc.name)}-card.png`;
+
+    if (!(navigator.clipboard && window.ClipboardItem)) {
+      buildNpcCardBlob(npc)
+        .then(blob => {
+          downloadBlob(blob, filename);
+          showToast('Image téléchargée (presse-papier image non supporté)');
+        })
+        .catch(error => {
+          console.error('Card export failed:', error);
+          showToast('Échec de génération de la carte');
+        });
+      return;
+    }
+
+    const blobPromise = buildNpcCardBlob(npc);
+    const item = new ClipboardItem({ 'image/png': blobPromise });
+
+    navigator.clipboard.write([item]).then(() => {
+      showToast('Image copiée ✓ — colle-la (Ctrl+V) dans ton document');
+    }).catch(async (error) => {
+      console.error('Clipboard write failed:', error);
+      try {
+        const blob = await blobPromise;
+        downloadBlob(blob, filename);
+        showToast('Presse-papier indisponible — image téléchargée');
+      } catch (error2) {
+        console.error('Card export failed:', error2);
+        showToast('Échec de génération de la carte');
+      }
+    });
   }
 
   function renderStatBlock(target, npc) {
